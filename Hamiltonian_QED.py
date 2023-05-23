@@ -1,3 +1,4 @@
+#NEW VERSION WITH ONLY HAMILTONIAN
 #
 #
 """Definition of the Hamiltonian for QED lattice NxN"""
@@ -369,7 +370,6 @@ class HamiltonianQED:
                 [Symbol(k[0]) for k in self.list_edges2_u_op].index(n_tmp)
                 for n_tmp in self.u_op_free
             ]
-            print(lu_op_edges)
             lu_op_free_map = [
                 (
                     tuple(map(int, re.findall(r"\d+", self.list_edges2_u_op[i][0])[0])),
@@ -377,12 +377,11 @@ class HamiltonianQED:
                 )
                 for i in lu_op_edges
             ]
-            print(lu_op_free_map)
+
             edge_color_list = [
                 "black" if e in lu_op_free_map else "lightgray"
                 for e in self.graph_edges_system
             ]
-
         else:
             edge_color_list = ["black" for e in self.graph_edges_system]
 
