@@ -22,22 +22,7 @@ from mpl_toolkits.mplot3d import Axes3D,proj3d
 from matplotlib.patches import FancyArrowPatch
 from sympy import Symbol
 mpl.rcParams["patch.facecolor"] = "xkcd:white"
-#from dataclasses import dataclass, field
 
-# @dataclass
-# class Sites:
-#     """Class for the sites of the lattice."""
-#     n_sites: list
-#     pbc: bool | list = False
-#     puregauge: bool = False
-#     n_sitestot: float = field(init=False)
-#     dims: float = field(init=False)
-
-#     def __post_init__(self):
-#         while 1 in self.n_sites:  # avoid 1 dimension useless input
-#             self.n_sites.remove(1)
-#         self.n_sitestot =  np.prod(self.n_sites)
-#         self.dims = len(self.n_sites)
 class HCLattice:
 
     """The algorithm a generic N dimensional hypercubic lattice with both open and
@@ -74,13 +59,10 @@ class HCLattice:
         self.dims = len(self.n_sites)  # how many dimensions
         self.pbc = pbc
         self.puregauge = puregauge
-        #lattice_data = Sites(n_sites)
-
 
         # define graph and edges
         self.graph_lattice()
         self.graph_edges_system: list = list(self.graph.edges)
-
         # Build  edges and plaquettes operators
         self.list_edges_gauge()
         self.plaquette_operators()
@@ -130,19 +112,23 @@ class HCLattice:
         graph = relabel_nodes(graph_g, flatten)
         self.graph = graph
 
-    def draw_graph_func(self, gauss_law_fig: bool = False, savefig_dir=None):
+    def draw_graph_func(self, gauss_law_fig: bool = False,u_op_free=None, savefig_dir=None):
         """Draw the graph of the lattice with the dynamical links.
         Parameters
            gauss_law_fig: bool
                If True, the free links are highlighted in gray and the dynamical
                links in black.
+
+            u_op_free: list
+                List of dynamical links after Gauss law is applied.
+
            savefig_dir: str
                If not None, the figure is saved in the specified directory."""
 
-        if gauss_law_fig:
+        if gauss_law_fig and u_op_free is not None:
             lu_op_edges = [
                 [Symbol(k[0]) for k in self.list_edges2_u_op].index(n_tmp)
-                for n_tmp in self.u_op_free  # TODO: include gauss law option
+                for n_tmp in u_op_free  # TODO: include gauss law option
             ]
             lu_op_free_map = [
                 (
