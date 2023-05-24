@@ -330,13 +330,7 @@ class HCLattice:
         # TODO: test for dims>4 how to visualize it?
         plaq_list = []
 
-        if (
-            len(self.n_sites) == 1 and self.n_sites[0] == 4 and self.pbc is True
-        ):  # only 1 dimension #TODO plaquette only if 4 sites pbc?
-
-            plaq_list = [list(self.graph.edges)]
-
-        elif len(self.n_sites) > 1:  # more than 1 dimension
+        if len(self.n_sites) > 1:  # more than 1 dimension
             for a_index, b_index in list(
                 combinations(range(self.dims), 2)
             ):  # change only 2 coordinates
@@ -405,21 +399,13 @@ class HCLattice:
                 op_chr_u = "U_"
                 coeff = "none"
 
-                if self.dims == 1:
-                    coeff = ax_direct[0]  # Find in which direction the edge is
-
-                else:
-                    # Find in which direction the edge is
-                    for index, (first, second) in enumerate(zip(u_elem, v_elem)):
+                for index, (first, second) in enumerate(zip(u_elem, v_elem)):
                         if first != second:
                             coeff = ax_direct[index]
 
                 vec = u_elem if j > 1 else v_elem  # U^dag after 2 edges: UUU^dagU^dag
 
-                if self.dims == 1:  # TODO: not U^dag for 1D
-                    list_p.append(op_chr_u + str(v_elem) + coeff)
-                else:
-                    list_p.append(op_chr_u + "".join(map(str, vec)) + coeff)
+                list_p.append(op_chr_u + "".join(map(str, vec)) + coeff)
                 j += 1
 
             list_plaq_u_op.append(list_p)
