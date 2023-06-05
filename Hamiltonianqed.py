@@ -1367,9 +1367,10 @@ class HamiltonianQED:
                     (-1) ** ((sum(i[0]) % 2)) if self.ksphase and i[0][1] != i[1][1] else 1
                 )
                 xy_term = 'x' if i[0][1] == i[1][1] else 'y' #if x - adjoint, if y + adjoint
+                ###
+            #hamiltonian_k_sym.append((xy_term,phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1]))
 
-            hamiltonian_k_sym.append((xy_term,phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1]))
-
+            hamiltonian_k_sym.append((phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1]))
         self.hamiltonian_k_sym = hamiltonian_k_sym
 
     # build H
@@ -1444,57 +1445,66 @@ class HamiltonianQED:
         # ************************************  H_K   ************************************
 
         # # Pauli expression
-        hamiltonian_k_1x = sum(
+        hamiltonian_k_1 = sum(
             [
-                HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
-                for h in self.hamiltonian_k_sym if h[0]=='x'
+                HamiltonianQED._subs_hamilt_sym_to_pauli(h, self.u_op_field_subs + self.phi_jw_subs)
+                for h in self.hamiltonian_k_sym
             ]
         )
-        hamiltonian_k_1y = sum(
-            [
-                HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
-                for h in self.hamiltonian_k_sym if h[0]=='y'
-            ]
-        )
-
         hamiltonian_k_pauli = (
-            0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint()) + 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
+            0.5 * (hamiltonian_k_1 + hamiltonian_k_1.adjoint())
         ).reduce()  # (must be then multiplied by omega)
+        #  # TODO: test i/2a
+        # hamiltonian_k_1x = sum(
+        #     [
+        #         HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
+        #         for h in self.hamiltonian_k_sym if h[0]=='x'
+        #     ]
+        # )
+        # hamiltonian_k_1y = sum(
+        #     [
+        #         HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
+        #         for h in self.hamiltonian_k_sym if h[0]=='y'
+        #     ]
+        # )
+
+        # hamiltonian_k_pauli = (
+        #     0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint()) + 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
+        # ).reduce()  # (must be then multiplied by omega)
 
 
         if self.display_hamiltonian:
 
             hamiltonian_k_display = [
                 (
-                    k[1],
-                    Dagger(Symbol(str(k[2])[:-1], commutative=False)),
-                    Dagger(Symbol(str(k[3])[:-1], commutative=False)),
-                    k[4],
-                )
-                if str(k[3])[-1] == "D"
-                else (
-                    k[1],
+                    k[0],
+                    Dagger(Symbol(str(k[1])[:-1], commutative=False)),
                     Dagger(Symbol(str(k[2])[:-1], commutative=False)),
                     k[3],
-                    k[4],
+                )
+                if str(k[2])[-1] == "d"
+                else (
+                    k[0],
+                    Dagger(Symbol(str(k[1])[:-1], commutative=False)),
+                    k[2],
+                    k[3],
                 )
                 for k in self.hamiltonian_k_sym
             ]
-            h_k_x_disp = 0
-            h_k_y_disp = 0
-            for k,j in zip(hamiltonian_k_display,self.hamiltonian_k_sym):
-                if j[0]=='x':
-                    h_k_x_disp+=  sum( [ Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k) ] )
-                elif j[0]=='y':
-                    h_k_y_disp+= sum( [ Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k) ] )
-
-            display_hamiltonian_k= Eq(
-                            Symbol("H_K"),
-                            (Symbol("Omega") )
-                            * (0.5j*(h_k_x_disp-Symbol("h.c.(x)", commutative=False)) + 0.5*(h_k_y_disp+Symbol("h.c.(y)", commutative=False))
-                            ),
-                            evaluate=False,
-                        )
+            display_hamiltonian_k = Eq(
+                Symbol("H_K"),
+                (Symbol("Omega") / 2)
+                * (
+                    sum(
+                        [
+                            Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)
+                            for k in hamiltonian_k_display
+                        ]
+                    )
+                    + Symbol("h.c.", commutative=False)
+                ),
+                evaluate=False,
+            )
 
             display(display_hamiltonian_k)
             print(latex(display_hamiltonian_k))
