@@ -975,7 +975,7 @@ class HamiltonianQED():#HCLattice):
                         phase = 1
                     #y-direction
                     elif i[0][1] != i[1][1]:
-                        phase = (-1)**(sum(i[0][:2]+1)%2)
+                        phase = (-1)**((sum(i[0][:2])+1)%2)
                     #z-direction
                     elif i[0][2] != i[1][2]:
                         phase = (-1)**(sum(i[0][:2])%2)
