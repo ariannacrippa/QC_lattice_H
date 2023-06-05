@@ -120,11 +120,11 @@ class HamiltonianQED:
         self,
         nx_sites: int,
         ny_sites: int,
-        g: int | float,
-        fact_e_op: int | float,
-        fact_b_op: int | float,
-        m: int | float,
-        omega: int | float,
+        #g: int | float,
+        #fact_e_op: int | float,
+        #fact_b_op: int | float,
+        #m: int | float,
+        #omega: int | float,
         l: int,
         ll: int = 2,
         magnetic_basis: bool = False,
@@ -134,17 +134,17 @@ class HamiltonianQED:
         e_op_out_plus: bool = False,
         ksphase: bool = True,
         display_hamiltonian: bool = False,
-        lambd:int | float = 1000.0,
+        #lambd:int | float = 1000.0,
         tn_comparison: bool = False,
     ) -> None:
         self.nx_sites = nx_sites
         self.ny_sites = ny_sites
         self.n_sitestot = self.nx_sites * self.ny_sites
-        self.g_var = g
-        self.fact_e_op = fact_e_op
-        self.fact_b_op = fact_b_op
-        self.m_var = m
-        self.omega = omega
+        #self.g_var = g
+        #self.fact_e_op = fact_e_op
+        #self.fact_b_op = fact_b_op
+        #self.m_var = m
+        #self.omega = omega
         self.l_par = l
         self.ll_par = ll
         self.magnetic_basis = magnetic_basis
@@ -154,7 +154,7 @@ class HamiltonianQED:
         self.e_op_out_plus = e_op_out_plus
         self.ksphase = ksphase
         self.display_hamiltonian = display_hamiltonian
-        self.lambd = lambd
+        #self.lambd = lambd
         self.tn_comparison = tn_comparison
 
         self.source: tuple = (0, 0)
@@ -253,7 +253,7 @@ class HamiltonianQED:
         self.u_op_free_dag = [
             k.subs(
                 [
-                    (symbols(j[0]), Symbol(k[0] + "d"))
+                    (symbols(j[0]), Symbol(k[0] + "D"))
                     for j, k in zip(self.list_edges2, self.list_edges2_u_op)
                 ]
             )
@@ -291,23 +291,31 @@ class HamiltonianQED:
         elapsed_time = end_time - start_time
         print(">> Suppression term built. ", "Execution time:", elapsed_time, "seconds")
 
-        # Final result of the Hamiltonian in terms of Pauli matrices
+        self.get_hamiltonian()
+
+
+    def get_hamiltonian(self,g_var=1.0, m_var=1.0, omega=1.0,fact_b_op=1.0,fact_e_op=1.0,lambd=1000.):
+        """ Returns the Hamiltonian of the system """
+
+        #Hamiltonian for fermions
         if self.puregauge:
             self.hamiltonian_ferm = 0
         else:
             self.hamiltonian_ferm = (
-                float(self.omega) * self.hamiltonian_k_pauli
-                + float(self.m_var) * self.hamiltonian_m_pauli
+                float(omega) * self.hamiltonian_k_pauli
+                + float(m_var) * self.hamiltonian_m_pauli
             )
-
+        # Hamiltonian for gauge fields
         self.hamiltonian_gauge = (
-            -self.fact_b_op / (float((self.g_var) ** 2)) * self.hamiltonian_mag_pauli
-            + self.fact_e_op * float((self.g_var) ** 2) * self.hamiltonian_el_pauli
+            -fact_b_op / (float((g_var) ** 2)) * self.hamiltonian_mag_pauli
+            + fact_e_op * float((g_var) ** 2) * self.hamiltonian_el_pauli
         )
-
-        self.hamiltonian_tot = (
-            self.hamiltonian_gauge + self.hamiltonian_ferm + self.hamiltonian_suppress
+        # Final result of the Hamiltonian in terms of Pauli matrices
+        hamiltonian_tot = (
+            self.hamiltonian_gauge + self.hamiltonian_ferm + lambd* self.hamiltonian_suppress
         ).reduce()
+
+        return hamiltonian_tot
 
     def _n_qubits_g(self) -> int:
         """Returns the minimum number of qubits required with Gray encoding"""
@@ -369,7 +377,6 @@ class HamiltonianQED:
                 [Symbol(k[0]) for k in self.list_edges2_u_op].index(n_tmp)
                 for n_tmp in self.u_op_free
             ]
-            print(lu_op_edges)
             lu_op_free_map = [
                 (
                     tuple(map(int, re.findall(r"\d+", self.list_edges2_u_op[i][0])[0])),
@@ -377,12 +384,11 @@ class HamiltonianQED:
                 )
                 for i in lu_op_edges
             ]
-            print(lu_op_free_map)
+
             edge_color_list = [
                 "black" if e in lu_op_free_map else "lightgray"
                 for e in self.graph_edges_system
             ]
-
         else:
             edge_color_list = ["black" for e in self.graph_edges_system]
 
@@ -705,12 +711,12 @@ class HamiltonianQED:
 
         container = (
             hamilt_input[0] * I
-            if isinstance(hamilt_input[0],(int, float))
+            if isinstance(hamilt_input[0],(int,float,complex))
             else hamilt_input[0]
         )
 
         for i in hamilt_input[1:]:
-            if not isinstance(i, (int,float)):
+            if not isinstance(i, (int,float,complex)):
                 container @= i
             else:
                 container *= i
@@ -1222,7 +1228,7 @@ class HamiltonianQED:
 
         phi_jw_subs = [
             (
-                Symbol(f"Phi_{i+1}d", commutative=False),
+                Symbol(f"Phi_{i+1}D", commutative=False),
                 phi_el(i, 0),
             )
             for i, k in enumerate(self.jw_s)
@@ -1263,7 +1269,7 @@ class HamiltonianQED:
         """Hamiltonian for B field"""
         plaq_u_op_gaus = [
             [
-                x if symbols(x) in self.u_op_free else "id"
+                x if symbols(x) in self.u_op_free else "iD"
                 for x in [k for j, k in enumerate(p_tmp)]
             ]
             for p_tmp in self.list_plaq_u_op
@@ -1272,9 +1278,9 @@ class HamiltonianQED:
         # Hamiltonian for substitution
         hamiltonian_mag_subs = [
             [
-                symbols(k).subs(symbols("id"), 1)
+                symbols(k).subs(symbols("iD"), 1)
                 if j < 2
-                else Symbol(k + "d").subs(symbols("idd"), 1)
+                else Symbol(k + "D").subs(symbols("iDD"), 1)
                 for j, k in enumerate(p_tmp)
             ]
             for p_tmp in plaq_u_op_gaus
@@ -1299,7 +1305,7 @@ class HamiltonianQED:
 
         jw_dict = {
             k: (
-                Symbol(f"Phi_{i+1}d", commutative=False),
+                Symbol(f"Phi_{i+1}D", commutative=False),
                 Symbol(f"Phi_{i+1}", commutative=False),
             )
             for i, k in enumerate(self.jw_s)
@@ -1332,7 +1338,7 @@ class HamiltonianQED:
         # dictionary for fermionic sistes to symbols
         jw_dict = {
             k: (
-                Symbol(f"Phi_{i+1}d", commutative=False),
+                Symbol(f"Phi_{i+1}D", commutative=False),
                 Symbol(f"Phi_{i+1}", commutative=False),
             )
             for i, k in enumerate(self.jw_s)
@@ -1356,11 +1362,13 @@ class HamiltonianQED:
             if self.nx_sites==1 or self.ny_sites==1:
                 phase = 1
             else:
-                phase = (
-                    (-1) ** (sum(i[0]) % 2) if self.ksphase and i[0][1] != i[1][1] else 1
-                )  # change in y direction
 
-            hamiltonian_k_sym.append((phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1]))
+                phase = (
+                    (-1) ** ((sum(i[0]) % 2)) if self.ksphase and i[0][1] != i[1][1] else 1
+                )
+                xy_term = 'x' if i[0][1] == i[1][1] else 'y' #if x - adjoint, if y + adjoint
+
+            hamiltonian_k_sym.append((xy_term,phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1]))
 
         self.hamiltonian_k_sym = hamiltonian_k_sym
 
@@ -1420,7 +1428,7 @@ class HamiltonianQED:
                                         else Dagger(Symbol(k, commutative=False))
                                         for j, k in enumerate(p_tmp)
                                     ]
-                                ).subs(Symbol("id", commutative=False), 1)
+                                ).subs(Symbol("iD", commutative=False), 1)
                                 for p_tmp in self.plaq_u_op_gaus
                             ]
                         )
@@ -1435,47 +1443,58 @@ class HamiltonianQED:
             )
         # ************************************  H_K   ************************************
 
-        # Pauli expression
-        hamiltonian_k_1 = sum(
+        # # Pauli expression
+        hamiltonian_k_1x = sum(
             [
-                HamiltonianQED._subs_hamilt_sym_to_pauli(h, self.u_op_field_subs + self.phi_jw_subs)
-                for h in self.hamiltonian_k_sym
+                HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
+                for h in self.hamiltonian_k_sym if h[0]=='x'
             ]
         )
+        hamiltonian_k_1y = sum(
+            [
+                HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
+                for h in self.hamiltonian_k_sym if h[0]=='y'
+            ]
+        )
+
         hamiltonian_k_pauli = (
-            0.5 * (hamiltonian_k_1 + hamiltonian_k_1.adjoint())
+            0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint()) + 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
         ).reduce()  # (must be then multiplied by omega)
+
+
         if self.display_hamiltonian:
+
             hamiltonian_k_display = [
                 (
-                    k[0],
-                    Dagger(Symbol(str(k[1])[:-1], commutative=False)),
+                    k[1],
+                    Dagger(Symbol(str(k[2])[:-1], commutative=False)),
+                    Dagger(Symbol(str(k[3])[:-1], commutative=False)),
+                    k[4],
+                )
+                if str(k[3])[-1] == "D"
+                else (
+                    k[1],
                     Dagger(Symbol(str(k[2])[:-1], commutative=False)),
                     k[3],
-                )
-                if str(k[2])[-1] == "d"
-                else (
-                    k[0],
-                    Dagger(Symbol(str(k[1])[:-1], commutative=False)),
-                    k[2],
-                    k[3],
+                    k[4],
                 )
                 for k in self.hamiltonian_k_sym
             ]
-            display_hamiltonian_k = Eq(
-                Symbol("H_K"),
-                (Symbol("Omega") / 2)
-                * (
-                    sum(
-                        [
-                            Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)
-                            for k in hamiltonian_k_display
-                        ]
-                    )
-                    + Symbol("h.c.", commutative=False)
-                ),
-                evaluate=False,
-            )
+            h_k_x_disp = 0
+            h_k_y_disp = 0
+            for k,j in zip(hamiltonian_k_display,self.hamiltonian_k_sym):
+                if j[0]=='x':
+                    h_k_x_disp+=  sum( [ Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k) ] )
+                elif j[0]=='y':
+                    h_k_y_disp+= sum( [ Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k) ] )
+
+            display_hamiltonian_k= Eq(
+                            Symbol("H_K"),
+                            (Symbol("Omega") )
+                            * (0.5j*(h_k_x_disp-Symbol("h.c.(x)", commutative=False)) + 0.5*(h_k_y_disp+Symbol("h.c.(y)", commutative=False))
+                            ),
+                            evaluate=False,
+                        )
 
             display(display_hamiltonian_k)
             print(latex(display_hamiltonian_k))
@@ -1593,7 +1612,7 @@ class HamiltonianQED:
     def hamiltonian_suppr(
         self,
     ):
-        """Suppression Hamiltonian"""
+        """Suppression Hamiltonian.Must be multiplied by lambda"""
         # Unphysical space suppressors:
         s_down = 0.5 * (I + Z)  # project to 0
         s_up = 0.5 * (I - Z)  # project to 1
@@ -1608,7 +1627,7 @@ class HamiltonianQED:
                     lambda x, y: (x) ^ (y), [s_down if x == "0" else s_up for x in gray_str]
                 )
 
-            suppr1 = self.lambd * (h_s)
+            suppr1 = h_s
             hamiltonian_gauge_suppr = 0.0 * (I ^ (self._n_qubits_g() * (self.len_u_op)))
 
             for i in range(1, self.len_u_op + 1):
@@ -1632,9 +1651,8 @@ class HamiltonianQED:
                     lambda x, y: (x) ^ (y), [s_down if x == "0" else s_up for x in binc]
                 )
 
-        hamiltonian_nzcharge_suppr = self.lambd * (
-            (suppr_f) ^ (I ^ (self._n_qubits_g() * self.len_u_op))
-        )
+        hamiltonian_nzcharge_suppr = (suppr_f) ^ (I ^ (self._n_qubits_g() * self.len_u_op))
+
 
         if self.tn_comparison:  # TODO: only for 2+1 QED
             # gauss #TODO: global term in H (possible barren plateaus!)
@@ -1693,7 +1711,7 @@ class HamiltonianQED:
                     lambda x, y: (x) ^ (y), [s_down if x == "0" else s_up for x in gray_str]
                 )
 
-            hamiltonian_gauss_suppr = self.lambd * (suppr_gaus)
+            hamiltonian_gauss_suppr = suppr_gaus
 
         elif self.puregauge:
             hamiltonian_gauss_suppr = 0.0 * (I ^ (self._n_qubits_g() * (self.len_u_op)))
