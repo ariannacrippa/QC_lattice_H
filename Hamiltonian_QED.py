@@ -1,5 +1,4 @@
-#NEW VERSION WITH ONLY HAMILTONIAN
-#
+# NEW VERSION WITH ONLY HAMILTONIAN
 #
 """Definition of the Hamiltonian for QED lattice NxN"""
 from __future__ import annotations
@@ -7,7 +6,7 @@ import math
 import warnings
 from functools import reduce
 import time
-from itertools import permutations, product,combinations
+from itertools import permutations, product, combinations
 import re
 from typing import List
 import numpy as np
@@ -15,7 +14,7 @@ import networkx as nx
 from networkx import all_simple_paths, get_edge_attributes
 from networkx.generators.classic import empty_graph
 from networkx.utils import pairwise
-from qiskit.opflow import Z, X, Y, I, PauliSumOp,OperatorBase
+from qiskit.opflow import Z, X, Y, I, PauliSumOp, OperatorBase
 from qiskit.quantum_info import SparsePauliOp
 from IPython.display import display
 from scipy import special as sp
@@ -23,50 +22,54 @@ import matplotlib.pyplot as plt
 from sympy import Symbol, symbols, solve, lambdify, Mul, Eq, latex
 from sympy.physics.quantum.dagger import Dagger
 
-#from HC_Lattice import HCLattice
 
-class HamiltonianQED():#HCLattice):
+class HamiltonianQED:
 
     """The algorithm computes the expression of the Quantum Electrodynamics (QED)
     Kogut-Susskind Hamiltonian,
-    both in terms of sympy.symbols and in qiskit Pauli matrices for 2-D and
-    1-D lattices.
-    The latter formulation is suitable for quantum circuits.
+    both in terms of sympy.symbols and in qiskit Pauli matrices for lattices
+    from 1D to 3D. The latter formulation is suitable for quantum circuits.
     For fermionic degrees of freedom, the Jordan-Wigner transformation is applied.
     The discretisation of the group U(1) is done by means of group of integer numbers
     Z_(2L+1).In this definition, the Gray encoding is applied for the gauge fields.
 
-    From an instance of number of sites in the lattice, in the horizontal (x) and
-    vertical (y) direction,
-    and the boundary condition, the code generates the Hamiltonian related to that
-    lattice.
+    From an instance of a n-dimensional lattice the code generates the Hamiltonian
+    related to that lattice.
 
     The final expression of the Hamiltonian is given in terms of Pauli matrices,
     and it is written by
     following the order right-left, up-down, i.e. the first term is the one acting
     on the rightmost site.
 
+    To define the Hamiltonian, the following parameters are needed in the
+    "get_hamiltonian" function:
+
+        g: float or int
+        Coupling of the theory.
+
+        m:float or int
+            Mass term in the Hamiltonian.
+
+        omega:float or int
+            Factor in front of the kinetic Hamiltonian.
+
+        fact_b_op:float or int
+            Factor in front of the magnetic Hamiltonian.
+
+        fact_e_op:float or int
+            Factor in front of the electric Hamiltonian.
+
+        lambd=int or float
+        Parameter for the suppression factor in the Hamiltonian.
 
     Parameters
     ----------
 
-    nx_sites,ny_sites: int
-            Number of sites in the lattice in the x and y direction.
+    lattice: class
+        Instance of the class Lattice.
 
-    g: float or int
-        Coupling of the theory.
-
-    fact_e_op:float or int
-        Factor in front of the electric Hamiltonian.
-
-    fact_b_op:float or int
-        Factor in front of the magnetic Hamiltonian.
-
-    m:float or int
-        Mass term in the Hamiltonian.
-
-    omega:float or int
-        Factor in front of the kinetic Hamiltonian.
+    n_sites: list
+        Number of sites in each direction.
 
     l: int
         Truncation parameter. Defines how many values the gauge fields take,
@@ -77,7 +80,6 @@ class HamiltonianQED():#HCLattice):
 
     magnetic_basis: bool
         If True, then the magnetic basis is considered, False for electric basis.
-
 
     pbc : bool
             If `pbc` is True, both dimensions are periodic. If False, none
@@ -102,19 +104,14 @@ class HamiltonianQED():#HCLattice):
         Phase in the kientic Hamiltonian, option for tests. Muste be kept True for
         Kogut-Susskind Hamiltonian.
 
-
     display_hamiltonian: bool
         If True, the Hamiltonian and the Gauss law equations are displayed in the output.
 
-    lambd=int or float
-        Parameter for the suppression factor in the Hamiltonian.
 
     tn_comparison: bool
         If True, it considers only eigenstate within the truncation applied,
         for example if l=1 it will have only configurations that allow for ±1,0 values
         for the gauge fields.
-
-
 
     """
 
@@ -136,7 +133,7 @@ class HamiltonianQED():#HCLattice):
         self.n_sites = n_sites
         self.pbc = pbc
 
-        #super().__init__(n_sites,pbc)
+        # super().__init__(n_sites,pbc)
         self.lattice = lattice
         self.l_par = l
         self.ll_par = ll
@@ -150,21 +147,29 @@ class HamiltonianQED():#HCLattice):
 
         print("HamiltonianQED: Initializing...")
 
-
         self._symlist = ["I", "X", "Y", "Z", "Sd", "S-", "Su", "S+"]
         self.alpha = 2 * np.pi / (2 * self.ll_par + 1) if self.magnetic_basis else 0
 
         # get the start time
         start_time = time.time()
 
-        #list of dynamical and static charges
-        self.str_node_f = lambda node: str(node) if self.lattice.dims==1 else "".join(map(str, node))
+        # list of dynamical and static charges
+        self.str_node_f = (
+            lambda node: str(node)
+            if self.lattice.dims == 1
+            else "".join(map(str, node))
+        )
 
-        self.q_charge_str_list = ["q_" +self.str_node_f(node)  for node in self.lattice.graph.nodes if self.puregauge is False]
+        self.q_charge_str_list = [
+            "q_" + self.str_node_f(node)
+            for node in self.lattice.graph.nodes
+            if self.puregauge is False
+        ]
         self.static_charges_str_list = [
-                "Q_" +self.str_node_f(node)  for node in self.lattice.graph.nodes
-                if  self.static_charges_values is not None
-            ]
+            "Q_" + self.str_node_f(node)
+            for node in self.lattice.graph.nodes
+            if self.static_charges_values is not None
+        ]
         # Dictionary of all elements (E and charges q) in the system with their symbols
         self.e_op_dict = {
             s_tmp: symbols(s_tmp)
@@ -174,9 +179,7 @@ class HamiltonianQED():#HCLattice):
         }
 
         self.u_op_dict = {
-            s_tmp: symbols(s_tmp)
-            for s_tmp in self.lattice.list_edges2_u_op
-
+            s_tmp: symbols(s_tmp) for s_tmp in self.lattice.list_edges2_u_op
         }
 
         # #Gauss law equations in a list and display them
@@ -187,9 +190,8 @@ class HamiltonianQED():#HCLattice):
             [print(latex(i) + " &= 0 \\\\ \\nonumber") for i in self.list_gauss[:-1]]
             print(latex(self.list_gauss[-1]) + " &= 0", "\n")
 
-        #Solution of gauss law equations
+        # Solution of gauss law equations
         self.sol_gauss = solve(self.list_gauss, dict=True)[0]
-
 
         # e_op_free from solution of Guass equations and edges
         self.e_op_free = list(
@@ -210,7 +212,9 @@ class HamiltonianQED():#HCLattice):
             k.subs(
                 [
                     (symbols(j), symbols(k))
-                    for j, k in zip(self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op)
+                    for j, k in zip(
+                        self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
+                    )
                 ]
             )
             for k in self.e_op_free
@@ -219,7 +223,9 @@ class HamiltonianQED():#HCLattice):
             k.subs(
                 [
                     (symbols(j), Symbol(k + "D"))
-                    for j, k in zip(self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op)
+                    for j, k in zip(
+                        self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
+                    )
                 ]
             )
             for k in self.e_op_free
@@ -229,8 +235,6 @@ class HamiltonianQED():#HCLattice):
         self.len_e_op = len(self.e_op_free)
         self.len_u_op = len(self.u_op_free)
 
-
-
         # Define the espressions for substituting symbols into Pauli strings
         self._symbol_to_pauli()
         if display_hamiltonian:
@@ -239,7 +243,6 @@ class HamiltonianQED():#HCLattice):
         self._hamiltonian_mag_autom()
         self._hamiltonian_m_autom()
         self._hamiltonian_k_autom()
-
 
         self.build_hamiltonian_tot()
 
@@ -262,11 +265,18 @@ class HamiltonianQED():#HCLattice):
 
         self.get_hamiltonian()
 
+    def get_hamiltonian(
+        self,
+        g_var=1.0,
+        m_var=1.0,
+        omega=1.0,
+        fact_b_op=1.0,
+        fact_e_op=1.0,
+        lambd=1000.0,
+    ):
+        """Returns the Hamiltonian of the system"""
 
-    def get_hamiltonian(self,g_var=1.0, m_var=1.0, omega=1.0,fact_b_op=1.0,fact_e_op=1.0,lambd=1000.):
-        """ Returns the Hamiltonian of the system """
-
-        #Hamiltonian for fermions
+        # Hamiltonian for fermions
         if self.puregauge:
             self.hamiltonian_ferm = 0
         else:
@@ -281,7 +291,9 @@ class HamiltonianQED():#HCLattice):
         )
         # Final result of the Hamiltonian in terms of Pauli matrices
         hamiltonian_tot = (
-            self.hamiltonian_gauge + self.hamiltonian_ferm + lambd* self.hamiltonian_suppress
+            self.hamiltonian_gauge
+            + self.hamiltonian_ferm
+            + lambd * self.hamiltonian_suppress
         ).reduce()
 
         return hamiltonian_tot
@@ -290,7 +302,6 @@ class HamiltonianQED():#HCLattice):
         """Returns the minimum number of qubits required with Gray encoding"""
 
         return int(np.ceil(np.log2(2 * self.l_par + 1)))
-
 
     # Gauss law equations in a list
     def gauss_equations(self):
@@ -310,25 +321,25 @@ class HamiltonianQED():#HCLattice):
             if self.puregauge:
                 ga_tmp = 0
             else:
-                ga_tmp=-1*self.e_op_dict['q_'+self.str_node_f(node)]
-                gc_tmp += self.e_op_dict['q_'+self.str_node_f(node)]
+                ga_tmp = -1 * self.e_op_dict["q_" + self.str_node_f(node)]
+                gc_tmp += self.e_op_dict["q_" + self.str_node_f(node)]
             if self.static_charges_values is not None:
-                ga_tmp-=1*self.e_op_dict['Q_'+self.str_node_f(node)]
-                gc_tmp+=self.e_op_dict['Q_'+self.str_node_f(node)]
+                ga_tmp -= 1 * self.e_op_dict["Q_" + self.str_node_f(node)]
+                gc_tmp += self.e_op_dict["Q_" + self.str_node_f(node)]
 
-            e_op_i = "E_" +self.str_node_f(node)
+            e_op_i = "E_" + self.str_node_f(node)
             for j, k in zip(self.lattice.list_edges, self.lattice.list_edges2_e_op):
-                        if e_op_i in j:
-                            if e_op_i == j[0]:  # E_out
-                                coeff = (
-                                    1 if self.e_op_out_plus else -1
-                                )  # if +1 then U in H_k / if -1 then U^dag in H_k
-                            else:  # E_in
-                                coeff = (
-                                    -1 if self.e_op_out_plus else 1
-                                )  # if -1 then U in H_k / if 1 then U^dag in H_k
+                if e_op_i in j:
+                    if e_op_i == j[0]:  # E_out
+                        coeff = (
+                            1 if self.e_op_out_plus else -1
+                        )  # if +1 then U in H_k / if -1 then U^dag in H_k
+                    else:  # E_in
+                        coeff = (
+                            -1 if self.e_op_out_plus else 1
+                        )  # if -1 then U in H_k / if 1 then U^dag in H_k
 
-                            ga_tmp += coeff * Symbol(k)
+                    ga_tmp += coeff * Symbol(k)
 
             list_gauss.append(ga_tmp)
         if gc_tmp != 0:
@@ -352,12 +363,12 @@ class HamiltonianQED():#HCLattice):
 
         container = (
             hamilt_input[0] * I
-            if isinstance(hamilt_input[0],(int,float,complex))
+            if isinstance(hamilt_input[0], (int, float, complex))
             else hamilt_input[0]
         )
 
         for i in hamilt_input[1:]:
-            if not isinstance(i, (int,float,complex)):
+            if not isinstance(i, (int, float, complex)):
                 container @= i
             else:
                 container *= i
@@ -374,8 +385,52 @@ class HamiltonianQED():#HCLattice):
             n_qubits: n.er of total qubits in the string
 
         """
-        sgm = PauliSumOp( SparsePauliOp.from_sparse_list( [ ( "X", [ 0, ], 0.5, ), ] + [ ( "Y", [ 0, ], (-0.5j), ), ], num_qubits=1, ) )
-        sgp = PauliSumOp( SparsePauliOp.from_sparse_list( [ ( "X", [ 0, ], 0.5, ), ] + [ ( "Y", [ 0, ], (0.5j), ), ], num_qubits=1, ) )
+        sgm = PauliSumOp(
+            SparsePauliOp.from_sparse_list(
+                [
+                    (
+                        "X",
+                        [
+                            0,
+                        ],
+                        0.5,
+                    ),
+                ]
+                + [
+                    (
+                        "Y",
+                        [
+                            0,
+                        ],
+                        (-0.5j),
+                    ),
+                ],
+                num_qubits=1,
+            )
+        )
+        sgp = PauliSumOp(
+            SparsePauliOp.from_sparse_list(
+                [
+                    (
+                        "X",
+                        [
+                            0,
+                        ],
+                        0.5,
+                    ),
+                ]
+                + [
+                    (
+                        "Y",
+                        [
+                            0,
+                        ],
+                        (0.5j),
+                    ),
+                ],
+                num_qubits=1,
+            )
+        )
 
         assert n_tmp > 0
         if n_tmp == 1:
@@ -451,7 +506,7 @@ class HamiltonianQED():#HCLattice):
 
         return pauli_res.reduce()
 
-    # ##ENCODING FUNCTIONS AND OPERATORS
+    # utilities and operators
     def _gray_map(self):
         """Gray map dictionary for a certain value of the truncation parameter l.
         for example if l = 1, it returns:{-1: '00', 0: '01', 1: '11'}"""
@@ -499,8 +554,9 @@ class HamiltonianQED():#HCLattice):
                 e_op_list.append(
                     [
                         st_fact,
-                        *HamiltonianQED._trans_map(self._gray_map()[st_fact],
-                                                   self._gray_map()[st_fact]),
+                        *HamiltonianQED._trans_map(
+                            self._gray_map()[st_fact], self._gray_map()[st_fact]
+                        ),
                     ]
                 )
         e_oper = [
@@ -541,7 +597,9 @@ class HamiltonianQED():#HCLattice):
                         encs[ei_tmp] = (enc,)
                 for e1_tmp in encs[0]:
                     for e2_tmp in encs[1]:
-                        u_op_list.append([fact, *HamiltonianQED._trans_map(e1_tmp, e2_tmp)])
+                        u_op_list.append(
+                            [fact, *HamiltonianQED._trans_map(e1_tmp, e2_tmp)]
+                        )
         u_oper = [
             f"{v_elem[0]} "
             + " ".join(
@@ -756,7 +814,14 @@ class HamiltonianQED():#HCLattice):
             static_charges_subs = [
                 (
                     symbols("Q_" + "".join(map(str, k))),
-                    j * (I ^ (int(self.lattice.n_sitestot) + self._n_qubits_g() * self.len_e_op)),
+                    j
+                    * (
+                        I
+                        ^ (
+                            int(self.lattice.n_sitestot)
+                            + self._n_qubits_g() * self.len_e_op
+                        )
+                    ),
                 )
                 for k, j in zip(self.lattice.jw_sites, static_charges_list)
             ]
@@ -771,28 +836,30 @@ class HamiltonianQED():#HCLattice):
         _e_op_elem = lambda i: self._e_operator(index=i + 1)
 
         if self.puregauge:
-            e_op_field_subs = [(s_tmp, _e_op_elem(i)) for i, s_tmp in enumerate(self.e_op_free)]
+            e_op_field_subs = [
+                (s_tmp, _e_op_elem(i)) for i, s_tmp in enumerate(self.e_op_free)
+            ]
             q_charges_subs = []
         else:
             e_op_field_subs = [
                 (s_tmp, ((I ^ (int(self.lattice.n_sitestot))) ^ (_e_op_elem(i))))
                 for i, s_tmp in enumerate(self.e_op_free)
             ]
-            #charge operator in terms of Pauli matrices
+            # charge operator in terms of Pauli matrices
             q_el = (
                 lambda i, q: (I ^ (int(self.lattice.n_sitestot) - 1 - i))
                 ^ (q)
                 ^ (I ^ (self._n_qubits_g() * self.len_e_op + i))
             )
-            sum_k = lambda k: k if self.lattice.dims ==1 else sum(k)
+            sum_k = lambda k: k if self.lattice.dims == 1 else sum(k)
             q_charges_subs = [
                 (
-                    symbols("q_" +self.str_node_f(k)),
+                    symbols("q_" + self.str_node_f(k)),
                     q_el(i, q10),
                 )
                 if sum_k(k) % 2
                 else (
-                    symbols("q_" +self.str_node_f(k)),
+                    symbols("q_" + self.str_node_f(k)),
                     q_el(i, q00),
                 )
                 for i, k in enumerate(self.lattice.jw_sites)
@@ -802,8 +869,9 @@ class HamiltonianQED():#HCLattice):
         _u_op_elem = lambda i: self._u_operator(index=i + 1)
 
         if self.puregauge:
-            u_op_field_subs = [(s_tmp, _u_op_elem(i)) for i, s_tmp in enumerate(self.u_op_free)] + \
-            [
+            u_op_field_subs = [
+                (s_tmp, _u_op_elem(i)) for i, s_tmp in enumerate(self.u_op_free)
+            ] + [
                 (
                     s_tmp,
                     (self._u_operator(index=i + 1)).adjoint(),
@@ -823,9 +891,9 @@ class HamiltonianQED():#HCLattice):
         if self.puregauge:
             phi_jw_subs = []
         else:
-            phi_el = lambda i, j: (HamiltonianQED.jw_func(i + 1, int(self.lattice.n_sitestot))[j]) ^ (
-                I ^ (self._n_qubits_g() * self.len_u_op)
-            )
+            phi_el = lambda i, j: (
+                HamiltonianQED.jw_func(i + 1, int(self.lattice.n_sitestot))[j]
+            ) ^ (I ^ (self._n_qubits_g() * self.len_u_op))
 
             phi_jw_subs = [
                 (
@@ -845,7 +913,6 @@ class HamiltonianQED():#HCLattice):
         self.q_charges_subs = q_charges_subs
         self.u_op_field_subs = u_op_field_subs
         self.phi_jw_subs = phi_jw_subs
-
 
     # HAMILTONIAN
     # * symbols
@@ -956,39 +1023,55 @@ class HamiltonianQED():#HCLattice):
             # phase in H_k in y-direction as Kogut Susskind H #TODO:assume 2 components spinor >check with 4 components
 
             if self.lattice.dims == 1:
-                phase=1
-                hamiltonian_k_sym.append((phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1]))
+                phase = 1
+                hamiltonian_k_sym.append(
+                    (phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])
+                )
 
             elif self.lattice.dims == 2:
-
                 phase = (
-                    (-1) ** (sum(i[0]) % 2) if self.ksphase and i[0][1] != i[1][1] else 1
+                    (-1) ** (sum(i[0]) % 2)
+                    if self.ksphase and i[0][1] != i[1][1]
+                    else 1
                 )  # change in y direction if x is odd
-                xy_term = 'y' if i[0][1] != i[1][1] else 'x' #if x - adjoint, if y + adjoint
+                xy_term = (
+                    "y" if i[0][1] != i[1][1] else "x"
+                )  # if x - adjoint, if y + adjoint
 
-                hamiltonian_k_sym.append((xy_term,phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1]))
+                hamiltonian_k_sym.append(
+                    (xy_term, phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])
+                )
 
             elif self.lattice.dims == 3:
                 if self.ksphase:
-                    #x-direction
+                    # x-direction
                     if i[0][0] != i[1][0]:
                         phase = 1
-                    #y-direction
+                    # y-direction
                     elif i[0][1] != i[1][1]:
-                        phase = (-1)**((sum(i[0][:2])+1)%2)
-                    #z-direction
+                        phase = (-1) ** ((sum(i[0][:2]) + 1) % 2)
+                    # z-direction
                     elif i[0][2] != i[1][2]:
-                        phase = (-1)**(sum(i[0][:2])%2)
+                        phase = (-1) ** (sum(i[0][:2]) % 2)
                 else:
-                    phase = 1 #y or z direction
+                    phase = 1  # y or z direction
 
-                i_term = 'x' if i[0][0] != i[1][0] else 'y' if i[0][1] != i[1][1] else 'z' if i[0][2] != i[1][2] else None
+                i_term = (
+                    "x"
+                    if i[0][0] != i[1][0]
+                    else "y"
+                    if i[0][1] != i[1][1]
+                    else "z"
+                    if i[0][2] != i[1][2]
+                    else None
+                )
 
-                hamiltonian_k_sym.append((i_term,phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])) #phi^dag U phi
+                hamiltonian_k_sym.append(
+                    (i_term, phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])
+                )  # phi^dag U phi
 
             else:
                 raise ValueError("Only 1, 2 and 3 dimensions are supported.")
-
 
         self.hamiltonian_k_sym = hamiltonian_k_sym
 
@@ -1018,7 +1101,8 @@ class HamiltonianQED():#HCLattice):
                 print(latex(display_hamiltonian_el))
         else:  # no gauge fields (e.g. 1d OBC case)
             hamiltonian_el_pauli = 0.0 * (
-                I ^ (int(self.lattice.n_sitestot) + self._n_qubits_g() * (self.len_u_op))
+                I
+                ^ (int(self.lattice.n_sitestot) + self._n_qubits_g() * (self.len_u_op))
             )
 
         # ************************************  H_B   ************************************
@@ -1060,16 +1144,19 @@ class HamiltonianQED():#HCLattice):
                 print(latex(display_hamiltonian_mag))
         else:  # no gauge fields (e.g. 1d OBC case)
             hamiltonian_mag_pauli = 0.0 * (
-                I ^ (int(self.lattice.n_sitestot) + self._n_qubits_g() * (self.len_u_op))
+                I
+                ^ (int(self.lattice.n_sitestot) + self._n_qubits_g() * (self.len_u_op))
             )
         # ************************************  H_K   ************************************
         # Pauli expression
         if self.lattice.dims == 1:
             hamiltonian_k_1x = sum(
-            [
-                HamiltonianQED._subs_hamilt_sym_to_pauli(h, self.u_op_field_subs + self.phi_jw_subs)
-                for h in self.hamiltonian_k_sym
-            ]
+                [
+                    HamiltonianQED._subs_hamilt_sym_to_pauli(
+                        h, self.u_op_field_subs + self.phi_jw_subs
+                    )
+                    for h in self.hamiltonian_k_sym
+                ]
             )
 
             hamiltonian_k_pauli = (
@@ -1077,86 +1164,102 @@ class HamiltonianQED():#HCLattice):
             ).reduce()  # (must be then multiplied by omega)
 
         elif self.lattice.dims == 2:
-
             hamiltonian_k_1x = sum(
                 [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
-                    for h in self.hamiltonian_k_sym if h[0]=='x'
+                    HamiltonianQED._subs_hamilt_sym_to_pauli(
+                        h[1:], self.u_op_field_subs + self.phi_jw_subs
+                    )
+                    for h in self.hamiltonian_k_sym
+                    if h[0] == "x"
                 ]
             )
             hamiltonian_k_1y = sum(
                 [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
-                    for h in self.hamiltonian_k_sym if h[0]=='y'
+                    HamiltonianQED._subs_hamilt_sym_to_pauli(
+                        h[1:], self.u_op_field_subs + self.phi_jw_subs
+                    )
+                    for h in self.hamiltonian_k_sym
+                    if h[0] == "y"
                 ]
             )
 
             hamiltonian_k_pauli = (
-                0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint()) - 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
+                0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint())
+                - 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
             ).reduce()  # (must be then multiplied by omega)
 
         elif self.lattice.dims == 3:
             hamiltonian_k_1x = sum(
                 [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
-                    for h in self.hamiltonian_k_sym if h[0]=='x'
+                    HamiltonianQED._subs_hamilt_sym_to_pauli(
+                        h[1:], self.u_op_field_subs + self.phi_jw_subs
+                    )
+                    for h in self.hamiltonian_k_sym
+                    if h[0] == "x"
                 ]
             )
             hamiltonian_k_1y = sum(
                 [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
-                    for h in self.hamiltonian_k_sym if h[0]=='y'
+                    HamiltonianQED._subs_hamilt_sym_to_pauli(
+                        h[1:], self.u_op_field_subs + self.phi_jw_subs
+                    )
+                    for h in self.hamiltonian_k_sym
+                    if h[0] == "y"
                 ]
             )
             hamiltonian_k_1z = sum(
                 [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(h[1:], self.u_op_field_subs + self.phi_jw_subs)
-                    for h in self.hamiltonian_k_sym if h[0]=='z'
+                    HamiltonianQED._subs_hamilt_sym_to_pauli(
+                        h[1:], self.u_op_field_subs + self.phi_jw_subs
+                    )
+                    for h in self.hamiltonian_k_sym
+                    if h[0] == "z"
                 ]
             )
             hamiltonian_k_pauli = (
-                0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint()) - 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
+                0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint())
+                - 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
                 + 0.5j * (hamiltonian_k_1z - hamiltonian_k_1z.adjoint())
             ).reduce()  # (must be then multiplied by omega)
 
         else:
             raise ValueError("Dimension not supported")
 
-        if self.display_hamiltonian:#TODO 1d
+        if self.display_hamiltonian:  # TODO 1d
             # Hamiltonian to print
 
             if self.lattice.dims == 1:
                 hamiltonian_k_display = [
-                (
-                    k[0],
-                    Dagger(Symbol(str(k[1])[:-1], commutative=False)),
-                    Dagger(Symbol(str(k[2])[:-1], commutative=False)),
-                    k[3],
-                )
-                if str(k[2])[-1] == "d"
-                else (
-                    k[0],
-                    Dagger(Symbol(str(k[1])[:-1], commutative=False)),
-                    k[2],
-                    k[3],
-                )
-                for k in self.hamiltonian_k_sym
-            ]
+                    (
+                        k[0],
+                        Dagger(Symbol(str(k[1])[:-1], commutative=False)),
+                        Dagger(Symbol(str(k[2])[:-1], commutative=False)),
+                        k[3],
+                    )
+                    if str(k[2])[-1] == "d"
+                    else (
+                        k[0],
+                        Dagger(Symbol(str(k[1])[:-1], commutative=False)),
+                        k[2],
+                        k[3],
+                    )
+                    for k in self.hamiltonian_k_sym
+                ]
 
                 display_hamiltonian_k = Eq(
-                Symbol("H_K"),
-                (Symbol("Omega")*1j / 2)
-                * (
-                    sum(
-                        [
-                            Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)
-                            for k in hamiltonian_k_display
-                        ]
-                    )
-                    - Symbol("h.c.", commutative=False)
-                ),
-                evaluate=False,
-            )
+                    Symbol("H_K"),
+                    (Symbol("Omega") * 1j / 2)
+                    * (
+                        sum(
+                            [
+                                Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)
+                                for k in hamiltonian_k_display
+                            ]
+                        )
+                        - Symbol("h.c.", commutative=False)
+                    ),
+                    evaluate=False,
+                )
 
             else:
                 hamiltonian_k_display = [
@@ -1178,25 +1281,34 @@ class HamiltonianQED():#HCLattice):
                 h_k_x_disp = 0
                 h_k_y_disp = 0
                 h_k_z_disp = 0
-                for k,j in zip(hamiltonian_k_display,self.hamiltonian_k_sym):
-                    if j[0]=='x':
-                        h_k_x_disp+=  sum( [ Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k) ] )
-                    elif j[0]=='y':
-                        h_k_y_disp+= sum( [ Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k) ] )
-                    elif j[0]=='z':
-                        h_k_z_disp+= sum( [ Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k) ] )
+                for k, j in zip(hamiltonian_k_display, self.hamiltonian_k_sym):
+                    if j[0] == "x":
+                        h_k_x_disp += sum(
+                            [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
+                        )
+                    elif j[0] == "y":
+                        h_k_y_disp += sum(
+                            [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
+                        )
+                    elif j[0] == "z":
+                        h_k_z_disp += sum(
+                            [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
+                        )
 
                 if self.lattice.dims == 3:
-                    h_k_z = 0.5j*(h_k_z_disp-Symbol("h.c.(z)", commutative=False))
+                    h_k_z = 0.5j * (h_k_z_disp - Symbol("h.c.(z)", commutative=False))
                 else:
                     h_k_z = 0
-                display_hamiltonian_k= Eq(
-                                Symbol("H_K"),
-                                (Symbol("Omega") )
-                                * (0.5j*(h_k_x_disp-Symbol("h.c.(x)", commutative=False)) - 0.5*(h_k_y_disp+Symbol("h.c.(y)", commutative=False))
-                                + h_k_z),
-                                evaluate=False,
-                            )
+                display_hamiltonian_k = Eq(
+                    Symbol("H_K"),
+                    (Symbol("Omega"))
+                    * (
+                        0.5j * (h_k_x_disp - Symbol("h.c.(x)", commutative=False))
+                        - 0.5 * (h_k_y_disp + Symbol("h.c.(y)", commutative=False))
+                        + h_k_z
+                    ),
+                    evaluate=False,
+                )
 
             display(display_hamiltonian_k)
             print(latex(display_hamiltonian_k))
@@ -1204,7 +1316,8 @@ class HamiltonianQED():#HCLattice):
         # H_M in terms of Paulis
         hamiltonian_m_pauli = sum(
             [
-                (-1) ** j * HamiltonianQED._subs_hamilt_sym_to_pauli(h, self.phi_jw_subs)
+                (-1) ** j
+                * HamiltonianQED._subs_hamilt_sym_to_pauli(h, self.phi_jw_subs)
                 for j, h in enumerate(self.hamiltonian_m_sym)
             ]
         )  # (must be then multiplied by m)
@@ -1232,7 +1345,6 @@ class HamiltonianQED():#HCLattice):
         self.hamiltonian_mag_pauli = hamiltonian_mag_pauli
         self.hamiltonian_k_pauli = hamiltonian_k_pauli
         self.hamiltonian_m_pauli = hamiltonian_m_pauli
-
 
     # others
     @staticmethod
@@ -1297,7 +1409,9 @@ class HamiltonianQED():#HCLattice):
             (
                 q[0],
                 (
-                    HamiltonianQED.str_to_tens(k) @ s_p.to_matrix() @ HamiltonianQED.str_to_tens(k)
+                    HamiltonianQED.str_to_tens(k)
+                    @ s_p.to_matrix()
+                    @ HamiltonianQED.str_to_tens(k)
                     - 0.5 * (1 + (-1) ** (n_tmp))
                 ).real,
             )
@@ -1309,7 +1423,6 @@ class HamiltonianQED():#HCLattice):
         ]
 
         return e_op_sol if self.puregauge else e_op_sol + charge_sol
-
 
     def hamiltonian_suppr(
         self,
@@ -1326,7 +1439,8 @@ class HamiltonianQED():#HCLattice):
             for i in range(2 * self.l_par + 1, 2 ** self._n_qubits_g()):
                 gray_str = "{0:0{1}b}".format(i ^ (i >> 1), self._n_qubits_g())
                 h_s += reduce(
-                    lambda x, y: (x) ^ (y), [s_down if x == "0" else s_up for x in gray_str]
+                    lambda x, y: (x) ^ (y),
+                    [s_down if x == "0" else s_up for x in gray_str],
                 )
 
             suppr1 = h_s
@@ -1345,7 +1459,7 @@ class HamiltonianQED():#HCLattice):
         # ****** fermion
         suppr_f = I ^ (int(self.lattice.n_sitestot))
         # the state is projected onto zero-charge state (fermions), same number of 1 and 0
-        for i in range(2**int(self.lattice.n_sitestot)):
+        for i in range(2 ** int(self.lattice.n_sitestot)):
             bincount = sum([1 for el in bin(i)[2:] if el == "1"])
             if bincount == int(self.lattice.n_sitestot) / 2:
                 binc = format(i, "0%db" % int(self.lattice.n_sitestot))
@@ -1353,8 +1467,9 @@ class HamiltonianQED():#HCLattice):
                     lambda x, y: (x) ^ (y), [s_down if x == "0" else s_up for x in binc]
                 )
 
-        hamiltonian_nzcharge_suppr = (suppr_f) ^ (I ^ (self._n_qubits_g() * self.len_u_op))
-
+        hamiltonian_nzcharge_suppr = (suppr_f) ^ (
+            I ^ (self._n_qubits_g() * self.len_u_op)
+        )
 
         if self.tn_comparison:  # TODO: only for 2+1 QED
             # gauss #TODO: global term in H (possible barren plateaus!)
@@ -1372,7 +1487,6 @@ class HamiltonianQED():#HCLattice):
                 )
             )
 
-
             gray_physical = [
                 "".join(i) for i in product(gray_physical, repeat=self.len_u_op)
             ]
@@ -1384,7 +1498,8 @@ class HamiltonianQED():#HCLattice):
                     "".join(i)
                     for i in set(
                         permutations(
-                            "0" * (int(self.lattice.n_sitestot) // 2) + "1" * (int(self.lattice.n_sitestot) // 2)
+                            "0" * (int(self.lattice.n_sitestot) // 2)
+                            + "1" * (int(self.lattice.n_sitestot) // 2)
                         )
                     )
                 ]  # charge 0 for n_sitestot fermions
@@ -1410,7 +1525,8 @@ class HamiltonianQED():#HCLattice):
             # the state is projected onto the UNphysical state
             for gray_str in unphys_list_gauss:
                 suppr_gaus += reduce(
-                    lambda x, y: (x) ^ (y), [s_down if x == "0" else s_up for x in gray_str]
+                    lambda x, y: (x) ^ (y),
+                    [s_down if x == "0" else s_up for x in gray_str],
                 )
 
             hamiltonian_gauss_suppr = suppr_gaus
@@ -1419,7 +1535,8 @@ class HamiltonianQED():#HCLattice):
             hamiltonian_gauss_suppr = 0.0 * (I ^ (self._n_qubits_g() * (self.len_u_op)))
         else:
             hamiltonian_gauss_suppr = 0.0 * (
-                (I ^ int(self.lattice.n_sitestot)) ^ (I ^ (self._n_qubits_g() * (self.len_u_op)))
+                (I ^ int(self.lattice.n_sitestot))
+                ^ (I ^ (self._n_qubits_g() * (self.len_u_op)))
             )
 
         if self.puregauge:
@@ -1436,6 +1553,3 @@ class HamiltonianQED():#HCLattice):
             hamiltonian_suppress = ((hamiltonian_nzcharge_suppr)).reduce()
 
         self.hamiltonian_suppress = hamiltonian_suppress
-
-
-

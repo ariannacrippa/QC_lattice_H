@@ -1,5 +1,38 @@
 #
-#
+# Copyright (C) 2004-2018, NetworkX Developers
+# Aric Hagberg <hagberg@lanl.gov>
+# Dan Schult <dschult@colgate.edu>
+# Pieter Swart <swart@lanl.gov>
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are
+# met:
+
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions and the following disclaimer.
+
+#   * Redistributions in binary form must reproduce the above
+#     copyright notice, this list of conditions and the following
+#     disclaimer in the documentation and/or other materials provided
+#     with the distribution.
+
+#   * Neither the name of the NetworkX Developers nor the names of its
+#     contributors may be used to endorse or promote products derived
+#     from this software without specific prior written permission.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 """Definition of the Hamiltonian for QED lattice NxN"""
 from __future__ import annotations
 import warnings
@@ -18,15 +51,17 @@ from networkx.generators.classic import empty_graph
 from networkx.utils import flatten
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from mpl_toolkits.mplot3d import Axes3D,proj3d
+from mpl_toolkits.mplot3d import Axes3D, proj3d
 from matplotlib.patches import FancyArrowPatch
 from sympy import Symbol
+
 mpl.rcParams["patch.facecolor"] = "xkcd:white"
+
 
 class HCLattice:
 
-    """The algorithm a generic N dimensional hypercubic lattice with both open and
-    periodic boundary conditions.
+    """The algorithm generates a generic N dimensional hypercubic lattice
+    with open or periodic boundary conditions.
 
     Parameters
     ----------
@@ -34,14 +69,12 @@ class HCLattice:
     n_sites: list
             Number of sites in the lattice in the nth direction.
 
-
     pbc : bool
             If `pbc` is True, both dimensions are periodic. If False, none
             are periodic.
 
-
-
     """
+
     # pylint: disable=too-many-instance-attributes
     def __init__(
         self,
@@ -107,7 +140,9 @@ class HCLattice:
         graph = relabel_nodes(graph_g, flatten)
         self.graph = graph
 
-    def draw_graph_func(self, gauss_law_fig: bool = False,e_op_free=None, savefig_dir=None):
+    def draw_graph_func(
+        self, gauss_law_fig: bool = False, e_op_free=None, savefig_dir=None
+    ):
         """Draw the graph of the lattice with the dynamical links.
         Parameters
            gauss_law_fig: bool
@@ -125,14 +160,20 @@ class HCLattice:
                 [Symbol(k) for k in self.list_edges2_e_op].index(n_tmp)
                 for n_tmp in e_op_free
             ]
-            to_int = lambda i,cff : tuple(map(int, re.findall(r"\d+", self.list_edges[i][cff])[0]))[0] if self.dims==1 else tuple(map(int, re.findall(r"\d+", self.list_edges[i][cff])[0]))
+            to_int = (
+                lambda i, cff: tuple(
+                    map(int, re.findall(r"\d+", self.list_edges[i][cff])[0])
+                )[0]
+                if self.dims == 1
+                else tuple(map(int, re.findall(r"\d+", self.list_edges[i][cff])[0]))
+            )
             lu_op_free_map = [
                 (
-                    to_int(i,0),
-                    to_int(i,1),
+                    to_int(i, 0),
+                    to_int(i, 1),
                 )
                 for i in lu_op_edges
-            ]# list of edges (tuples) that are dynamical
+            ]  # list of edges (tuples) that are dynamical
 
             edge_color_list = [
                 "black" if e in lu_op_free_map else "lightgray"
@@ -179,7 +220,9 @@ class HCLattice:
 
         else:
             ax_plt = fig.add_subplot(111, projection="3d")
-            ax_plt.scatter(*np.array(self.graph.nodes).T, s=200, c=color_map)  # ,alpha=1)
+            ax_plt.scatter(
+                *np.array(self.graph.nodes).T, s=200, c=color_map
+            )  # ,alpha=1)
 
             # Nodes labels
             for nds in np.array(self.graph.nodes):
@@ -331,7 +374,7 @@ class HCLattice:
         # TODO: test for dims>4 how to visualize it?
         plaq_list = []
 
-        if 1<self.dims<4:  # 2D or 3D
+        if 1 < self.dims < 4:  # 2D or 3D
             for a_index, b_index in list(
                 combinations(range(self.dims), 2)
             ):  # change only 2 coordinates
@@ -359,10 +402,8 @@ class HCLattice:
                         continue
 
                     tpl3 = tuple(
-
-                            op_tmp(n, i) if i in (a_index,b_index) else n
-                            for i, n in enumerate(node)
-
+                        op_tmp(n, i) if i in (a_index, b_index) else n
+                        for i, n in enumerate(node)
                     )
                     if tpl3 not in self.graph.nodes:
                         continue
@@ -387,7 +428,6 @@ class HCLattice:
                 for p_tmp in plaq_list
             ]
 
-
         if self.dims < 4:
             ax_direct = ["x", "y", "z"]
         else:
@@ -402,8 +442,8 @@ class HCLattice:
                 coeff = "none"
 
                 for index, (first, second) in enumerate(zip(u_elem, v_elem)):
-                        if first != second:
-                            coeff = ax_direct[index]
+                    if first != second:
+                        coeff = ax_direct[index]
 
                 vec = u_elem if j > 1 else v_elem  # U^dag after 2 edges: UUU^dagU^dag
 
@@ -495,7 +535,7 @@ class HCLattice:
 
         if (self.n_sitestot) - (len([k[0] for k in jw_chain]) + 1) != 0:
             warnings.warn(
-            "Warning: Jordan-Wigner chain has missing sites. not long enough to reach every site."
+                "Warning: Jordan-Wigner chain has missing sites. not long enough to reach every site."
             )
 
         self.jw_sites = jw_sites
