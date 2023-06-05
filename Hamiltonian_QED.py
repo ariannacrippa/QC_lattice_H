@@ -298,7 +298,7 @@ class HamiltonianQED:
         return int(np.ceil(np.log2(2 * self.l_par + 1)))
 
     # Gauss law equations in a list
-    def gauss_equations(self):
+    def gauss_equations(self):#TODO generalize to static charges
         """Returns a list of Gauss' law equations (symbols), the system of equation
             can be solved in order to find the set of independent gauge field.
 
@@ -805,6 +805,8 @@ class HamiltonianQED:
                 else 0
                 for k in self.lattice.jw_sites
             ]
+
+            coeff_Q = 0 if self.puregauge else int(self.lattice.n_sitestot)
             static_charges_subs = [
                 (
                     symbols("Q_" + "".join(map(str, k))),
@@ -812,7 +814,7 @@ class HamiltonianQED:
                     * (
                         I
                         ^ (
-                            int(self.lattice.n_sitestot)
+                            coeff_Q
                             + self._n_qubits_g() * self.len_e_op
                         )
                     ),
@@ -833,7 +835,7 @@ class HamiltonianQED:
             e_op_field_subs = [
                 (s_tmp, _e_op_elem(i)) for i, s_tmp in enumerate(self.e_op_free)
             ]
-            q_charges_subs = []
+            q_charges_subs = []+ static_charges_subs
         else:
             e_op_field_subs = [
                 (s_tmp, ((I ^ (int(self.lattice.n_sitestot))) ^ (_e_op_elem(i))))
