@@ -39,9 +39,6 @@ class HCLattice:
             If `pbc` is True, both dimensions are periodic. If False, none
             are periodic.
 
-    puregauge: bool
-        If False, then we have fermionic degrees of freedom in the system, if True only
-        gauge fields.
 
 
     """
@@ -50,7 +47,6 @@ class HCLattice:
         self,
         n_sites: list,
         pbc: bool | list = False,
-        puregauge: bool = False,
     ) -> None:
         self.n_sites = n_sites
         while 1 in self.n_sites:  # avoid 1 dimension useless input
@@ -58,7 +54,6 @@ class HCLattice:
         self.n_sitestot = np.prod(self.n_sites)
         self.dims = len(self.n_sites)  # how many dimensions
         self.pbc = pbc
-        self.puregauge = puregauge
 
         # define graph and edges
         self.graph_lattice()
@@ -112,31 +107,32 @@ class HCLattice:
         graph = relabel_nodes(graph_g, flatten)
         self.graph = graph
 
-    def draw_graph_func(self, gauss_law_fig: bool = False,u_op_free=None, savefig_dir=None):
+    def draw_graph_func(self, gauss_law_fig: bool = False,e_op_free=None, savefig_dir=None):
         """Draw the graph of the lattice with the dynamical links.
         Parameters
            gauss_law_fig: bool
                If True, the free links are highlighted in gray and the dynamical
                links in black.
 
-            u_op_free: list
+            e_op_free: list
                 List of dynamical links after Gauss law is applied.
 
            savefig_dir: str
                If not None, the figure is saved in the specified directory."""
 
-        if gauss_law_fig and u_op_free is not None:
+        if gauss_law_fig and e_op_free is not None:
             lu_op_edges = [
-                [Symbol(k[0]) for k in self.list_edges2_u_op].index(n_tmp)
-                for n_tmp in u_op_free  # TODO: include gauss law option
+                [Symbol(k) for k in self.list_edges2_e_op].index(n_tmp)
+                for n_tmp in e_op_free
             ]
+            to_int = lambda i,cff : tuple(map(int, re.findall(r"\d+", self.list_edges[i][cff])[0]))[0] if self.dims==1 else tuple(map(int, re.findall(r"\d+", self.list_edges[i][cff])[0]))
             lu_op_free_map = [
                 (
-                    tuple(map(int, re.findall(r"\d+", self.list_edges2_u_op[i][0])[0])),
-                    tuple(map(int, re.findall(r"\d+", self.list_edges2_u_op[i][1])[0])),
+                    to_int(i,0),
+                    to_int(i,1),
                 )
                 for i in lu_op_edges
-            ]
+            ]# list of edges (tuples) that are dynamical
 
             edge_color_list = [
                 "black" if e in lu_op_free_map else "lightgray"
@@ -300,12 +296,17 @@ class HCLattice:
 
             # list of edges starting point and ending point
             list_edges.append((op_chr_e + edge_op1, op_chr_e + edge_op2))
-            list_edges2_e_op.append(
-                (op_chr_e + edge_op1 + coeff, op_chr_e + edge_op2 + coeff)
-            )
-            list_edges2_u_op.append(
-                (op_chr_u + edge_op1 + coeff, op_chr_u + edge_op2 + coeff)
-            )
+
+            # list of edges with direction #TODO if okay, remove the list_edges2_e/u_op below
+            list_edges2_e_op.append(op_chr_e + edge_op1 + coeff)
+            list_edges2_u_op.append(op_chr_u + edge_op1 + coeff)
+
+            # list_edges2_e_op.append(
+            #     (op_chr_e + edge_op1 + coeff, op_chr_e + edge_op2 + coeff)
+            # )
+            # list_edges2_u_op.append(
+            #     (op_chr_u + edge_op1 + coeff, op_chr_u + edge_op2 + coeff)
+            # )
 
         self.list_edges: list = list_edges
         self.list_edges2_e_op: list = list_edges2_e_op
@@ -330,7 +331,7 @@ class HCLattice:
         # TODO: test for dims>4 how to visualize it?
         plaq_list = []
 
-        if len(self.n_sites) > 1:  # more than 1 dimension
+        if 1<self.dims<4:  # 2D or 3D
             for a_index, b_index in list(
                 combinations(range(self.dims), 2)
             ):  # change only 2 coordinates
@@ -385,6 +386,7 @@ class HCLattice:
                 ]
                 for p_tmp in plaq_list
             ]
+
 
         if self.dims < 4:
             ax_direct = ["x", "y", "z"]
