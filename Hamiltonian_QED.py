@@ -100,10 +100,6 @@ class HamiltonianQED:
         the plaquette term and
         the kinetic term (H_k): if + sign then U^dag in H_k / if - then U in H_k.
 
-    ksphase: bool
-        Phase in the kientic Hamiltonian, option for tests. Muste be kept True for
-        Kogut-Susskind Hamiltonian.
-
     display_hamiltonian: bool
         If True, the Hamiltonian and the Gauss law equations are displayed in the output.
 
@@ -126,7 +122,6 @@ class HamiltonianQED:
         puregauge: bool = False,
         static_charges_values: dict | None = None,
         e_op_out_plus: bool = False,
-        ksphase: bool = True,
         display_hamiltonian: bool = False,
         tn_comparison: bool = False,
     ) -> None:
@@ -141,7 +136,6 @@ class HamiltonianQED:
         self.puregauge = puregauge
         self.static_charges_values = static_charges_values
         self.e_op_out_plus = e_op_out_plus
-        self.ksphase = ksphase
         self.display_hamiltonian = display_hamiltonian
         self.tn_comparison = tn_comparison
 
@@ -1031,7 +1025,7 @@ class HamiltonianQED:
             elif self.lattice.dims == 2:
                 phase = (
                     (-1) ** (sum(i[0]) % 2)
-                    if self.ksphase and i[0][1] != i[1][1]
+                    if i[0][1] != i[1][1]
                     else 1
                 )  # change in y direction if x is odd
                 xy_term = (
@@ -1043,18 +1037,16 @@ class HamiltonianQED:
                 )
 
             elif self.lattice.dims == 3:
-                if self.ksphase:
-                    # x-direction
-                    if i[0][0] != i[1][0]:
-                        phase = 1
-                    # y-direction
-                    elif i[0][1] != i[1][1]:
-                        phase = (-1) ** ((sum(i[0][:2]) + 1) % 2)
-                    # z-direction
-                    elif i[0][2] != i[1][2]:
-                        phase = (-1) ** (sum(i[0][:2]) % 2)
-                else:
-                    phase = 1  # y or z direction
+                # x-direction
+                if i[0][0] != i[1][0]:
+                    phase = 1
+                # y-direction
+                elif i[0][1] != i[1][1]:
+                    phase = (-1) ** ((sum(i[0][:2]) + 1) % 2)
+                # z-direction
+                elif i[0][2] != i[1][2]:
+                    phase = (-1) ** (sum(i[0][:2]) % 2)
+
 
                 i_term = (
                     "x"
