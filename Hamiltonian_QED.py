@@ -127,8 +127,6 @@ class HamiltonianQED:
     ) -> None:
         self.n_sites = n_sites
         self.pbc = pbc
-
-        # super().__init__(n_sites,pbc)
         self.lattice = lattice
         self.l_par = l
         self.ll_par = ll
@@ -1141,204 +1139,207 @@ class HamiltonianQED:
                 I
                 ^ (int(self.lattice.n_sitestot) + self._n_qubits_g() * (self.len_u_op))
             )
-        # ************************************  H_K   ************************************
-        # Pauli expression
-        if self.lattice.dims == 1:
-            hamiltonian_k_1x = sum(
-                [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(
-                        h, self.u_op_field_subs + self.phi_jw_subs
-                    )
-                    for h in self.hamiltonian_k_sym
-                ]
-            )
-
-            hamiltonian_k_pauli = (
-                0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint())
-            ).reduce()  # (must be then multiplied by omega)
-
-        elif self.lattice.dims == 2:
-            hamiltonian_k_1x = sum(
-                [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(
-                        h[1:], self.u_op_field_subs + self.phi_jw_subs
-                    )
-                    for h in self.hamiltonian_k_sym
-                    if h[0] == "x"
-                ]
-            )
-            hamiltonian_k_1y = sum(
-                [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(
-                        h[1:], self.u_op_field_subs + self.phi_jw_subs
-                    )
-                    for h in self.hamiltonian_k_sym
-                    if h[0] == "y"
-                ]
-            )
-
-            hamiltonian_k_pauli = (
-                0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint())
-                - 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
-            ).reduce()  # (must be then multiplied by omega)
-
-        elif self.lattice.dims == 3:
-            hamiltonian_k_1x = sum(
-                [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(
-                        h[1:], self.u_op_field_subs + self.phi_jw_subs
-                    )
-                    for h in self.hamiltonian_k_sym
-                    if h[0] == "x"
-                ]
-            )
-            hamiltonian_k_1y = sum(
-                [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(
-                        h[1:], self.u_op_field_subs + self.phi_jw_subs
-                    )
-                    for h in self.hamiltonian_k_sym
-                    if h[0] == "y"
-                ]
-            )
-            hamiltonian_k_1z = sum(
-                [
-                    HamiltonianQED._subs_hamilt_sym_to_pauli(
-                        h[1:], self.u_op_field_subs + self.phi_jw_subs
-                    )
-                    for h in self.hamiltonian_k_sym
-                    if h[0] == "z"
-                ]
-            )
-            hamiltonian_k_pauli = (
-                0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint())
-                - 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
-                + 0.5j * (hamiltonian_k_1z - hamiltonian_k_1z.adjoint())
-            ).reduce()  # (must be then multiplied by omega)
-
-        else:
-            raise ValueError("Dimension not supported")
-
-        if self.display_hamiltonian:  # TODO 1d
-            # Hamiltonian to print
-
+        if not self.puregauge:
+            # ************************************  H_K   ************************************
+            # Pauli expression
             if self.lattice.dims == 1:
-                hamiltonian_k_display = [
-                    (
-                        k[0],
-                        Dagger(Symbol(str(k[1])[:-1], commutative=False)),
-                        Dagger(Symbol(str(k[2])[:-1], commutative=False)),
-                        k[3],
-                    )
-                    if str(k[2])[-1] == "d"
-                    else (
-                        k[0],
-                        Dagger(Symbol(str(k[1])[:-1], commutative=False)),
-                        k[2],
-                        k[3],
-                    )
-                    for k in self.hamiltonian_k_sym
-                ]
-
-                display_hamiltonian_k = Eq(
-                    Symbol("H_K"),
-                    (Symbol("Omega") * 1j / 2)
-                    * (
-                        sum(
-                            [
-                                Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)
-                                for k in hamiltonian_k_display
-                            ]
+                hamiltonian_k_1x = sum(
+                    [
+                        HamiltonianQED._subs_hamilt_sym_to_pauli(
+                            h, self.u_op_field_subs + self.phi_jw_subs
                         )
-                        - Symbol("h.c.", commutative=False)
-                    ),
-                    evaluate=False,
+                        for h in self.hamiltonian_k_sym
+                    ]
                 )
+
+                hamiltonian_k_pauli = (
+                    0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint())
+                ).reduce()  # (must be then multiplied by omega)
+
+            elif self.lattice.dims == 2:
+                hamiltonian_k_1x = sum(
+                    [
+                        HamiltonianQED._subs_hamilt_sym_to_pauli(
+                            h[1:], self.u_op_field_subs + self.phi_jw_subs
+                        )
+                        for h in self.hamiltonian_k_sym
+                        if h[0] == "x"
+                    ]
+                )
+                hamiltonian_k_1y = sum(
+                    [
+                        HamiltonianQED._subs_hamilt_sym_to_pauli(
+                            h[1:], self.u_op_field_subs + self.phi_jw_subs
+                        )
+                        for h in self.hamiltonian_k_sym
+                        if h[0] == "y"
+                    ]
+                )
+
+                hamiltonian_k_pauli = (
+                    0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint())
+                    - 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
+                ).reduce()  # (must be then multiplied by omega)
+
+            elif self.lattice.dims == 3:
+                hamiltonian_k_1x = sum(
+                    [
+                        HamiltonianQED._subs_hamilt_sym_to_pauli(
+                            h[1:], self.u_op_field_subs + self.phi_jw_subs
+                        )
+                        for h in self.hamiltonian_k_sym
+                        if h[0] == "x"
+                    ]
+                )
+                hamiltonian_k_1y = sum(
+                    [
+                        HamiltonianQED._subs_hamilt_sym_to_pauli(
+                            h[1:], self.u_op_field_subs + self.phi_jw_subs
+                        )
+                        for h in self.hamiltonian_k_sym
+                        if h[0] == "y"
+                    ]
+                )
+                hamiltonian_k_1z = sum(
+                    [
+                        HamiltonianQED._subs_hamilt_sym_to_pauli(
+                            h[1:], self.u_op_field_subs + self.phi_jw_subs
+                        )
+                        for h in self.hamiltonian_k_sym
+                        if h[0] == "z"
+                    ]
+                )
+                hamiltonian_k_pauli = (
+                    0.5j * (hamiltonian_k_1x - hamiltonian_k_1x.adjoint())
+                    - 0.5 * (hamiltonian_k_1y + hamiltonian_k_1y.adjoint())
+                    + 0.5j * (hamiltonian_k_1z - hamiltonian_k_1z.adjoint())
+                ).reduce()  # (must be then multiplied by omega)
 
             else:
-                hamiltonian_k_display = [
-                    (
-                        k[1],
-                        Dagger(Symbol(str(k[2])[:-1], commutative=False)),
-                        Dagger(Symbol(str(k[3])[:-1], commutative=False)),
-                        k[4],
-                    )
-                    if str(k[3])[-1] == "D"
-                    else (
-                        k[1],
-                        Dagger(Symbol(str(k[2])[:-1], commutative=False)),
-                        k[3],
-                        k[4],
-                    )
-                    for k in self.hamiltonian_k_sym
-                ]
-                h_k_x_disp = 0
-                h_k_y_disp = 0
-                h_k_z_disp = 0
-                for k, j in zip(hamiltonian_k_display, self.hamiltonian_k_sym):
-                    if j[0] == "x":
-                        h_k_x_disp += sum(
-                            [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
-                        )
-                    elif j[0] == "y":
-                        h_k_y_disp += sum(
-                            [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
-                        )
-                    elif j[0] == "z":
-                        h_k_z_disp += sum(
-                            [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
-                        )
+                raise ValueError("Dimension not supported")
 
-                if self.lattice.dims == 3:
-                    h_k_z = 0.5j * (h_k_z_disp - Symbol("h.c.(z)", commutative=False))
+            if self.display_hamiltonian:
+                # Hamiltonian to print
+
+                if self.lattice.dims == 1:
+                    hamiltonian_k_display = [
+                        (
+                            k[0],
+                            Dagger(Symbol(str(k[1])[:-1], commutative=False)),
+                            Dagger(Symbol(str(k[2])[:-1], commutative=False)),
+                            k[3],
+                        )
+                        if str(k[2])[-1] == "d"
+                        else (
+                            k[0],
+                            Dagger(Symbol(str(k[1])[:-1], commutative=False)),
+                            k[2],
+                            k[3],
+                        )
+                        for k in self.hamiltonian_k_sym
+                    ]
+
+                    display_hamiltonian_k = Eq(
+                        Symbol("H_K"),
+                        (Symbol("Omega") * 1j / 2)
+                        * (
+                            sum(
+                                [
+                                    Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)
+                                    for k in hamiltonian_k_display
+                                ]
+                            )
+                            - Symbol("h.c.", commutative=False)
+                        ),
+                        evaluate=False,
+                    )
+
                 else:
-                    h_k_z = 0
-                display_hamiltonian_k = Eq(
-                    Symbol("H_K"),
-                    (Symbol("Omega"))
-                    * (
-                        0.5j * (h_k_x_disp - Symbol("h.c.(x)", commutative=False))
-                        - 0.5 * (h_k_y_disp + Symbol("h.c.(y)", commutative=False))
-                        + h_k_z
+                    hamiltonian_k_display = [
+                        (
+                            k[1],
+                            Dagger(Symbol(str(k[2])[:-1], commutative=False)),
+                            Dagger(Symbol(str(k[3])[:-1], commutative=False)),
+                            k[4],
+                        )
+                        if str(k[3])[-1] == "D"
+                        else (
+                            k[1],
+                            Dagger(Symbol(str(k[2])[:-1], commutative=False)),
+                            k[3],
+                            k[4],
+                        )
+                        for k in self.hamiltonian_k_sym
+                    ]
+                    h_k_x_disp = 0
+                    h_k_y_disp = 0
+                    h_k_z_disp = 0
+                    for k, j in zip(hamiltonian_k_display, self.hamiltonian_k_sym):
+                        if j[0] == "x":
+                            h_k_x_disp += sum(
+                                [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
+                            )
+                        elif j[0] == "y":
+                            h_k_y_disp += sum(
+                                [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
+                            )
+                        elif j[0] == "z":
+                            h_k_z_disp += sum(
+                                [Mul(*k, evaluate=False) if k[2] != 1 else Mul(*k)]
+                            )
+
+                    if self.lattice.dims == 3:
+                        h_k_z = 0.5j * (h_k_z_disp - Symbol("h.c.(z)", commutative=False))
+                    else:
+                        h_k_z = 0
+                    display_hamiltonian_k = Eq(
+                        Symbol("H_K"),
+                        (Symbol("Omega"))
+                        * (
+                            0.5j * (h_k_x_disp - Symbol("h.c.(x)", commutative=False))
+                            - 0.5 * (h_k_y_disp + Symbol("h.c.(y)", commutative=False))
+                            + h_k_z
+                        ),
+                        evaluate=False,
+                    )
+
+                display(display_hamiltonian_k)
+                print(latex(display_hamiltonian_k))
+            # ************************************  H_M   ************************************
+            # H_M in terms of Paulis
+            hamiltonian_m_pauli = sum(
+                [
+                    (-1) ** j
+                    * HamiltonianQED._subs_hamilt_sym_to_pauli(h, self.phi_jw_subs)
+                    for j, h in enumerate(self.hamiltonian_m_sym)
+                ]
+            )  # (must be then multiplied by m)
+            if self.display_hamiltonian:  # to print
+                display_hamiltonian_m = Eq(
+                    Symbol("H_m"),
+                    Symbol("m")
+                    * sum(
+                        [
+                            (-1) ** j * np.prod(k)
+                            for j, k in enumerate(
+                                [
+                                    (k[0].subs(k[0], Dagger(k[1])), k[1])
+                                    for k in self.hamiltonian_m_sym
+                                ]
+                            )
+                        ]
                     ),
-                    evaluate=False,
                 )
 
-            display(display_hamiltonian_k)
-            print(latex(display_hamiltonian_k))
-        # ************************************  H_M   ************************************
-        # H_M in terms of Paulis
-        hamiltonian_m_pauli = sum(
-            [
-                (-1) ** j
-                * HamiltonianQED._subs_hamilt_sym_to_pauli(h, self.phi_jw_subs)
-                for j, h in enumerate(self.hamiltonian_m_sym)
-            ]
-        )  # (must be then multiplied by m)
-        if self.display_hamiltonian:  # to print
-            display_hamiltonian_m = Eq(
-                Symbol("H_m"),
-                Symbol("m")
-                * sum(
-                    [
-                        (-1) ** j * np.prod(k)
-                        for j, k in enumerate(
-                            [
-                                (k[0].subs(k[0], Dagger(k[1])), k[1])
-                                for k in self.hamiltonian_m_sym
-                            ]
-                        )
-                    ]
-                ),
-            )
+                display(display_hamiltonian_m)
+                print(latex(display_hamiltonian_m))
 
-            display(display_hamiltonian_m)
-            print(latex(display_hamiltonian_m))
+            self.hamiltonian_k_pauli = hamiltonian_k_pauli
+            self.hamiltonian_m_pauli = hamiltonian_m_pauli
 
         self.hamiltonian_el_pauli = hamiltonian_el_pauli
         self.hamiltonian_mag_pauli = hamiltonian_mag_pauli
-        self.hamiltonian_k_pauli = hamiltonian_k_pauli
-        self.hamiltonian_m_pauli = hamiltonian_m_pauli
+
 
     # others
     @staticmethod
