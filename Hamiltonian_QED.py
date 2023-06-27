@@ -15,6 +15,7 @@ from networkx import all_simple_paths, get_edge_attributes
 from networkx.generators.classic import empty_graph
 from networkx.utils import pairwise
 #from qiskit.opflow import Z, X, Y, I, PauliSumOp, OperatorBase
+import qiskit
 from qiskit.quantum_info import SparsePauliOp, Pauli,Operator
 from IPython.display import display
 from scipy import special as sp
@@ -22,6 +23,8 @@ import matplotlib.pyplot as plt
 from sympy import Symbol, symbols, solve, lambdify, Mul, Eq, latex,expand,simplify,Pow,Float,Integer
 from sympy.physics.quantum.dagger import Dagger
 from scipy.sparse.linalg import eigs
+
+SPARSE_PAULI = qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp
 
 class HamiltonianQED:
 
@@ -382,16 +385,22 @@ class HamiltonianQED:
 
     # multiple tensor product of Pauli matrices
     @staticmethod
-    def pauli_tensor(*args):
-        """Returns Pauli tensor product of all arguments. If int in args then it skips it."""
+    def pauli_tens(*args):
+        """Returns Pauli tensor product of all arguments. If int in args then it skips it.
+        If all arguments are SparsePauliOp then it applies tensor method of SparsePauliOp.
+        If not it applies kronecker product of numpy.(it works also with SparsePauliOp) but much slower.)"""
         valid_args = [arg for arg in args if not isinstance(arg, int)]
+
         if len(valid_args) >= 2:
-            return reduce(lambda x, y: x.tensor(y), valid_args)
+            if all([type(arg)==SPARSE_PAULI for arg in valid_args]): # all SparsePauliOp
+                return reduce(lambda x, y: x.tensor(y), valid_args)
+            else:
+                return reduce(lambda x, y: np.kron(x,y), valid_args)
+
         elif len(valid_args) == 1:
             return valid_args[0]
         else:
             raise ValueError("Insufficient valid arguments for tensor product")
-
     # decompose sympy expression into a list of symbols and powers
     @staticmethod
     def decompose_expression(expr):
@@ -462,8 +471,8 @@ class HamiltonianQED:
             jw_dagk = ((1j) ** (n_tmp - 1)) * self.tensor_prod(self.Z, (n_tmp - 1))
             jwk = ((-1j) ** (n_tmp - 1)) * self.tensor_prod(self.Z, (n_tmp - 1))
 
-        jw_dag = HamiltonianQED.pauli_tensor(self.tensor_prod(self.I , (n_qubits - n_tmp)) , (sgm) , (jw_dagk))
-        jw_nodag = HamiltonianQED.pauli_tensor(self.tensor_prod(self.I , (n_qubits - n_tmp)) , (sgp) , (jwk))
+        jw_dag = HamiltonianQED.pauli_tens(self.tensor_prod(self.I , (n_qubits - n_tmp)) , (sgm) , (jw_dagk))
+        jw_nodag = HamiltonianQED.pauli_tens(self.tensor_prod(self.I , (n_qubits - n_tmp)) , (sgp) , (jwk))
 
         return jw_dag, jw_nodag  # then use: jw_dag@jw_nodag for phi^dag phi
 
@@ -644,7 +653,7 @@ class HamiltonianQED:
             magnetic_basis = magnetic basis (default True)
         """
         # When fermions add I^(n.er fermions) in the hamiltonian
-        return HamiltonianQED.pauli_tensor(
+        return HamiltonianQED.pauli_tens(
                 self.tensor_prod(self.I ,(self._n_qubits_g() * (self.len_e_op - index)))
                 , self.str_to_pauli(self._r_c()[1], self._n_qubits_g())
                 , self.tensor_prod(self.I, (self._n_qubits_g() * (index - 1)))
@@ -657,7 +666,7 @@ class HamiltonianQED:
         """
         # _n_qubits_g valid for _gray_map, could be different for other encodings
 
-        return HamiltonianQED.pauli_tensor(
+        return HamiltonianQED.pauli_tens(
             self.tensor_prod(self.I , (self._n_qubits_g() * (self.len_u_op - index)))
             , (self.str_to_pauli(self._l_c(), self._n_qubits_g()))
             , self.tensor_prod(self.I , (self._n_qubits_g() * (index - 1)))
@@ -805,16 +814,15 @@ class HamiltonianQED:
 
         eop_list = self.e_op_free if not self.rotors else self.rotor_list
         if self.magnetic_basis:#dict only with gauge fields
-            _e_op_elem = lambda i: self._e_operator(index=i + 1)
             self.e_op_dict_mbasis = dict([(Symbol(s_tmp), _e_op_elem(i)) if eop_list==self.rotor_list else (s_tmp, _e_op_elem(i)) for i, s_tmp in enumerate(eop_list)])
         if self.puregauge:
             e_op_field_subs =[(Symbol(s_tmp), _e_op_elem(i)) if eop_list==self.rotor_list else (s_tmp, _e_op_elem(i)) for i, s_tmp in enumerate(eop_list)]
 
             q_charges_subs = []+ static_charges_subs
         else:
-            e_op_field_subs = [(Symbol(s_tmp), HamiltonianQED.pauli_tensor(self.tensor_prod(self.I , (int(self.lattice.n_sitestot))) , (_e_op_elem(i))))
+            e_op_field_subs = [(Symbol(s_tmp), HamiltonianQED.pauli_tens(self.tensor_prod(self.I , (int(self.lattice.n_sitestot))) , (_e_op_elem(i))))
                                if eop_list==self.rotor_list
-                               else (s_tmp, HamiltonianQED.pauli_tensor(self.tensor_prod(self.I ,  (int(self.lattice.n_sitestot))) , (_e_op_elem(i)))) for i, s_tmp in enumerate(eop_list)]
+                               else (s_tmp, HamiltonianQED.pauli_tens(self.tensor_prod(self.I ,  (int(self.lattice.n_sitestot))) , (_e_op_elem(i)))) for i, s_tmp in enumerate(eop_list)]
 
             # if not self.rotors:
             #     e_op_field_subs = [
@@ -828,7 +836,7 @@ class HamiltonianQED:
             #     ]
 
             # charge operator in terms of Pauli matrices
-            q_el = lambda i, q: HamiltonianQED.pauli_tensor(self.tensor_prod(self.I , (int(self.lattice.n_sitestot) - 1 - i)) , (q) , self.tensor_prod(self.I , (self._n_qubits_g() * self.len_e_op + i)) )
+            q_el = lambda i, q: HamiltonianQED.pauli_tens(self.tensor_prod(self.I , (int(self.lattice.n_sitestot) - 1 - i)) , (q) , self.tensor_prod(self.I , (self._n_qubits_g() * self.len_e_op + i)) )
             sum_k = lambda k: k if self.lattice.dims == 1 else sum(k)
             q_charges_subs = [
                 (
@@ -859,10 +867,10 @@ class HamiltonianQED:
             ]
         else:
             u_op_field_subs = [
-                (s_tmp, HamiltonianQED.pauli_tensor(self.tensor_prod(self.I , int(self.lattice.n_sitestot)) , _u_op_elem(i)))
+                (s_tmp, HamiltonianQED.pauli_tens(self.tensor_prod(self.I , int(self.lattice.n_sitestot)) , _u_op_elem(i)))
                 for i, s_tmp in enumerate(self.u_op_free)
             ] + [
-                (s_tmp, HamiltonianQED.pauli_tensor(self.tensor_prod(self.I , int(self.lattice.n_sitestot)) , _u_op_elem(i).adjoint()))
+                (s_tmp, HamiltonianQED.pauli_tens(self.tensor_prod(self.I , int(self.lattice.n_sitestot)) , _u_op_elem(i).adjoint()))
                 for i, s_tmp in enumerate(self.u_op_free_dag)
             ]
 
@@ -870,7 +878,7 @@ class HamiltonianQED:
         if self.puregauge:
             phi_jw_subs = []
         else:
-            phi_el = lambda i, j: HamiltonianQED.pauli_tensor((
+            phi_el = lambda i, j: HamiltonianQED.pauli_tens((
                 self.jw_funct(i + 1, int(self.lattice.n_sitestot))[j]
             ) , self.tensor_prod(self.I , (self._n_qubits_g() * self.len_u_op)))
 
@@ -1157,10 +1165,10 @@ class HamiltonianQED:
                         hamiltonian_mag_pauli.append(cos1)
                     else:
                         #compute cosine of multiple operators cos(E1+E2+...)=e^iE1 e^iE2 ... + e^-iE1 e^-iE2 ... /2
-                        cosn = self.cos_oper(HamiltonianQED.pauli_tensor(*[ei_class if i in id_eop else idx  for i in range(self.len_e_op)[::-1]][min(id_eop):max(id_eop) + 1])).simplify()
-                        hamiltonian_mag_pauli.append(HamiltonianQED.pauli_tensor(*[idx for i in range(self.len_e_op)[::-1]][max(id_eop) + 1:]+ [cosn]+ [idx for i in range(self.len_e_op)[::-1]][:min(id_eop)] ))
+                        cosn = self.cos_oper(HamiltonianQED.pauli_tens(*[ei_class if i in id_eop else idx  for i in range(self.len_e_op)[::-1]][min(id_eop):max(id_eop) + 1])).simplify()
+                        hamiltonian_mag_pauli.append(HamiltonianQED.pauli_tens(*[idx for i in range(self.len_e_op)[::-1]][max(id_eop) + 1:]+ [cosn]+ [idx for i in range(self.len_e_op)[::-1]][:min(id_eop)] ))
 
-                hamiltonian_mag_pauli = sum(hamiltonian_mag_pauli) if self.puregauge else HamiltonianQED.pauli_tensor(self.tensor_prod(self.I , (int(self.lattice.n_sitestot))),sum(hamiltonian_mag_pauli))# (must be then multiplied by -1/g^2)
+                hamiltonian_mag_pauli = sum(hamiltonian_mag_pauli) if self.puregauge else HamiltonianQED.pauli_tens(self.tensor_prod(self.I , (int(self.lattice.n_sitestot))),sum(hamiltonian_mag_pauli))# (must be then multiplied by -1/g^2)
                 print("Hamiltonian B mag basis: done")
             else:
                 hamiltonian_mag_sym = sum(
@@ -1505,7 +1513,7 @@ class HamiltonianQED:
             hamiltonian_gauge_suppr = 0.0 * self.tensor_prod(self.I , (self._n_qubits_g() * (self.len_u_op)))
 
             for i in range(1, self.len_u_op + 1):
-                hamiltonian_gauge_suppr += HamiltonianQED.pauli_tensor(
+                hamiltonian_gauge_suppr += HamiltonianQED.pauli_tens(
                     self.tensor_prod(self.I , (self._n_qubits_g() * (self.len_u_op - i)))
                     , (suppr1)
                     , self.tensor_prod(self.I , (self._n_qubits_g() * (i - 1)))
@@ -1525,7 +1533,7 @@ class HamiltonianQED:
                     lambda x, y: (x) ^ (y), [s_down if x == "0" else s_up for x in binc]
                 )
 
-        hamiltonian_nzcharge_suppr = HamiltonianQED.pauli_tensor(suppr_f, self.tensor_prod(self.I , (self._n_qubits_g() * self.len_u_op) ))
+        hamiltonian_nzcharge_suppr = HamiltonianQED.pauli_tens(suppr_f, self.tensor_prod(self.I , (self._n_qubits_g() * self.len_u_op) ))
 
         if self.tn_comparison:  # TODO: only for 2+1 QED
             # gauss #TODO: global term in H (possible barren plateaus!)
@@ -1590,7 +1598,7 @@ class HamiltonianQED:
         elif self.puregauge:
             hamiltonian_gauss_suppr = 0.0 * self.tensor_prod(self.I , (self._n_qubits_g() * (self.len_u_op)))
         else:
-            hamiltonian_gauss_suppr = 0.0 * HamiltonianQED.pauli_tensor(
+            hamiltonian_gauss_suppr = 0.0 * HamiltonianQED.pauli_tens(
                 self.tensor_prod(self.I , int(self.lattice.n_sitestot))
                 , self.tensor_prod(self.I , (self._n_qubits_g() * (self.len_u_op)))
             )
@@ -1601,7 +1609,7 @@ class HamiltonianQED:
             ).simplify()
         elif self.len_u_op > 0:
             hamiltonian_suppress = (
-                HamiltonianQED.pauli_tensor(self.tensor_prod(self.I , int(self.lattice.n_sitestot)) , hamiltonian_gauge_suppr)
+                HamiltonianQED.pauli_tens(self.tensor_prod(self.I , int(self.lattice.n_sitestot)) , hamiltonian_gauge_suppr)
                 + (hamiltonian_nzcharge_suppr)
                 + (hamiltonian_gauss_suppr)
             ).simplify()
