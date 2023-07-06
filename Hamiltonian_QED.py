@@ -1452,7 +1452,7 @@ class HamiltonianQED:
         if self.encoding=='gray':
             gauge=self.tensor_prod(self.I ,(self._n_qubits_g()* (self.len_u_op)))#Gray encoding for E fields
         elif self.encoding=='ed':#exact diagonaliz. dimensions of gauge fields 2l+1
-            gauge=np.eye((2*self.l_par+1 )** (self.len_u_op))
+            gauge=sparse.eye((2*self.l_par+1 )** (self.len_u_op))
 
         # ******* gauge
         if self.len_u_op > 0 and self.encoding == "gray":#only for gray encoding exlcusion of unphyisical states TODO:check
