@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 from sympy import Symbol, symbols, solve, lambdify, Mul, Eq, latex,expand,simplify,Pow,Float,Integer
 from sympy.physics.quantum.dagger import Dagger
 from scipy.sparse.linalg import eigs
+from scipy import sparse
 
 SPARSE_PAULI = qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp
 
@@ -406,7 +407,7 @@ class HamiltonianQED:
             if all([type(arg)==SPARSE_PAULI for arg in valid_args]): # all SparsePauliOp
                 return reduce(lambda x, y: x.tensor(y), valid_args)
             else:
-                return reduce(lambda x, y: np.kron(x,y), valid_args)
+                return reduce(lambda x, y: sparse.kron(sparse.csr_matrix(x),sparse.csr_matrix(y)), valid_args)
 
         elif len(valid_args) == 1:
             return valid_args[0]
@@ -424,39 +425,6 @@ class HamiltonianQED:
             return result
         else:
             raise ValueError("Invalid expression type")
-
-    #@staticmethod
-    # def subs_hamilt_sym_to_pauli(self,hamilt_sym: list, subst: list):
-    #     """Function that takes as input list like [U_00x, 1, U_01xd, U_00yd],
-    #     then applies substitutions rules (in subst) and combine elements
-    #     with @ operation between Pauli matrices.
-    #     If type(input)!=symbol then use * operator.
-    #     Otherwise, for Pauli matrix multiplication @ is needed.
-
-    #     Returns a list of symbols for mass Hamiltonian of the type 'phi^dag phi'.
-
-
-    #     """
-    #     hamilt_func = lambdify(list(zip(*subst))[0], hamilt_sym)
-    #     hamilt_input = hamilt_func(*list(zip(*subst))[1])
-
-    #     if self.puregauge:#I^n_quits
-    #         ident = self.tensor_prod(self.I , (self._n_qubits_g() * self.len_u_op) )
-    #     else:
-    #         ident = self.tensor_prod(self.I , (self._n_qubits_g() * self.len_u_op+int(self.lattice.n_sitestot)) )
-    #     container = (
-    #         hamilt_input[0] * ident
-    #         if isinstance(hamilt_input[0], (int, float, complex))
-    #         else hamilt_input[0]
-    #     )
-
-    #     for i in hamilt_input[1:]:
-    #         if not isinstance(i, (int, float, complex)):
-    #             container @= i
-    #         else:
-    #             container *= i
-
-    #     return container
 
     def list_to_enc_hamilt(self,list_el,subst,ferm_lst=[],gauge_lst=[],encoding='gray'):
         """Return a list of Pauli operators or list of matrices (depending on the encoding used) from a list of symbolic operators.
@@ -519,7 +487,6 @@ class HamiltonianQED:
             ham_encoded.append(np.prod(numbers)*self.pauli_tens(*res))
         return ham_encoded
 
-    #@staticmethod
     def jw_funct(self,n_tmp: int, n_qubits: int):
         """Jordan-Wigner for 2 terms phi^dag, phi
 
@@ -547,7 +514,6 @@ class HamiltonianQED:
         jw_nodag = HamiltonianQED.pauli_tens(self.tensor_prod(self.I , (n_qubits - n_tmp)) , (sgp) , (jwk))
 
         return jw_dag, jw_nodag  # then use: jw_dag@jw_nodag for phi^dag phi
-
 
     # utilities and operators
     def _gray_map(self):
@@ -716,7 +682,6 @@ class HamiltonianQED:
 
         return pauli_res#.reduce()
 
-
     def el_op_enc(self):
         """Return the encoding of the electric field operator in the chosen encoding"""
         if self.encoding=='gray':
@@ -759,68 +724,13 @@ class HamiltonianQED:
 
         if isinstance(expr,np.ndarray):
             return np.conj(expr).T
+        elif isinstance(expr,sparse._csr.csr_matrix):
+            return expr.transpose().conjugate()
         elif isinstance(expr,SparsePauliOp):
             return expr.adjoint()
         else:
             raise ValueError('encoding not recognized for hermitian conjugate')
-    # electric field operator
 
-    # def _e_operator(self, index: int = 1):
-    #     """Electric field operator
-    #     Input arguments:
-    #         index = on which qubits the operator acts
-    #         tot_fiels = how many fields are in the Hamiltonian
-    #         magnetic_basis = magnetic basis (default True)
-    #     """
-    #     # When fermions add I^(n.er fermions) in the hamiltonian
-    #     return HamiltonianQED.pauli_tens(
-    #             self.tensor_prod(self.I ,(self._n_qubits_g() * (self.len_e_op - index)))
-    #             , self.str_to_pauli(self._r_c()[1], self._n_qubits_g())
-    #             , self.tensor_prod(self.I, (self._n_qubits_g() * (index - 1)))
-    #         )
-
-    # link operator
-    # def _u_operator(self, index: int = 1):
-    #     """Link operator U
-    #     Input arguments: index = on which qubits the operator acts
-    #     """
-    #     # _n_qubits_g valid for _gray_map, could be different for other encodings
-
-    #     return HamiltonianQED.pauli_tens(
-    #         self.tensor_prod(self.I , (self._n_qubits_g() * (self.len_u_op - index)))
-    #         , (self.str_to_pauli(self._l_c(), self._n_qubits_g()))
-    #         , self.tensor_prod(self.I , (self._n_qubits_g() * (index - 1)))
-    #     ).simplify()
-
-    #     # else:  # magnetic basis
-    #     #     return  # self.eiSz_noidx_1() #TODO Start to fix for magnetic basis
-
-    # ### exp and cosine functions
-
-    # def expon_operator(self,operators):
-    #     """Compute the exponential of a matrix using the eigendecomposition and with coeffiecient alpha (!).
-    #         Function used for cosine and sine operators.
-    #     Input arguments:
-    #         operators = operator or list of operators
-    #         if single operator is passed, it returns the exponential of the operator
-    #         if list of operators is passed, it returns the exponential of the sum of the operators"""
-    #     #input matrix can be a single operator or a list of operators
-
-    #     coeff1 = 1j*self.alpha
-    #     coeff2 = -1j*self.alpha
-
-    #     if isinstance(operators, list):
-    #         operators = sum(operators)
-
-    #     eigenvalues, eigenvectors = np.linalg.eig(operators)
-    #     inv_eigenvectors = np.linalg.inv(eigenvectors)
-
-    #     diagonal_matrix1 = np.diag(np.exp(coeff1 * eigenvalues))
-    #     diagonal_matrix2 = np.diag(np.exp(coeff2 * eigenvalues))
-    #     self.exp_matrixp = eigenvectors @ diagonal_matrix1 @ inv_eigenvectors
-    #     self.exp_matrixm = eigenvectors @ diagonal_matrix2 @ inv_eigenvectors
-
-    #@staticmethod
     def matx_exp(self,matrix, coefficient):
         """Compute the matrix exponential of a matrix using the eigendecomposition
         Input arguments:operator SparsePauliOp
@@ -830,7 +740,6 @@ class HamiltonianQED:
         exp_matrix = eigenvectors @ diagonal_matrix @ np.linalg.inv(eigenvectors)
         return SparsePauliOp.from_operator(Operator(exp_matrix))#NB attention this operation is exponential
 
-    #@staticmethod
     def cos_oper(self,exp_matrixp):
         """Compute the cosine of a matrix using Euler formula,
         cos(operators)=exp(i*operators)+exp(-i*operators)/2
@@ -839,16 +748,12 @@ class HamiltonianQED:
 
         return ((exp_matrixp+exp_matrixp.adjoint())/2).simplify()
 
-
-    #@staticmethod
     def sin_oper(self,exp_matrixp):
         """Compute the sine of a matrix using Euler formula,
         sin(operators)=exp(i*operators)-exp(-i*operators)/2
 
         """
         return ((exp_matrixp-exp_matrixp.adjoint())/2j).simplify()
-
-
 
     def rotors_conversion(self):#TODO test this function
         rotors_dict = {}
@@ -896,130 +801,6 @@ class HamiltonianQED:
 
         self.rotors_dict = rotors_dict
 
-    # def _symbol_to_pauli(self):
-    #     """Converts a string of symbols into a Pauli operator"""
-    #     # ****GAUGE PART
-
-    #     # Static charges
-    #     if self.static_charges_values:
-    #         static_charges_list = [
-    #             self.static_charges_values[k]
-    #             if k in self.static_charges_values.keys()
-    #             else 0
-    #             for k in self.lattice.jw_sites
-    #         ]
-
-    #         coeff_Q = 0 if self.puregauge else int(self.lattice.n_sitestot)
-    #         static_charges_subs = [
-    #             (
-    #                 symbols("Q_" + "".join(map(str, k))),
-    #                 j
-    #                 * self.tensor_prod(self.I , (
-    #                         coeff_Q
-    #                         + self._n_qubits_g() * self.len_e_op
-    #                     )
-    #                 ),
-    #             )
-    #             for k, j in zip(self.lattice.jw_sites, static_charges_list)
-    #         ]
-    #     else:
-    #         static_charges_subs = []
-
-    #     # E FIELD
-    #     q10 = -0.5 * (self.I + self.Z)  # JW dependent
-    #     q00 = 0.5 * (self.I - self.Z)
-
-    #     # E field in terms of Pauli matrices
-    #     _e_op_elem = lambda i: self._e_operator(index=i + 1)
-
-    #     eop_list = self.e_op_free if not self.rotors else self.rotor_list
-    #     if self.magnetic_basis:#dict only with gauge fields
-    #         self.e_op_dict_mbasis = dict([(Symbol(s_tmp), _e_op_elem(i)) if eop_list==self.rotor_list else (s_tmp, _e_op_elem(i)) for i, s_tmp in enumerate(eop_list)])
-    #     if self.puregauge:
-    #         e_op_field_subs =[(Symbol(s_tmp), _e_op_elem(i)) if eop_list==self.rotor_list else (s_tmp, _e_op_elem(i)) for i, s_tmp in enumerate(eop_list)]
-
-    #         q_charges_subs = []+ static_charges_subs
-    #     else:
-    #         e_op_field_subs = [(Symbol(s_tmp), HamiltonianQED.pauli_tens(self.tensor_prod(self.I , (int(self.lattice.n_sitestot))) , (_e_op_elem(i))))
-    #                            if eop_list==self.rotor_list
-    #                            else (s_tmp, HamiltonianQED.pauli_tens(self.tensor_prod(self.I ,  (int(self.lattice.n_sitestot))) , (_e_op_elem(i)))) for i, s_tmp in enumerate(eop_list)]
-
-    #         # if not self.rotors:
-    #         #     e_op_field_subs = [
-    #         #         (s_tmp, (self.tensor_prod(self.I ,(int(self.lattice.n_sitestot))) ^ (_e_op_elem(i))))
-    #         #         for i, s_tmp in enumerate(self.e_op_free)
-    #         #     ]
-    #         # else:#rotors
-    #         #     e_op_field_subs = [
-    #         #         (Symbol(s_tmp), (self.tensor_prod(self.I ,(int(self.lattice.n_sitestot))) ^ (_e_op_elem(i))))
-    #         #         for i, s_tmp in enumerate(self.rotor_list)
-    #         #     ]
-
-    #         # charge operator in terms of Pauli matrices
-    #         q_el = lambda i, q: HamiltonianQED.pauli_tens(self.tensor_prod(self.I , (int(self.lattice.n_sitestot) - 1 - i)) , (q) , self.tensor_prod(self.I , (self._n_qubits_g() * self.len_e_op + i)) )
-    #         sum_k = lambda k: k if self.lattice.dims == 1 else sum(k)
-    #         q_charges_subs = [
-    #             (
-    #                 symbols("q_" + self.str_node_f(k)),
-    #                 q_el(i, q10),
-    #             )
-    #             if sum_k(k) % 2
-    #             else (
-    #                 symbols("q_" + self.str_node_f(k)),
-    #                 q_el(i, q00),
-    #             )
-    #             for i, k in enumerate(self.lattice.jw_sites)
-    #         ] + static_charges_subs
-
-    #     # U field in terms of Pauli matrices
-    #     _u_op_elem = lambda i: self._u_operator(index=i + 1)
-
-    #     u_op_list = self.u_op_free if not self.rotors else self.p_oper_list
-    #     if self.puregauge:#TODO ROTORS
-    #         u_op_field_subs = [
-    #             (s_tmp, _u_op_elem(i)) for i, s_tmp in enumerate(self.u_op_free)
-    #         ] + [
-    #             (
-    #                 s_tmp,
-    #                 (self._u_operator(index=i + 1)).adjoint(),
-    #             )
-    #             for i, s_tmp in enumerate(self.u_op_free_dag)
-    #         ]
-    #     else:
-    #         u_op_field_subs = [
-    #             (s_tmp, HamiltonianQED.pauli_tens(self.tensor_prod(self.I , int(self.lattice.n_sitestot)) , _u_op_elem(i)))
-    #             for i, s_tmp in enumerate(self.u_op_free)
-    #         ] + [
-    #             (s_tmp, HamiltonianQED.pauli_tens(self.tensor_prod(self.I , int(self.lattice.n_sitestot)) , _u_op_elem(i).adjoint()))
-    #             for i, s_tmp in enumerate(self.u_op_free_dag)
-    #         ]
-
-    #     # ****list of Pauli substitutions for fermionic sites
-    #     if self.puregauge:
-    #         phi_jw_subs = []
-    #     else:
-    #         phi_el = lambda i, j: HamiltonianQED.pauli_tens((
-    #             self.jw_funct(i + 1, int(self.lattice.n_sitestot))[j]
-    #         ) , self.tensor_prod(self.I , (self._n_qubits_g() * self.len_u_op)))
-
-    #         phi_jw_subs = [
-    #             (
-    #                 Symbol(f"Phi_{i+1}D", commutative=False),
-    #                 phi_el(i, 0),
-    #             )
-    #             for i, k in enumerate(self.lattice.jw_sites)
-    #         ] + [
-    #             (
-    #                 Symbol(f"Phi_{i+1}", commutative=False),
-    #                 phi_el(i, 1),
-    #             )
-    #             for i, k in enumerate(self.lattice.jw_sites)
-    #         ]
-
-    #     self.e_op_field_subs = e_op_field_subs
-    #     self.q_charges_subs = q_charges_subs
-    #     self.u_op_field_subs = u_op_field_subs
-    #     self.phi_jw_subs = phi_jw_subs
 
     def _get_symbol_subs(self):
         """Return list of substitutions for symbols in the Hamiltonian.
@@ -1046,8 +827,6 @@ class HamiltonianQED:
         self.phi_jw_list = [ ( Symbol(f"Phi_{i+1}D", commutative=False), phi_el(i, 0), ) for i, k in
                         enumerate(self.lattice.jw_sites) ] + [ ( Symbol(f"Phi_{i+1}", commutative=False), phi_el(i, 1), )
                         for i, k in enumerate(self.lattice.jw_sites) ]
-
-
 
     # HAMILTONIAN
     # * symbols
