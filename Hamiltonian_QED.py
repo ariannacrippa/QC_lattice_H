@@ -27,7 +27,7 @@ from scipy import sparse
 
 SPARSE_PAULI = qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp
 # importing the library
-from memory_profiler import profile
+#from memory_profiler import profile
 
 
 class HamiltonianQED:
