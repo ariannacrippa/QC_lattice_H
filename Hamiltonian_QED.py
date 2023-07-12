@@ -42,7 +42,7 @@ from scipy.sparse.linalg import eigs
 from scipy import sparse
 
 SPARSE_PAULI = qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp
-# importing the library
+
 # from memory_profiler import profile
 
 
@@ -240,7 +240,13 @@ class HamiltonianQED:
             self.gauss_equations()
             if self.display_hamiltonian:
                 print(">> Gauss law system of equations (symbolic + latex):")
-                print("static charges:", ["Q_" + self.str_node_f(key)+f'={val}'  for key,val in self.static_charges_values.items() ])
+                print(
+                    "static charges:",
+                    [
+                        "Q_" + self.str_node_f(key) + f"={val}"
+                        for key, val in self.static_charges_values.items()
+                    ] if self.static_charges_values is not None else "None"
+                )
                 [display(Eq(i, 0)) for i in self.list_gauss]
                 [
                     print(latex(i) + " &= 0 \\\\ \\nonumber")
@@ -374,7 +380,7 @@ class HamiltonianQED:
         return int(np.ceil(np.log2(2 * self.l_par + 1)))
 
     # Gauss law equations in a list
-    def gauss_equations(self):  # TODO generalize to static charges
+    def gauss_equations(self):
         """Returns a list of Gauss' law equations (symbols), the system of equation
             can be solved in order to find the set of independent gauge field.
 
@@ -396,10 +402,7 @@ class HamiltonianQED:
 
             if self.static_charges_values is not None:
                 if node in self.static_charges_values.keys():
-                    ga_tmp -=self.static_charges_values[node]
-            # if self.static_charges_values is not None:
-            #     ga_tmp -= 1 * self.e_op_dict["Q_" + self.str_node_f(node)]
-            #     gc_tmp += self.e_op_dict["Q_" + self.str_node_f(node)]
+                    ga_tmp -= self.static_charges_values[node]
 
             e_op_i = "E_" + self.str_node_f(node)
             for j, k in zip(self.lattice.list_edges, self.lattice.list_edges2_e_op):
@@ -1018,8 +1021,12 @@ class HamiltonianQED:
             if self.puregauge
             else [symbols("q_" + self.str_node_f(k)) for k in self.lattice.jw_sites]
         )
-        self.static_qop_list = ([] if self.static_charges_values is None else [symbols("Q_" + self.str_node_f(k)) for k in self.lattice.jw_sites])
-        #self.qop_list += self.static_qop_list
+        self.static_qop_list = (
+            []
+            if self.static_charges_values is None
+            else [symbols("Q_" + self.str_node_f(k)) for k in self.lattice.jw_sites]
+        )
+        # self.qop_list += self.static_qop_list
 
         self.phiop_list = [
             Symbol(f"Phi_{i+1}", commutative=False)
@@ -1039,8 +1046,16 @@ class HamiltonianQED:
         if self.static_charges_values is None:
             self.static_qcharge_list = []
         else:
-            self.static_qcharge_list =[(Symbol("Q_" + self.str_node_f(node)),self.static_charges_values[node]*self.I) if node in self.static_charges_values.keys() else (Symbol("Q_" + self.str_node_f(node)),0*self.I) for node in self.lattice.graph.nodes]
-        #self.qcharge_list += self.static_qcharge_list
+            self.static_qcharge_list = [
+                (
+                    Symbol("Q_" + self.str_node_f(node)),
+                    self.static_charges_values[node] * self.I,
+                )
+                if node in self.static_charges_values.keys()
+                else (Symbol("Q_" + self.str_node_f(node)), 0 * self.I)
+                for node in self.lattice.graph.nodes
+            ]
+        # self.qcharge_list += self.static_qcharge_list
 
         self.e_field_list = [(s_tmp, self.e_oper) for s_tmp in self.eop_list]
         self.u_field_list = [
@@ -1315,7 +1330,6 @@ class HamiltonianQED:
         """Builds the total Hamiltonian of the system."""
         # ************************************  H_E   ************************************
         if self.len_e_op > 0:
-
             if self.magnetic_basis:
                 # Pauli expression, since mag basis H_E is in terms of U and U^dag we use u_op_field_subs
                 hamiltonian_el_pauli = self.list_to_enc_hamilt(
