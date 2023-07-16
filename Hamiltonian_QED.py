@@ -382,7 +382,7 @@ class HamiltonianQED:
     @staticmethod
     def sparse_sum(sparse_list):
         # Initialize the result matrix with zeros
-        result = sp.csr_matrix((sparse_list[0].shape[0], sparse_list[0].shape[1]))
+        result = sparse.csr_matrix((sparse_list[0].shape[0], sparse_list[0].shape[1]))
 
         for matrix in sparse_list:
             result += matrix
