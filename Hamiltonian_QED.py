@@ -379,6 +379,14 @@ class HamiltonianQED:
 
         return int(np.ceil(np.log2(2 * self.l_par + 1)))
 
+    @staticmethod
+    def sparse_sum(sparse_list):
+        # Initialize the result matrix with zeros
+        result = sp.csr_matrix((sparse_list[0].shape[0], sparse_list[0].shape[1]))
+
+        for matrix in sparse_list:
+            result += matrix
+            return result
     # Gauss law equations in a list
     def gauss_equations(self):
         """Returns a list of Gauss' law equations (symbols), the system of equation
@@ -450,7 +458,7 @@ class HamiltonianQED:
             else:
                 return reduce(
                     lambda x, y: sparse.kron(
-                        sparse.csr_matrix(x), sparse.csr_matrix(y)
+                        x, y, format="csr"
                     ),
                     valid_args,
                 )
@@ -490,46 +498,28 @@ class HamiltonianQED:
                 if not isinstance(
                     e, (int, float, complex, Float, Integer, str, ImaginaryUnit)
                 ):
-                    if (
-                        list(e.free_symbols)[0].name[-1] == "D"
-                        and list(e.free_symbols)[0].name[0] == "U"
-                    ):  # gauge field U adjoint
-                        index_op.append(
-                            str(
-                                (
-                                    ferm_lst[::-1]
-                                    + [Symbol(i.name + "D") for i in gauge_lst][::-1]
-                                ).index(*e.free_symbols)
-                            )
-                            + "D"
-                        )
-                    elif (
-                        list(e.free_symbols)[0].name[-1] == "D"
-                        and list(e.free_symbols)[0].name[0:3] == "Phi"
-                    ):  # fermion adjoint (but JW index only 0, must cover all the fermionic dof)
-                        index_op.append(
-                            str(
-                                (
-                                    [
-                                        Symbol(i.name + "D", commutative=False)
-                                        for i in ferm_lst
-                                    ][::-1]
-                                    + gauge_lst[::-1]
-                                ).index(*e.free_symbols)
-                            )
-                            + "D"
-                        )
+                    if ( list(e.free_symbols)[0].name[-1] == "D" and list(e.free_symbols)[0].name[0] == "U" ):  # gauge field U adjoint
+                        index_op.append( str( ( ferm_lst[::-1] + [Symbol(i.name + "D") for i in gauge_lst][::-1] ).index(*e.free_symbols) ) + "D" )
+                    elif ( list(e.free_symbols)[0].name[-1] == "D" and list(e.free_symbols)[0].name[0:3] == "Phi" ):  # fermion adjoint (but JW index only 0, must cover all the fermionic dof)
+                        index_op.append( str( ( [ Symbol(i.name + "D", commutative=False) for i in ferm_lst ][::-1] + gauge_lst[::-1] ).index(*e.free_symbols) ) + "D" )
                     else:  # no adjoint
-                        index_op.append(
-                            str(
-                                (ferm_lst[::-1] + gauge_lst[::-1]).index(
-                                    *e.free_symbols
-                                )
-                            )
-                        )
+                        index_op.append( str( (ferm_lst[::-1] + gauge_lst[::-1]).index( *e.free_symbols ) ) )
 
-            ei_func = lambdify(list(zip(*subst))[0], ei)
-            pauli_ei = ei_func(*list(zip(*subst))[1])
+            # ei_func = lambdify(list(zip(*subst))[0], ei)
+            # pauli_ei = ei_func(*list(zip(*subst))[1])
+
+            symb_el = lambdify(list(zip(*subst))[0], ei)(*list(zip(*subst))[1])
+
+            q10 = -0.5 * (self.I + self.Z)  # JW dependent
+            q00 = 0.5 * (self.I - self.Z)
+            sym_list_tomatrix = [(Symbol('q10OP'),q10),(Symbol('q00OP'),q00),(Symbol('EOP'),self.e_oper),(Symbol('UOP'),self.u_oper),(Symbol('UdagOP'),self.u_oper_dag)]
+            if self.magnetic_basis: # U->exp(-i*alpha*E), U_dag->exp(i*alpha*E) in mag basis
+                ei_class = lambda fct: self.matx_exp(
+                fct * self.e_oper, 1j * self.alpha
+            )
+                sym_list_tomatrix += [(Symbol('exppiEOP'),ei_class(1)),(Symbol('expmiEOP'),ei_class(-1))]
+            pauli_ei = lambdify(list(zip(*sym_list_tomatrix))[0], symb_el)(*list(zip(*sym_list_tomatrix))[1])
+
             op_dct = {}
             numbers = []
             ct = 0
@@ -587,7 +577,7 @@ class HamiltonianQED:
                     elif (
                         encoding == "ed"
                     ):  # exact diagonaliz. dimensions of gauge fields 2l+1
-                        res[i] = sparse.eye(2 * self.l_par + 1)
+                        res[i] = sparse.eye(2 * self.l_par + 1,dtype=np.float32,format='csr')
             res = [
                 elem for elem in res if not isinstance(elem, str)
             ]  # remove id_f when JW applied
@@ -843,7 +833,7 @@ class HamiltonianQED:
             ).to_matrix(sparse=True)
         elif self.encoding == "ed":
             self.e_oper = sparse.diags(
-                np.arange(-self.l_par, self.l_par + 1), format="csr"
+                np.arange(-self.l_par, self.l_par + 1),dtype=np.float32,format='csr'
             )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
         else:
             raise ValueError("encoding not recognized")
@@ -1021,55 +1011,71 @@ class HamiltonianQED:
             if self.puregauge
             else [symbols("q_" + self.str_node_f(k)) for k in self.lattice.jw_sites]
         )
-        self.static_qop_list = (
-            []
-            if self.static_charges_values is None
-            else [symbols("Q_" + self.str_node_f(k)) for k in self.lattice.jw_sites]
-        )
-        # self.qop_list += self.static_qop_list
+        # self.static_qop_list = (
+        #     []
+        #     if self.static_charges_values is None
+        #     else [symbols("Q_" + self.str_node_f(k)) for k in self.lattice.jw_sites]
+        # )
+        # # self.qop_list += self.static_qop_list
 
         self.phiop_list = [
             Symbol(f"Phi_{i+1}", commutative=False)
             for i, k in enumerate(self.lattice.jw_sites)
         ]
-
-        q10 = -0.5 * (self.I + self.Z)  # JW dependent
-        q00 = 0.5 * (self.I - self.Z)
+        # list of symbols and operators
+        # q10 = -0.5 * (self.I + self.Z)  # JW dependent
+        # q00 = 0.5 * (self.I - self.Z)
 
         sum_k = lambda k: k if self.lattice.dims == 1 else sum(k)
 
-        # list of symbols and operators
+
+        # self.qcharge_list = [
+        #     (symbols("q_" + self.str_node_f(k)), (q10 if sum_k(k) % 2 else q00))
+        #     for k in self.lattice.jw_sites
+        # ]
         self.qcharge_list = [
-            (symbols("q_" + self.str_node_f(k)), (q10 if sum_k(k) % 2 else q00))
+            (symbols("q_" + self.str_node_f(k)), (Symbol('q10OP') if sum_k(k) % 2 else Symbol('q00OP')))
             for k in self.lattice.jw_sites
         ]
-        if self.static_charges_values is None:
-            self.static_qcharge_list = []
-        else:
-            self.static_qcharge_list = [
-                (
-                    Symbol("Q_" + self.str_node_f(node)),
-                    self.static_charges_values[node] * self.I,
-                )
-                if node in self.static_charges_values.keys()
-                else (Symbol("Q_" + self.str_node_f(node)), 0 * self.I)
-                for node in self.lattice.graph.nodes
-            ]
-        # self.qcharge_list += self.static_qcharge_list
+        # if self.static_charges_values is None:
+        #     self.static_qcharge_list = []
+        # else:
+        #     self.static_qcharge_list = [
+        #         (
+        #             Symbol("Q_" + self.str_node_f(node)),
+        #             self.static_charges_values[node] * self.I,
+        #         )
+        #         if node in self.static_charges_values.keys()
+        #         else (Symbol("Q_" + self.str_node_f(node)), 0 * self.I)
+        #         for node in self.lattice.graph.nodes
+        #     ]
+        # # self.qcharge_list += self.static_qcharge_list
 
-        self.e_field_list = [(s_tmp, self.e_oper) for s_tmp in self.eop_list]
+        self.e_field_list = [(s_tmp, Symbol('EOP')) for s_tmp in self.eop_list]
+
         self.u_field_list = [
-            (s_tmp, (self.u_oper_dag if s_tmp.name[-1] == "D" else self.u_oper))
+            (s_tmp, (Symbol('UdagOP') if s_tmp.name[-1] == "D" else Symbol('UOP')))
             for s_tmp in self.uop_list + self.u_op_free_dag
         ]
-        ei_class = lambda fct: self.matx_exp(
-            fct * self.e_oper, 1j * self.alpha
-        )  # compute exp(i*alpha*E)
+
+        # self.e_field_list = [(s_tmp, self.e_oper) for s_tmp in self.eop_list]
+        # self.u_field_list = [
+        #     (s_tmp, (self.u_oper_dag if s_tmp.name[-1] == "D" else self.u_oper))
+        #     for s_tmp in self.uop_list + self.u_op_free_dag
+        # ]
+        # ei_class = lambda fct: self.matx_exp(
+        #     fct * self.e_oper, 1j * self.alpha
+        # )  # compute exp(i*alpha*E)
         # U for mag basis (used in H_kinetic_mag)
-        self.u_field_list_mag = [
-            (s_tmp, (ei_class(1) if s_tmp.name[-1] == "D" else ei_class(-1)))
+        if self.magnetic_basis:
+            # self.u_field_list_mag = [
+            #     (s_tmp, (ei_class(1) if s_tmp.name[-1] == "D" else ei_class(-1)))
+            #     for s_tmp in self.uop_list + self.u_op_free_dag
+            # ]  # U->exp(-i*alpha*E), U_dag->exp(i*alpha*E) in mag basis
+            self.u_field_list_mag = [
+            (s_tmp, (Symbol('exppiEOP') if s_tmp.name[-1] == "D" else Symbol('expmiEOP')))
             for s_tmp in self.uop_list + self.u_op_free_dag
-        ]  # U->exp(-i*alpha*E), U_dag->exp(i*alpha*E) in mag basis
+        ]
 
         phi_el = lambda i, j: HamiltonianQED.pauli_tns(
             (self.jw_funct(i + 1, int(self.lattice.n_sitestot))[j]),
@@ -1348,8 +1354,12 @@ class HamiltonianQED:
                     encoding=self.encoding,
                 )
 
+            # hamiltonian_el_pauli = (
+            #     np.sum(hamiltonian_el_pauli) / 2
+            # )  # (must be then multiplied by g^2)
+
             hamiltonian_el_pauli = (
-                np.sum(hamiltonian_el_pauli) / 2
+                HamiltonianQED.sparse_sum(hamiltonian_el_pauli) / 2
             )  # (must be then multiplied by g^2)
 
             if self.display_hamiltonian:  # Hamiltonian to print
@@ -1410,7 +1420,7 @@ class HamiltonianQED:
                     elif (
                         self.encoding == "ed"
                     ):  # exact diagonaliz. dimensions of gauge fields 2l+1
-                        idx = sparse.eye(2 * self.l_par + 1, format="csr")
+                        idx = sparse.eye(2 * self.l_par + 1,dtype=np.float32,format='csr')
 
                     if len(ei) == 1:  # cos 1 operator is enough and rest is I
                         cos1 = [
@@ -1486,9 +1496,14 @@ class HamiltonianQED:
                     self.uop_list,
                     encoding=self.encoding,
                 )
+                # hamiltonian_mag_pauli = (
+                #     np.sum(hamiltonian_mag_pauli)
+                #     + self.hermitian_c(np.sum(hamiltonian_mag_pauli))
+                # ) / 2  # (must be then multiplied by -1/g^2)
+
                 hamiltonian_mag_pauli = (
-                    np.sum(hamiltonian_mag_pauli)
-                    + self.hermitian_c(np.sum(hamiltonian_mag_pauli))
+                    HamiltonianQED.sparse_sum(hamiltonian_mag_pauli)
+                    + self.hermitian_c(HamiltonianQED.sparse_sum(hamiltonian_mag_pauli))
                 ) / 2  # (must be then multiplied by -1/g^2)
 
                 if self.display_hamiltonian:
@@ -1880,7 +1895,7 @@ class HamiltonianQED:
                 self.I, (self._n_qubits_g() * (self.len_u_op))
             )  # Gray encoding for E fields
         elif self.encoding == "ed":  # exact diagonaliz. dimensions of gauge fields 2l+1
-            gauge = sparse.eye((2 * self.l_par + 1) ** (self.len_u_op), format="csr")
+            gauge = sparse.eye((2 * self.l_par + 1) ** (self.len_u_op),dtype=np.float32,format='csr')
 
         # ******* gauge
         if (
