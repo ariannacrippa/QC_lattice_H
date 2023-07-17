@@ -386,7 +386,7 @@ class HamiltonianQED:
 
         for matrix in sparse_list:
             result += matrix
-            return result
+        return result
     # Gauss law equations in a list
     def gauss_equations(self):
         """Returns a list of Gauss' law equations (symbols), the system of equation
@@ -518,6 +518,10 @@ class HamiltonianQED:
                 fct * self.e_oper, 1j * self.alpha
             )
                 sym_list_tomatrix += [(Symbol('exppiEOP'),ei_class(1)),(Symbol('expmiEOP'),ei_class(-1))]
+
+            if not self.puregauge:#add fermions subst
+                sym_list_tomatrix += self.phi_jw_list
+
             pauli_ei = lambdify(list(zip(*sym_list_tomatrix))[0], symb_el)(*list(zip(*sym_list_tomatrix))[1])
 
             op_dct = {}
@@ -1077,6 +1081,14 @@ class HamiltonianQED:
             for s_tmp in self.uop_list + self.u_op_free_dag
         ]
 
+        #dummy ferm list:
+        self.phi_jw_list_sym = [
+            (
+                Symbol(f"Phi_{i+1}D", commutative=False),Symbol(f"Phi_{i+1}D", commutative=False))
+        for i, k in enumerate(self.lattice.jw_sites)]+[
+            (Symbol(f"Phi_{i+1}", commutative=False),Symbol(f"Phi_{i+1}", commutative=False))
+         for i, k in enumerate(self.lattice.jw_sites)]
+
         phi_el = lambda i, j: HamiltonianQED.pauli_tns(
             (self.jw_funct(i + 1, int(self.lattice.n_sitestot))[j]),
         )
@@ -1540,9 +1552,9 @@ class HamiltonianQED:
             # ************************************  H_K   ************************************
             # Pauli expression of the kinetic term
             if self.magnetic_basis:
-                subst_list_hk = self.phi_jw_list + self.u_field_list_mag
+                subst_list_hk = self.phi_jw_list_sym + self.u_field_list_mag
             else:
-                subst_list_hk = self.phi_jw_list + self.u_field_list
+                subst_list_hk = self.phi_jw_list_sym + self.u_field_list
 
             if self.lattice.dims == 1:
                 hamiltonian_k_1x = np.sum(
@@ -1771,7 +1783,7 @@ class HamiltonianQED:
                     for j, el in enumerate(
                         self.list_to_enc_hamilt(
                             self.hamiltonian_m_sym,
-                            self.phi_jw_list,
+                            self.phi_jw_list_sym,
                             self.phiop_list,
                             encoding=self.encoding,
                         )
