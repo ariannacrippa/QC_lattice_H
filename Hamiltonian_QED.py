@@ -43,8 +43,10 @@ from scipy import sparse
 
 SPARSE_PAULI = qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp
 
-# from memory_profiler import profile
+from memory_profiler import profile
+snapshot_interval = 0.2 # seconds
 
+from memory_profiler import profile, memory_usage
 
 # TODO keep sparse pauli op for qiskit circuit(?)
 class HamiltonianQED:
@@ -382,11 +384,17 @@ class HamiltonianQED:
     @staticmethod
     def sparse_sum(sparse_list):
         # Initialize the result matrix with zeros
-        result = sparse.csr_matrix((sparse_list[0].shape[0], sparse_list[0].shape[1]))
+        #result = sparse.csr_matrix((sparse_list[0].shape[0], sparse_list[0].shape[1]))
+        #if sparse_list is generator
+        first_matrix = next(sparse_list)
+        result = sparse.csr_matrix((first_matrix.shape[0], first_matrix.shape[1]))
 
         for matrix in sparse_list:
             result += matrix
+
         return result
+
+
     # Gauss law equations in a list
     def gauss_equations(self):
         """Returns a list of Gauss' law equations (symbols), the system of equation
@@ -481,18 +489,19 @@ class HamiltonianQED:
         else:
             raise ValueError("Invalid expression type")
 
-    # @profile
-    def list_to_enc_hamilt(
-        self, list_el, subst, ferm_lst=[], gauge_lst=[], encoding="gray"
-    ):
+    #@profile
+    def list_to_enc_hamilt( self,list_el , subst, ferm_lst=[], gauge_lst=[], encoding="gray",massterm=False ):#list_el
+        print("list_to_enc_hamilt",ferm_lst, gauge_lst)
         """Return a list of Pauli operators or list of matrices (depending on the encoding used) from a list of symbolic operators.
         It consider only single operator, not entire pauli string, thus operation like (I^op^I)**2 and I^op1^I*I^op2^I are
         then simplied to I^(op**2)^I and I^(op1*op2)^I, respectively.
         Last part is put everything together and add identity matrices where needed.
 
         encoding: gray, ed (exact diagonalization)"""
-        ham_encoded = np.empty(len(list_el), dtype=object)  # []
-        for kk, ei in enumerate(list_el):
+        ham_encoded =0# np.empty(len(list_el), dtype=object)  # []
+        #for kk, ei in enumerate(list_el):
+        jj_mass = 0
+        for ei in list_el:
             index_op = []  # build index list order ..q2q1q0 (little endian)
             for e in ei:
                 if not isinstance(
@@ -505,8 +514,6 @@ class HamiltonianQED:
                     else:  # no adjoint
                         index_op.append( str( (ferm_lst[::-1] + gauge_lst[::-1]).index( *e.free_symbols ) ) )
 
-            # ei_func = lambdify(list(zip(*subst))[0], ei)
-            # pauli_ei = ei_func(*list(zip(*subst))[1])
 
             symb_el = lambdify(list(zip(*subst))[0], ei)(*list(zip(*subst))[1])
 
@@ -527,18 +534,8 @@ class HamiltonianQED:
             op_dct = {}
             numbers = []
             ct = 0
-            for (
-                el
-            ) in pauli_ei:  # build dictionary of sparse pauli operators and their index
-                if isinstance(
-                    el,
-                    (
-                        SparsePauliOp,
-                        np.ndarray,
-                        sparse._csr.csr_matrix,
-                        sparse._coo.coo_matrix,
-                    ),
-                ):
+            for ( el ) in pauli_ei:  # build dictionary of sparse pauli operators and their index
+                if isinstance( el, ( SparsePauliOp, np.ndarray, sparse._csr.csr_matrix, sparse._coo.coo_matrix, ), ):
                     op_dct[index_op[ct]] = el
                     ct += 1
                 else:
@@ -582,13 +579,19 @@ class HamiltonianQED:
                         encoding == "ed"
                     ):  # exact diagonaliz. dimensions of gauge fields 2l+1
                         res[i] = sparse.eye(2 * self.l_par + 1,dtype=np.float32,format='csr')
-            res = [
+            res = (
                 elem for elem in res if not isinstance(elem, str)
-            ]  # remove id_f when JW applied
+            )  # remove id_f when JW applied
 
-            ham_encoded[kk] = np.prod(numbers) * self.pauli_tns(*res)
+            #ham_encoded[kk] = np.prod(numbers) * self.pauli_tns(*res)
 
-        return ham_encoded
+            if massterm:
+                ham_encoded+=((-1) ** jj_mass)* np.prod(numbers) * self.pauli_tns(*res)  # sum over all terms for mass hamiltonian
+                jj_mass+=1
+            else:
+                ham_encoded+= np.prod(numbers) * self.pauli_tns(*res) #sum over all terms
+
+        return ham_encoded#np.prod(numbers),res#
 
     def jw_funct(self, n_tmp: int, n_qubits: int):
         """Jordan-Wigner for 2 terms phi^dag, phi
@@ -1112,13 +1115,13 @@ class HamiltonianQED:
 
     def _hamiltonian_el_autom(self):
         """Hamiltonian for E field"""
-        hamiltonian_el_sym = [Symbol(str(s)) for s in self.lattice.list_edges2_e_op]
+        hamiltonian_el_sym = (Symbol(str(s)) for s in self.lattice.list_edges2_e_op)
         if not self.rotors:
             hamiltonian_el_sym = sum(
-                [
+                (
                     x**2 if x not in self.sol_gauss else (self.sol_gauss[x]) ** 2
                     for x in hamiltonian_el_sym
-                ]
+                )
             )  # Gauss law applied
         else:  # if rotors not considered gauss law , they already satisfy it
             hamiltonian_el_sym = sum(
@@ -1196,9 +1199,7 @@ class HamiltonianQED:
             )  # list of symbolic expressions (must use expand for now. otherwise error in pauli substitution)
             print("Magnetic basis used for electric H")
         else:
-            self.hamiltonian_el_subs = list(
-                hamiltonian_el_sym.expand().args
-            )  # list of symbolic expressions
+            self.hamiltonian_el_subs = hamiltonian_el_sym.expand().args   # list of symbolic expressions
 
     def _hamiltonian_mag_autom(self):
         """Hamiltonian for B field"""
@@ -1343,7 +1344,7 @@ class HamiltonianQED:
         self.hamiltonian_k_sym = hamiltonian_k_sym
 
     # build H
-
+    @profile
     def build_hamiltonian_tot(self):
         """Builds the total Hamiltonian of the system."""
         # ************************************  H_E   ************************************
@@ -1358,21 +1359,35 @@ class HamiltonianQED:
                     encoding=self.encoding,
                 )
             else:
-                hamiltonian_el_pauli = self.list_to_enc_hamilt(
-                    [self.decompose_expression(i) for i in self.hamiltonian_el_subs],
-                    self.qcharge_list + self.e_field_list,
-                    self.qop_list,
-                    self.eop_list,
-                    encoding=self.encoding,
-                )
+                def tensor_or_kron(x, y):
+                    if isinstance(x, SPARSE_PAULI) and isinstance(y, SPARSE_PAULI):
+                        return x.tensor(y)
+                    else:
+                        return sparse.kron(x, y, format="csr")
 
-            # hamiltonian_el_pauli = (
-            #     np.sum(hamiltonian_el_pauli) / 2
-            # )  # (must be then multiplied by g^2)
 
-            hamiltonian_el_pauli = (
-                HamiltonianQED.sparse_sum(hamiltonian_el_pauli) / 2
-            )  # (must be then multiplied by g^2)
+                hamiltonian_el_pauli =self.list_to_enc_hamilt((i.as_ordered_factors() for i in self.hamiltonian_el_subs) , self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, )
+
+
+                # def generator_func(self):
+                #     for i in self.hamiltonian_el_subs:
+                #         numbers, res = self.list_to_enc_hamilt(
+                #             i.as_ordered_factors(),
+                #             self.qcharge_list + self.e_field_list,
+                #             self.qop_list,
+                #             self.eop_list,
+                #             encoding=self.encoding
+                #         )
+                #         yield numbers* reduce(tensor_or_kron, res)
+                # print([result for result in generator_func(self)])
+                #hamiltonian_el_pauli = self.list_to_enc_hamilt( (i.as_ordered_factors() for i in self.hamiltonian_el_subs), self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, )
+                #hamiltonian_el_pauli =sum(result for result in generator_func(self))# (self.list_to_enc_hamilt(i.as_ordered_factors() , self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, ) for i in self.hamiltonian_el_subs)
+
+            print(type(hamiltonian_el_pauli))
+            hamiltonian_el_pauli = ( hamiltonian_el_pauli / 2 )  # (must be then multiplied by g^2)
+            #hamiltonian_el_pauli = ( sum(hamiltonian_el_pauli) / 2 )  # (must be then multiplied by g^2)
+
+            #hamiltonian_el_pauli = ( HamiltonianQED.sparse_sum(hamiltonian_el_pauli) / 2 )  # (must be then multiplied by g^2)
 
             if self.display_hamiltonian:  # Hamiltonian to print
                 h_el_embasis = (
@@ -1501,22 +1516,19 @@ class HamiltonianQED:
                     display(display_hamiltonian_mag)
                     print(latex(display_hamiltonian_mag))
             else:
-                hamiltonian_mag_pauli = self.list_to_enc_hamilt(
-                    self.hamiltonian_mag_subs,
-                    self.u_field_list,
-                    self.qop_list,
-                    self.uop_list,
-                    encoding=self.encoding,
-                )
-                # hamiltonian_mag_pauli = (
-                #     np.sum(hamiltonian_mag_pauli)
-                #     + self.hermitian_c(np.sum(hamiltonian_mag_pauli))
-                # ) / 2  # (must be then multiplied by -1/g^2)
+                hamiltonian_mag_pauli = self.list_to_enc_hamilt( self.hamiltonian_mag_subs, self.u_field_list, self.qop_list, self.uop_list, encoding=self.encoding, )
+                hamiltonian_mag_pauli = ( hamiltonian_mag_pauli + self.hermitian_c(hamiltonian_mag_pauli) ) / 2  # (must be then multiplied by -1/g^2)
 
-                hamiltonian_mag_pauli = (
-                    HamiltonianQED.sparse_sum(hamiltonian_mag_pauli)
-                    + self.hermitian_c(HamiltonianQED.sparse_sum(hamiltonian_mag_pauli))
-                ) / 2  # (must be then multiplied by -1/g^2)
+                #hamiltonian_mag_pauli = self.list_to_enc_hamilt( self.hamiltonian_mag_subs, self.u_field_list, self.qop_list, self.uop_list, encoding=self.encoding, )
+
+                #sum_mag = np.sum(hamiltonian_mag_pauli)
+                #hamiltonian_mag_pauli = ( sum_mag + self.hermitian_c(sum_mag) ) / 2  # (must be then multiplied by -1/g^2)
+
+                # sum_mag = HamiltonianQED.sparse_sum(hamiltonian_mag_pauli)
+                # hamiltonian_mag_pauli = (
+                #     sum_mag
+                #     + self.hermitian_c(sum_mag)
+                # ) / 2  # (must be then multiplied by -1/g^2)
 
                 if self.display_hamiltonian:
                     # Hamiltonian to print
@@ -1572,24 +1584,22 @@ class HamiltonianQED:
                 ).simplify()  # (must be then multiplied by omega)
 
             elif self.lattice.dims == 2:
-                hamiltonian_k_1y = np.sum(
-                    self.list_to_enc_hamilt(
-                        [h[1:] for h in self.hamiltonian_k_sym if h[0] == "y"],
+                hamiltonian_k_1y = self.list_to_enc_hamilt(
+                        (h[1:] for h in self.hamiltonian_k_sym if h[0] == "y"),
                         subst_list_hk,
                         self.phiop_list,
                         self.uop_list,
                         encoding=self.encoding,
                     )
-                )
-                hamiltonian_k_1x = np.sum(
-                    self.list_to_enc_hamilt(
-                        [h[1:] for h in self.hamiltonian_k_sym if h[0] == "x"],
+
+                hamiltonian_k_1x = self.list_to_enc_hamilt(
+                        (h[1:] for h in self.hamiltonian_k_sym if h[0] == "x"),
                         subst_list_hk,
                         self.phiop_list,
                         self.uop_list,
                         encoding=self.encoding,
                     )
-                )
+
 
                 hamiltonian_k_pauli = 0.5j * (
                     hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x)
@@ -1777,19 +1787,14 @@ class HamiltonianQED:
             #         for j, h in enumerate(self.hamiltonian_m_sym)
             #     ]
             # )  # (must be then multiplied by m)
-            hamiltonian_m_pauli = np.sum(
-                [
-                    ((-1) ** j) * el
-                    for j, el in enumerate(
-                        self.list_to_enc_hamilt(
+            hamiltonian_m_pauli =self.list_to_enc_hamilt(
                             self.hamiltonian_m_sym,
                             self.phi_jw_list_sym,
                             self.phiop_list,
                             encoding=self.encoding,
+                            massterm=True
                         )
-                    )
-                ]
-            )  # (must be then multiplied by m)
+             # (must be then multiplied by m)
             if self.display_hamiltonian:  # to print
                 display_hamiltonian_m = Eq(
                     Symbol("H_m"),
