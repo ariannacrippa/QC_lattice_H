@@ -575,6 +575,7 @@ class HamiltonianQED:
                         encoding == "ed"
                     ):  # exact diagonaliz. dimensions of gauge fields 2l+1
                         res[i] = sparse.eye(2 * self.l_par + 1,dtype=np.float32,format='csr')
+
             res = (
                 elem for elem in res if not isinstance(elem, str)
             )  # remove id_f when JW applied
@@ -847,10 +848,46 @@ class HamiltonianQED:
         else:
             raise ValueError("encoding not recognized")
 
-    def u_op_enc(self):
-        """Return the encoding of the link operator in the chosen encoding"""
+    # def u_op_enc(self):#TODO now write as raising op!
+    #     """Return the encoding of the link operator in the chosen encoding"""
+    #     if self.encoding == "gray":
+    #         self.u_oper = self.str_to_pauli(self._l_c(), self._n_qubits_g()).to_matrix(
+    #             sparse=True
+    #         )
+    #     elif self.encoding == "ed":
+    #         size_op = 2 * self.l_par + 1
+    #         u_ed = np.zeros((size_op, size_op))
+    #         # Fill the upper diagonal with 1s: U
+    #         for i in range(size_op - 1):
+    #             u_ed[i, i + 1] = 1
+    #         self.u_oper = sparse.csr_matrix(
+    #             u_ed
+    #         )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
+    #     else:
+    #         raise ValueError("encoding not recognized")
+
+    # def u_op_dag_enc(self):#TODO now write as lowering op!
+    #     """Return the encoding of the link operator dagger in the chosen encoding"""
+    #     if self.encoding == "gray":
+    #         self.u_oper_dag = (
+    #             self.str_to_pauli(self._l_c(), self._n_qubits_g())
+    #             .adjoint()
+    #             .to_matrix(sparse=True)
+    #         )
+    #     elif self.encoding == "ed":
+    #         u_ed_dag = np.zeros((2 * self.l_par + 1, 2 * self.l_par + 1))
+    #         # Fill the lower diagonal with 1s: U_dag
+    #         for i in range(2 * self.l_par):
+    #             u_ed_dag[i + 1, i] = 1
+    #         self.u_oper_dag = sparse.csr_matrix(
+    #             u_ed_dag
+    #         )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
+    #     else:
+    #         raise ValueError("encoding not recognized")
+    def u_op_dag_enc(self):
+        """LOWERING OPERATOR.Return the encoding of the link operator in the chosen encoding"""
         if self.encoding == "gray":
-            self.u_oper = self.str_to_pauli(self._l_c(), self._n_qubits_g()).to_matrix(
+            self.u_oper_dag = self.str_to_pauli(self._l_c(), self._n_qubits_g()).to_matrix(
                 sparse=True
             )
         elif self.encoding == "ed":
@@ -859,16 +896,16 @@ class HamiltonianQED:
             # Fill the upper diagonal with 1s: U
             for i in range(size_op - 1):
                 u_ed[i, i + 1] = 1
-            self.u_oper = sparse.csr_matrix(
+            self.u_oper_dag = sparse.csr_matrix(
                 u_ed
             )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
         else:
             raise ValueError("encoding not recognized")
 
-    def u_op_dag_enc(self):
-        """Return the encoding of the link operator dagger in the chosen encoding"""
+    def u_op_enc(self):
+        """RAISING OPERATOR. Return the encoding of the link operator dagger in the chosen encoding"""
         if self.encoding == "gray":
-            self.u_oper_dag = (
+            self.u_oper = (
                 self.str_to_pauli(self._l_c(), self._n_qubits_g())
                 .adjoint()
                 .to_matrix(sparse=True)
@@ -878,12 +915,11 @@ class HamiltonianQED:
             # Fill the lower diagonal with 1s: U_dag
             for i in range(2 * self.l_par):
                 u_ed_dag[i + 1, i] = 1
-            self.u_oper_dag = sparse.csr_matrix(
+            self.u_oper = sparse.csr_matrix(
                 u_ed_dag
             )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
         else:
             raise ValueError("encoding not recognized")
-
     @staticmethod
     def hermitian_c(expr):
         """Compute hermitian conjugate of input expr."""
@@ -1287,10 +1323,10 @@ class HamiltonianQED:
         for i in self.lattice.graph_edges_system:  # for every edge
             if i in u_op_free_dict:  # if dynamical link
                 hamilt_k_elem = (
-                    u_op_free_dict[i][1]
+                    u_op_free_dict[i][0]
                     if self.e_op_out_plus
                     else u_op_free_dict[i][
-                        0
+                        1
                     ]  # u_op_free_dict[i][0] if e_op_out_plus else u_op_free_dict[i][1]
                 )  # if Gauss law with E out + -> U / else U^dag
             else:
