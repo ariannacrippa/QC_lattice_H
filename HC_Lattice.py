@@ -96,6 +96,7 @@ class HCLattice:
         self.plaquette_operators()
         # Build Jordan-Wigner chain
         self.jw_chain_func()
+        self.func_qstatic_dist()
 
     # ADDED: create_using=nx.DiGraph and periodic inverted
     def graph_lattice(self):
@@ -141,7 +142,7 @@ class HCLattice:
         self.graph = graph
 
     def draw_graph_func(
-        self, gauss_law_fig: bool = False, e_op_free=None, savefig_dir=None
+        self, gauss_law_fig: bool = False, e_op_free=None, static_charges=None,savefig_dir=None
     ):
         """Draw the graph of the lattice with the dynamical links.
         Parameters
@@ -154,7 +155,7 @@ class HCLattice:
 
            savefig_dir: str
                If not None, the figure is saved in the specified directory."""
-
+        #edges
         if gauss_law_fig and e_op_free is not None:
             lu_op_edges = [
                 [Symbol(k) for k in self.list_edges2_e_op].index(n_tmp)
@@ -179,6 +180,10 @@ class HCLattice:
                 "black" if e in lu_op_free_map else "lightgray"
                 for e in self.graph_edges_system
             ]
+        elif not gauss_law_fig and e_op_free is not None:
+            raise ValueError("gauss_law_fig must be True if e_op_free is not None")
+        elif gauss_law_fig and e_op_free is None:
+            raise ValueError("e_op_free must be not None if gauss_law_fig is True")
         else:
             edge_color_list = ["black" for e in self.graph_edges_system]
 
@@ -186,17 +191,22 @@ class HCLattice:
 
         color_map = []
 
+        #nodes
         for node in self.graph:
-            if self.dims == 1:
-                if node % 2:
-                    color_map.append("orange")
-                else:
-                    color_map.append("skyblue")
+            if static_charges is not None:
+                col = 'blue' if node in static_charges.keys() and static_charges[node] == -1 else 'red' if node in static_charges.keys() and static_charges[node] == 1 else 'lightgray'
+                color_map.append(col)
             else:
-                if sum(node) % 2:
-                    color_map.append("orange")
+                if self.dims == 1:
+                    if node % 2:
+                        color_map.append("orange")
+                    else:
+                        color_map.append("skyblue")
                 else:
-                    color_map.append("skyblue")
+                    if sum(node) % 2:
+                        color_map.append("orange")
+                    else:
+                        color_map.append("skyblue")
 
         connection = "arc3, rad = 0.16" if self.pbc else "arc3, rad = 0.0"
 
@@ -266,13 +276,14 @@ class HCLattice:
             bc_title = "OBC"
 
         fig.patch.set_facecolor("xkcd:white")
+
         fig.suptitle(
             "x".join(map(str, self.n_sites)) + f" Lattice:" + bc_title,
             fontsize=12,
             fontweight="bold",
             horizontalalignment="center",
+            color="black",
         )
-
         if isinstance(savefig_dir, str):  # directory where to save figure
             fig.savefig(
                 f"{savefig_dir}/system_"
@@ -284,6 +295,19 @@ class HCLattice:
                 dpi=600,
             )
 
+        # Add the colorbar
+        if static_charges is not None:
+            import matplotlib.lines as mlines
+            #TODO: default charges ± 1
+            blue_c = mlines.Line2D([], [], color='blue', marker='o', linestyle='None',
+                                    markersize=10, label='Q=-1')
+            red_c = mlines.Line2D([], [], color='red', marker='o', linestyle='None',
+                                    markersize=10, label='Q=+1')
+            grey_c = mlines.Line2D([], [], color='lightgray', marker='o', linestyle='None',
+                                    markersize=10, label='Q=0')
+            radius = mlines.Line2D([], [], color='black', marker='_', linestyle='None',
+                                    markersize=10, label=f'r={self.distance_f(*static_charges.keys())}')
+            plt.legend(handles=[blue_c, red_c, grey_c,radius], loc='upper right', bbox_to_anchor=(1.1, 1.1))
         plt.show()
 
     # # List of edges
@@ -543,6 +567,44 @@ class HCLattice:
         self.not_jwchain = not_jwchain
 
 
+    def distance_f(self,*points):
+        if len(points) < 2:
+            raise ValueError("At least two points are required to calculate the distance.")
+        if self.dims == 1:
+            return np.abs(points[0] - points[1])
+        else:
+            return np.sqrt(sum((x - y) ** 2 for x, y in zip(points[0], points[1])))
+
+    def func_qstatic_dist(self,charge=None):
+        """Returns two lists:
+        1. A list of dictionaries of the form {charge:1,j:-1} where j is the coordinate of the site to which charge is connected.
+        The default is the origin (0,0,...,0) and the sites to which it is connected are the odd sites.
+        If the charge is on an odd site, then it is connected to the even sites.
+        2. A list of distances between the charge and the sites to which it is connected."""
+        if charge is None:
+            charge = (0,) * self.dims
+
+        if self.dims == 1:
+            if len(charge) != 1:
+                raise ValueError("Charge must be a tuple of length 1 for a 1D selfice.")
+            if charge == (0,) or (charge[0]+1)%2:#even site
+                distances_coord = np.array([{charge[0]:-1,j:1} for j in list(self.graph.nodes) if j%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+            else:
+                distances_coord = np.array([{charge[0]:1,j:-1} for j in list(self.graph.nodes) if (j+1)%2 and j!=charge],dtype=object)#connect (odd,) to only even sites
+        else:
+            if len(charge) != self.dims:
+                raise ValueError("Charge must be a tuple of length self.dims for a {}D selfice.".format(self.dims))
+            if charge == (0,)*self.dims or (sum(charge)+1)%2:#even site
+                distances_coord = np.array([{charge:-1,j:1} for j in list(self.graph.nodes) if sum(j)%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+            else:
+                distances_coord = np.array([{charge:1,j:-1} for j in list(self.graph.nodes) if (sum(j)+1)%2 and j!=charge],dtype=object)
+
+        r_list = np.empty(len(distances_coord),dtype=object)
+        for i,dd in enumerate(distances_coord):
+            r_list[i] =self.distance_f(*dd.keys())
+
+        self.distances_coord=distances_coord
+        self.r_list = r_list
 
 class Arrow3D(FancyArrowPatch):
     def __init__(self, xs, ys, zs, *args, **kwargs):
