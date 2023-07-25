@@ -416,6 +416,8 @@ class HamiltonianQED:
             if self.static_charges_values is not None:
                 if node in self.static_charges_values.keys():
                     ga_tmp -= self.static_charges_values[node]
+                    if not self.puregauge:
+                        gc_tmp += self.static_charges_values[node]
 
             e_op_i = "E_" + self.str_node_f(node)
             for j, k in zip(self.lattice.list_edges, self.lattice.list_edges2_e_op):
