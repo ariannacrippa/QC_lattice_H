@@ -1158,7 +1158,7 @@ class HamiltonianQED:
         if not self.rotors:
             hamiltonian_el_sym = sum(
                 (
-                    x**2 if x not in self.sol_gauss else (self.sol_gauss[x]) ** 2
+                    0.5*x**2 if x not in self.sol_gauss else 0.5*(self.sol_gauss[x]) ** 2
                     for x in hamiltonian_el_sym
                 )
             )  # Gauss law applied
@@ -1257,7 +1257,7 @@ class HamiltonianQED:
                 if j < 2
                 else Symbol(k + "D").subs(symbols("iDD"), 1)
                 for j, k in enumerate(p_tmp)
-            ]
+            ]+[0.5]
             for p_tmp in plaq_u_op_gaus
         ]
 
@@ -1326,23 +1326,21 @@ class HamiltonianQED:
                 hamilt_k_elem = (
                     u_op_free_dict[i][0]
                     if self.e_op_out_plus
-                    else u_op_free_dict[i][
-                        1
-                    ]  # u_op_free_dict[i][0] if e_op_out_plus else u_op_free_dict[i][1]
+                    else u_op_free_dict[i][1]  # u_op_free_dict[i][0] if e_op_out_plus else u_op_free_dict[i][1]
                 )  # if Gauss law with E out + -> U / else U^dag
             else:
                 hamilt_k_elem = 1
             # phase in H_k in y-direction as Kogut Susskind H #TODO:assume 2 components spinor >check with 4 components
 
             if self.lattice.dims == 1:
-                phase = 1
+                phase = 0.5
                 hamiltonian_k_sym.append(
                     (phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])
                 )
 
             elif self.lattice.dims == 2:
                 phase = (
-                    (-1) ** (sum(i[0]) % 2) if i[0][1] != i[1][1] else 1
+                    0.5*(-1) ** (sum(i[0]) % 2) if i[0][1] != i[1][1] else 0.5
                 )  # change in y direction if x is odd
                 xy_term = (
                     "y" if i[0][1] != i[1][1] else "x"
@@ -1355,13 +1353,13 @@ class HamiltonianQED:
             elif self.lattice.dims == 3:
                 # x-direction
                 if i[0][0] != i[1][0]:
-                    phase = 1
+                    phase = 0.5
                 # y-direction
                 elif i[0][1] != i[1][1]:
-                    phase = (-1) ** ((sum(i[0][:2]) + 1) % 2)
+                    phase = 0.5*(-1) ** ((sum(i[0][:2]) + 1) % 2)
                 # z-direction
                 elif i[0][2] != i[1][2]:
-                    phase = (-1) ** (sum(i[0][:2]) % 2)
+                    phase = 0.5*(-1) ** (sum(i[0][:2]) % 2)
 
                 i_term = (
                     "x"
@@ -1423,7 +1421,8 @@ class HamiltonianQED:
             #hamiltonian_el_pauli =sum(result for result in generator_func(self))# (self.list_to_enc_hamilt(i.as_ordered_factors() , self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, ) for i in self.hamiltonian_el_subs)
 
         #print(type(hamiltonian_el_pauli))
-        hamiltonian_el_pauli = ( hamiltonian_el_pauli / 2 )  # (must be then multiplied by g^2)
+        #TODO
+        #hamiltonian_el_pauli = ( hamiltonian_el_pauli / 2 )  # (must be then multiplied by g^2)
         #hamiltonian_el_pauli = ( sum(hamiltonian_el_pauli) / 2 )  # (must be then multiplied by g^2)
 
         #hamiltonian_el_pauli = ( HamiltonianQED.sparse_sum(hamiltonian_el_pauli) / 2 )  # (must be then multiplied by g^2)
@@ -1556,7 +1555,7 @@ class HamiltonianQED:
                     print(latex(display_hamiltonian_mag))
             else:
                 hamiltonian_mag_pauli = self.list_to_enc_hamilt( self.hamiltonian_mag_subs, self.u_field_list, self.qop_list, self.uop_list, encoding=self.encoding, )
-                hamiltonian_mag_pauli = ( hamiltonian_mag_pauli + self.hermitian_c(hamiltonian_mag_pauli) ) / 2  # (must be then multiplied by -1/g^2)
+                hamiltonian_mag_pauli = ( hamiltonian_mag_pauli + self.hermitian_c(hamiltonian_mag_pauli) ) #/ 2  # (must be then multiplied by -1/g^2)
 
                 #hamiltonian_mag_pauli = self.list_to_enc_hamilt( self.hamiltonian_mag_subs, self.u_field_list, self.qop_list, self.uop_list, encoding=self.encoding, )
 
@@ -1618,7 +1617,7 @@ class HamiltonianQED:
 
 
                 hamiltonian_k_pauli = (
-                    0.5j * (hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x))
+                    1j * (hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x))
                 ).simplify()  # (must be then multiplied by omega)
 
             elif self.lattice.dims == 2:
@@ -1638,12 +1637,12 @@ class HamiltonianQED:
                         encoding=self.encoding,
                     )
 
-
-                hamiltonian_k_pauli = 0.5j * (
+                hamiltonian_k_pauli = 1j * (
                     hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x)
-                ) - 0.5 * (
+                ) - 1 * (
                     hamiltonian_k_1y + self.hermitian_c(hamiltonian_k_1y)
                 )  # (must be then multiplied by omega)
+
 
             elif self.lattice.dims == 3:
                 hamiltonian_k_1y = self.list_to_enc_hamilt(
@@ -1671,9 +1670,9 @@ class HamiltonianQED:
                     )
 
                 hamiltonian_k_pauli = (
-                    0.5j * (hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x))
-                    - 0.5 * (hamiltonian_k_1y + self.hermitian_c(hamiltonian_k_1y))
-                    + 0.5j * (hamiltonian_k_1z - self.hermitian_c(hamiltonian_k_1z))
+                    1j * (hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x))
+                    - 1 * (hamiltonian_k_1y + self.hermitian_c(hamiltonian_k_1y))
+                    + 1j * (hamiltonian_k_1z - self.hermitian_c(hamiltonian_k_1z))
                 )  # (must be then multiplied by omega)
 
             else:
