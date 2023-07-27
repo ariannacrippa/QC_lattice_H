@@ -193,8 +193,8 @@ class HCLattice:
 
         #nodes
         for node in self.graph:
-            if static_charges is not None:
-                col = 'blue' if node in static_charges.keys() and static_charges[node] == -1 else 'red' if node in static_charges.keys() and static_charges[node] == 1 else 'lightgray'
+            if static_charges is not None:#TODO: again condition of negative static charges for even sites/positive for odd sites
+                col = 'blue' if node in static_charges.keys() and static_charges[node] <0 else 'red' if node in static_charges.keys() and static_charges[node] >0 else 'lightgray'
                 color_map.append(col)
             else:
                 if self.dims == 1:
@@ -300,9 +300,9 @@ class HCLattice:
             import matplotlib.lines as mlines
             #TODO: default charges ± 1
             blue_c = mlines.Line2D([], [], color='blue', marker='o', linestyle='None',
-                                    markersize=10, label='Q=-1')
+                                    markersize=10, label=f'Q={self.ch_val_e}')
             red_c = mlines.Line2D([], [], color='red', marker='o', linestyle='None',
-                                    markersize=10, label='Q=+1')
+                                    markersize=10, label=f'Q={self.ch_val_o}')
             grey_c = mlines.Line2D([], [], color='lightgray', marker='o', linestyle='None',
                                     markersize=10, label='Q=0')
             radius = mlines.Line2D([], [], color='black', marker='_', linestyle='None',
@@ -575,34 +575,51 @@ class HCLattice:
         else:
             return np.sqrt(sum((x - y) ** 2 for x, y in zip(points[0], points[1])))
 
-    def func_qstatic_dist(self,charge=None):
+    def func_qstatic_dist(self,charge: tuple =None,ch_val: int=None):
         """Returns two lists:
         1. A list of dictionaries of the form {charge:1,j:-1} where j is the coordinate of the site to which charge is connected.
         The default is the origin (0,0,...,0) and the sites to which it is connected are the odd sites.
         If the charge is on an odd site, then it is connected to the even sites.
-        2. A list of distances between the charge and the sites to which it is connected."""
-        if charge is None:
+        2. A list of distances between the charge and the sites to which it is connected.
+
+        The choice of charges respects the Gauss law, i.e. the sum of the charges is zero."""
+
+        #set initial charge position and charge value:(fermions (staggered m>0) have charge q= 1, antifermions (staggered m<0) have charge q=-1)
+        if charge is None and ch_val is None:
             charge = (0,) * self.dims
+            ch_val_e, ch_val_o = -1, 1
+        elif charge is None and ch_val is not None:
+            charge = (0,) * self.dims
+            ch_val_e, ch_val_o = (ch_val, -ch_val) if ch_val < 0 else (-ch_val, ch_val)
+        elif charge is not None and ch_val is None:
+            ch_val_e, ch_val_o = -1, 1
+        else:
+            if sum(charge)%2 and ch_val<0 or not sum(charge)%2 and ch_val>0:
+                raise ValueError("Charge and charge value must be such that the charge on even(odd) site is negative(positive).") #TODO: check if ok. balance dynamical charge so net charge zero
+            else:
+                ch_val_e, ch_val_o = (ch_val, -ch_val) if ch_val < 0 else (-ch_val, ch_val)
 
         if self.dims == 1:
             if len(charge) != 1:
-                raise ValueError("Charge must be a tuple of length 1 for a 1D selfice.")
-            if charge == (0,) or (charge[0]+1)%2:#even site
-                distances_coord = np.array([{charge[0]:-1,j:1} for j in list(self.graph.nodes) if j%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+                raise ValueError("Charge must be a tuple of length 1 for a 1D lattice.")
+            if (charge[0]+1)%2:#even site
+                distances_coord = np.array([{charge[0]:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if j%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
             else:
-                distances_coord = np.array([{charge[0]:1,j:-1} for j in list(self.graph.nodes) if (j+1)%2 and j!=charge],dtype=object)#connect (odd,) to only even sites
+                distances_coord = np.array([{charge[0]:ch_val_o,j:ch_val_e} for j in list(self.graph.nodes) if (j+1)%2 and j!=charge],dtype=object)#connect (odd,) to only even sites
         else:
             if len(charge) != self.dims:
-                raise ValueError("Charge must be a tuple of length self.dims for a {}D selfice.".format(self.dims))
-            if charge == (0,)*self.dims or (sum(charge)+1)%2:#even site
-                distances_coord = np.array([{charge:-1,j:1} for j in list(self.graph.nodes) if sum(j)%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+                raise ValueError("Charge must be a tuple of length self.dims for a {}D lattice.".format(self.dims))
+            if (sum(charge)+1)%2:#even site
+                distances_coord = np.array([{charge:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if sum(j)%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
             else:
-                distances_coord = np.array([{charge:1,j:-1} for j in list(self.graph.nodes) if (sum(j)+1)%2 and j!=charge],dtype=object)
+                distances_coord = np.array([{charge:ch_val_o,j:ch_val_e} for j in list(self.graph.nodes) if (sum(j)+1)%2 and j!=charge],dtype=object)
 
         r_list = np.empty(len(distances_coord),dtype=object)
         for i,dd in enumerate(distances_coord):
             r_list[i] =self.distance_f(*dd.keys())
 
+        self.ch_val_e = ch_val_e
+        self.ch_val_o = ch_val_o
         self.distances_coord=distances_coord
         self.r_list = r_list
 
