@@ -40,10 +40,11 @@ from sympy.core.numbers import ImaginaryUnit
 from sympy.physics.quantum.dagger import Dagger
 from scipy.sparse.linalg import eigs
 from scipy import sparse
+import gc
 
 SPARSE_PAULI = qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp
 
-#from memory_profiler import profile, memory_usage
+from memory_profiler import profile#, memory_usage
 
 # TODO keep sparse pauli op for qiskit circuit(?)
 class HamiltonianQED:
@@ -129,7 +130,9 @@ class HamiltonianQED:
     display_hamiltonian: bool
         If True, the Hamiltonian and the Gauss law equations are displayed in the output.
 
-
+    sparse_pauli: bool
+        If False, the Hamiltonian is returned in terms of SparsePauliOp, otherwise in terms
+        of sparse matrices.
 
     """
 
@@ -147,6 +150,7 @@ class HamiltonianQED:
         static_charges_values: dict | None = None,
         e_op_out_plus: bool = False,
         display_hamiltonian: bool = False,
+        sparse_pauli: bool = True,
     ) -> None:
         self.n_sites = n_sites
         self.pbc = pbc
@@ -160,6 +164,10 @@ class HamiltonianQED:
         self.static_charges_values = static_charges_values
         self.e_op_out_plus = e_op_out_plus
         self.display_hamiltonian = display_hamiltonian
+        self.sparse_pauli = sparse_pauli
+
+        if not self.sparse_pauli and self.encoding == "ed":
+            raise ValueError("PauliSumOp not supported with exact diagonalization encoding")
 
         if self.magnetic_basis and self.ll_par <= self.l_par:
             raise ValueError("l must be smaller than L")
@@ -347,28 +355,36 @@ class HamiltonianQED:
         # Hamiltonian for fermions
         if self.puregauge:
             self.hamiltonian_ferm = 0
+        elif self.lattice.dims==1 and self.sparse_pauli:
+            self.hamiltonian_ferm = (
+                float(omega) * self.hamiltonian_k_pauli
+                + float(m_var) * self.hamiltonian_m_pauli
+            ).to_matrix(sparse=True)
         else:
             self.hamiltonian_ferm = (
                 float(omega) * self.hamiltonian_k_pauli
                 + float(m_var) * self.hamiltonian_m_pauli
             )
+
         # Hamiltonian for gauge fields
         if self.len_e_op == 0 and self.puregauge:
-            self.hamiltonian_gauge = 0
+            #self.hamiltonian_gauge = 0
+            raise ValueError("No gauge fields in pure gauge theory")
         elif self.len_e_op == 0 and not self.puregauge:
-            self.hamiltonian_gauge =  fact_e_op * float((g_var) ** 2) * self.hamiltonian_el_pauli
+            self.hamiltonian_gauge = 0
+            #self.hamiltonian_gauge =  self.hamiltonian_el_pauli if self.encoding == "gray" else self.hamiltonian_el_pauli.to_matrix(sparse=True)
+
         else:
             self.hamiltonian_gauge = (
                 -fact_b_op / (float((g_var) ** 2)) * self.hamiltonian_mag_pauli
                 + fact_e_op * float((g_var) ** 2) * self.hamiltonian_el_pauli
             )
-
         # Final result of the Hamiltonian in terms of Pauli matrices
         hamiltonian_tot = (
             self.hamiltonian_gauge
-            + self.hamiltonian_ferm#.to_matrix(sparse=True) #TODO check 1d
+            + self.hamiltonian_ferm
             + lambd * self.hamiltonian_suppress
-        )  # .simplify()
+        )
 
         return hamiltonian_tot
 
@@ -551,6 +567,10 @@ class HamiltonianQED:
                 res = ["id_q"] * len(ferm_lst) + ["id_g"] * self.len_e_op
                 start = 0
 
+
+            del pauli_ei,index_op
+            gc.collect()
+
             for i in range(start, len(res)):  # only for gauge or charges q
                 if str(i) in op_dct.keys() and isinstance(
                     res[i], str
@@ -564,14 +584,17 @@ class HamiltonianQED:
                 if (
                     isinstance(res[i], str) and res[i] == "id_q"
                 ):  # remaining spots for charges are filled with I
-                    res[i] = self.I.to_matrix(sparse=True)  # single qubit for charge
+                    res[i] = self.I  # single qubit for charge
+                    if self.sparse_pauli:
+                        res[i] = res[i].to_matrix(sparse=True)
+
                 elif isinstance(res[i], str) and res[i] == "id_g":
                     if encoding == "gray":
                         res[i] = self.tensor_prod(
                             self.I, (self._n_qubits_g())
-                        ).to_matrix(
-                            sparse=True
-                        )  # Gray encoding for E field
+                        )
+                        if self.sparse_pauli:
+                            res[i] = res[i].to_matrix(sparse=True) # Gray encoding for E field
                     elif (
                         encoding == "ed"
                     ):  # exact diagonaliz. dimensions of gauge fields 2l+1
@@ -581,21 +604,51 @@ class HamiltonianQED:
                 elem for elem in res if not isinstance(elem, str)
             )  # remove id_f when JW applied
 
-            #ham_encoded[kk] = np.prod(numbers) * HamiltonianQED.pauli_tns(*res)
-            # def tensor_or_kron(x, y):
-            #     if isinstance(x, SPARSE_PAULI) and isinstance(y, SPARSE_PAULI):
-            #         return x.tensor(y)
-            #     else:
-            #         return sparse.kron(x, y, format="csr")
-
             if massterm:
                 #print(((-1) ** jj_mass))
                 ham_encoded+=((-1) ** jj_mass)* np.prod(numbers) * HamiltonianQED.pauli_tns(*res) #reduce(tensor_or_kron,res ) # sum over all terms for mass hamiltonian
                 jj_mass+=1
             else:
-                ham_encoded+= np.prod(numbers) * HamiltonianQED.pauli_tns(*res)#reduce(tensor_or_kron,res ) #sum over all terms
+                # ham= np.prod(numbers) * self.pauli_tns2(*res)
+                #TODO memory problematic part
+                ham= np.prod(numbers) * HamiltonianQED.pauli_tns(*res)#reduce(tensor_or_kron,res ) #sum over all terms
+                #print(type(ham))
+                ham_encoded+=ham
 
-        return ham_encoded#np.prod(numbers),res#
+            del res,op_dct,numbers
+            gc.collect()
+
+        return ham_encoded
+    #@profile
+    def tensor_or_kron(self,x, y):
+        if isinstance(x, SPARSE_PAULI) and isinstance(y, SPARSE_PAULI):
+            return x.tensor(y)
+        else:
+            return sparse.kron(x, y, format="csr")
+    #@profile
+    def pauli_tns2(self,*args):
+        """Returns Pauli tensor product of all arguments. If int in args then it skips it.
+        If all arguments are SparsePauliOp then it applies tensor method of SparsePauliOp.
+        If not it applies kronecker product of numpy.(it works also with SparsePauliOp) but much slower.)
+        """
+        valid_args = [arg for arg in args if not isinstance(arg, int)]
+
+        if len(valid_args) >= 2:
+            if all(
+                [type(arg) == SPARSE_PAULI for arg in valid_args]
+            ):  # all SparsePauliOp
+                return reduce(lambda x, y: x.tensor(y), valid_args)
+            else:
+                # result = valid_args[0]
+                # for matrix in valid_args[1:]:
+                #     result = sparse.kron(result, matrix, format="csr")
+                # return result
+                return reduce( lambda x, y: sparse.kron( x, y, format="csr" ), valid_args, )
+
+        elif len(valid_args) == 1:
+            return valid_args[0]
+        else:
+            raise ValueError("Insufficient valid arguments for tensor product")
 
     def jw_funct(self, n_tmp: int, n_qubits: int):
         """Jordan-Wigner for 2 terms phi^dag, phi
@@ -841,7 +894,9 @@ class HamiltonianQED:
         if self.encoding == "gray":
             self.e_oper = self.str_to_pauli(
                 self._r_c()[1], self._n_qubits_g()
-            ).to_matrix(sparse=True)
+            )
+            if self.sparse_pauli:
+                self.e_oper = self.e_oper.to_matrix(sparse=True)
         elif self.encoding == "ed":
             self.e_oper = sparse.diags(
                 np.arange(-self.l_par, self.l_par + 1),dtype=np.float32,format='csr'
@@ -849,48 +904,12 @@ class HamiltonianQED:
         else:
             raise ValueError("encoding not recognized")
 
-    # def u_op_enc(self):#TODO now write as raising op!
-    #     """Return the encoding of the link operator in the chosen encoding"""
-    #     if self.encoding == "gray":
-    #         self.u_oper = self.str_to_pauli(self._l_c(), self._n_qubits_g()).to_matrix(
-    #             sparse=True
-    #         )
-    #     elif self.encoding == "ed":
-    #         size_op = 2 * self.l_par + 1
-    #         u_ed = np.zeros((size_op, size_op))
-    #         # Fill the upper diagonal with 1s: U
-    #         for i in range(size_op - 1):
-    #             u_ed[i, i + 1] = 1
-    #         self.u_oper = sparse.csr_matrix(
-    #             u_ed
-    #         )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
-    #     else:
-    #         raise ValueError("encoding not recognized")
-
-    # def u_op_dag_enc(self):#TODO now write as lowering op!
-    #     """Return the encoding of the link operator dagger in the chosen encoding"""
-    #     if self.encoding == "gray":
-    #         self.u_oper_dag = (
-    #             self.str_to_pauli(self._l_c(), self._n_qubits_g())
-    #             .adjoint()
-    #             .to_matrix(sparse=True)
-    #         )
-    #     elif self.encoding == "ed":
-    #         u_ed_dag = np.zeros((2 * self.l_par + 1, 2 * self.l_par + 1))
-    #         # Fill the lower diagonal with 1s: U_dag
-    #         for i in range(2 * self.l_par):
-    #             u_ed_dag[i + 1, i] = 1
-    #         self.u_oper_dag = sparse.csr_matrix(
-    #             u_ed_dag
-    #         )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
-    #     else:
-    #         raise ValueError("encoding not recognized")
     def u_op_dag_enc(self):
         """LOWERING OPERATOR.Return the encoding of the link operator in the chosen encoding"""
         if self.encoding == "gray":
-            self.u_oper_dag = self.str_to_pauli(self._l_c(), self._n_qubits_g()).to_matrix(
-                sparse=True
-            )
+            self.u_oper_dag = self.str_to_pauli(self._l_c(), self._n_qubits_g())
+            if self.sparse_pauli:
+                self.u_oper_dag = self.u_oper_dag.to_matrix(sparse=True)
         elif self.encoding == "ed":
             size_op = 2 * self.l_par + 1
             u_ed = np.zeros((size_op, size_op))
@@ -909,8 +928,11 @@ class HamiltonianQED:
             self.u_oper = (
                 self.str_to_pauli(self._l_c(), self._n_qubits_g())
                 .adjoint()
-                .to_matrix(sparse=True)
+
             )
+            if self.sparse_pauli:
+                self.u_oper = self.u_oper.to_matrix(sparse=True)
+
         elif self.encoding == "ed":
             u_ed_dag = np.zeros((2 * self.l_par + 1, 2 * self.l_par + 1))
             # Fill the lower diagonal with 1s: U_dag
@@ -1158,7 +1180,7 @@ class HamiltonianQED:
         if not self.rotors:
             hamiltonian_el_sym = sum(
                 (
-                    0.5*x**2 if x not in self.sol_gauss else 0.5*(self.sol_gauss[x]) ** 2
+                    x**2 if x not in self.sol_gauss else (self.sol_gauss[x]) ** 2
                     for x in hamiltonian_el_sym
                 )
             )  # Gauss law applied
@@ -1251,15 +1273,15 @@ class HamiltonianQED:
         ]
 
         # Hamiltonian for substitution
-        hamiltonian_mag_subs = [
+        hamiltonian_mag_subs = (
             [
                 symbols(k).subs(symbols("iD"), 1)
                 if j < 2
                 else Symbol(k + "D").subs(symbols("iDD"), 1)
                 for j, k in enumerate(p_tmp)
-            ]+[0.5]
+            ]
             for p_tmp in plaq_u_op_gaus
-        ]
+        )
 
         self.plaq_u_op_gaus = plaq_u_op_gaus
         self.hamiltonian_mag_subs = hamiltonian_mag_subs
@@ -1333,14 +1355,14 @@ class HamiltonianQED:
             # phase in H_k in y-direction as Kogut Susskind H #TODO:assume 2 components spinor >check with 4 components
 
             if self.lattice.dims == 1:
-                phase = 0.5
+                phase = 1
                 hamiltonian_k_sym.append(
                     (phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])
                 )
 
             elif self.lattice.dims == 2:
                 phase = (
-                    0.5*(-1) ** (sum(i[0]) % 2) if i[0][1] != i[1][1] else 0.5
+                    (-1) ** (sum(i[0]) % 2) if i[0][1] != i[1][1] else 1
                 )  # change in y direction if x is odd
                 xy_term = (
                     "y" if i[0][1] != i[1][1] else "x"
@@ -1353,13 +1375,13 @@ class HamiltonianQED:
             elif self.lattice.dims == 3:
                 # x-direction
                 if i[0][0] != i[1][0]:
-                    phase = 0.5
+                    phase = 1
                 # y-direction
                 elif i[0][1] != i[1][1]:
-                    phase = 0.5*(-1) ** ((sum(i[0][:2]) + 1) % 2)
+                    phase = (-1) ** ((sum(i[0][:2]) + 1) % 2)
                 # z-direction
                 elif i[0][2] != i[1][2]:
-                    phase = 0.5*(-1) ** (sum(i[0][:2]) % 2)
+                    phase = (-1) ** (sum(i[0][:2]) % 2)
 
                 i_term = (
                     "x"
@@ -1385,67 +1407,40 @@ class HamiltonianQED:
     def build_hamiltonian_tot(self):
         """Builds the total Hamiltonian of the system."""
         # ************************************  H_E   ************************************
-        #if self.len_e_op > 0:
-        if self.magnetic_basis:
-            # Pauli expression, since mag basis H_E is in terms of U and U^dag we use u_op_field_subs
-            hamiltonian_el_pauli = self.list_to_enc_hamilt(
-                [self.decompose_expression(i) for i in self.hamiltonian_el_subs],
-                self.qcharge_list + self.u_field_list,
-                self.qop_list,
-                self.uop_list,
-                encoding=self.encoding,
-            )
-        else:
-            def tensor_or_kron(x, y):
-                if isinstance(x, SPARSE_PAULI) and isinstance(y, SPARSE_PAULI):
-                    return x.tensor(y)
-                else:
-                    return sparse.kron(x, y, format="csr")
+        if self.len_e_op > 0:
+            if self.magnetic_basis:
+                # Pauli expression, since mag basis H_E is in terms of U and U^dag we use u_op_field_subs
+                hamiltonian_el_pauli = self.list_to_enc_hamilt(
+                    [self.decompose_expression(i) for i in self.hamiltonian_el_subs],
+                    self.qcharge_list + self.u_field_list,
+                    self.qop_list,
+                    self.uop_list,
+                    encoding=self.encoding,
+                )
+            else:
+                hamiltonian_el_pauli = self.list_to_enc_hamilt((i.as_ordered_factors() for i in self.hamiltonian_el_subs) , self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, )# (must be then multiplied by g^2)
 
+            hamiltonian_el_pauli =0.5* ( hamiltonian_el_pauli)  # (must be then multiplied by g^2)
 
-            hamiltonian_el_pauli =self.list_to_enc_hamilt((i.as_ordered_factors() for i in self.hamiltonian_el_subs) , self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, )
-
-
-            # def generator_func(self):
-            #     for i in self.hamiltonian_el_subs:
-            #         numbers, res = self.list_to_enc_hamilt(
-            #             i.as_ordered_factors(),
-            #             self.qcharge_list + self.e_field_list,
-            #             self.qop_list,
-            #             self.eop_list,
-            #             encoding=self.encoding
-            #         )
-            #         yield numbers* reduce(tensor_or_kron, res)
-            # print([result for result in generator_func(self)])
-            #hamiltonian_el_pauli = self.list_to_enc_hamilt( (i.as_ordered_factors() for i in self.hamiltonian_el_subs), self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, )
-            #hamiltonian_el_pauli =sum(result for result in generator_func(self))# (self.list_to_enc_hamilt(i.as_ordered_factors() , self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, ) for i in self.hamiltonian_el_subs)
-
-        #print(type(hamiltonian_el_pauli))
-        #TODO
-        #hamiltonian_el_pauli = ( hamiltonian_el_pauli / 2 )  # (must be then multiplied by g^2)
-        #hamiltonian_el_pauli = ( sum(hamiltonian_el_pauli) / 2 )  # (must be then multiplied by g^2)
-
-        #hamiltonian_el_pauli = ( HamiltonianQED.sparse_sum(hamiltonian_el_pauli) / 2 )  # (must be then multiplied by g^2)
-
-        if self.display_hamiltonian:  # Hamiltonian to print
-            h_el_embasis = (
-                self.hamiltonian_el_sym_mbasis
-                if self.magnetic_basis
-                else self.hamiltonian_el_sym
-            )
-            display_hamiltonian_el = Eq(
-                Symbol("H_E"), (Symbol("g") ** 2) / 2 * h_el_embasis
-            )
-            display(display_hamiltonian_el)
-            print(latex(display_hamiltonian_el))
-    # else:  # no gauge fields (e.g. 1d OBC case)
-    #     hamiltonian_el_pauli = 0.0 * self.tensor_prod(
-    #         self.I,
-    #         (int(self.lattice.n_sitestot) + self._n_qubits_g() * (self.len_u_op)),
-    #     )#TODO encoding ed
+            if self.display_hamiltonian:  # Hamiltonian to print
+                h_el_embasis = (
+                    self.hamiltonian_el_sym_mbasis
+                    if self.magnetic_basis
+                    else self.hamiltonian_el_sym
+                )
+                display_hamiltonian_el = Eq(
+                    Symbol("H_E"), (Symbol("g") ** 2) / 2 * h_el_embasis
+                )
+                display(display_hamiltonian_el)
+                print(latex(display_hamiltonian_el))
+        else:  # no gauge fields (e.g. 1d OBC case)
+            hamiltonian_el_pauli = 0#.0 * self.tensor_prod(
+            #     self.I,
+            #     (int(self.lattice.n_sitestot) ),
+            # )
 
         # ************************************  H_B   ************************************
-        if len(self.u_op_free) > 0:  # and self.lattice.dims > 1:
+        if self.len_e_op > 0:
             # Pauli expression
 
             if self.magnetic_basis:
@@ -1555,7 +1550,7 @@ class HamiltonianQED:
                     print(latex(display_hamiltonian_mag))
             else:
                 hamiltonian_mag_pauli = self.list_to_enc_hamilt( self.hamiltonian_mag_subs, self.u_field_list, self.qop_list, self.uop_list, encoding=self.encoding, )
-                hamiltonian_mag_pauli = ( hamiltonian_mag_pauli + self.hermitian_c(hamiltonian_mag_pauli) ) #/ 2  # (must be then multiplied by -1/g^2)
+                hamiltonian_mag_pauli = 0.5*( hamiltonian_mag_pauli + self.hermitian_c(hamiltonian_mag_pauli) )  # (must be then multiplied by -1/g^2)
 
                 #hamiltonian_mag_pauli = self.list_to_enc_hamilt( self.hamiltonian_mag_subs, self.u_field_list, self.qop_list, self.uop_list, encoding=self.encoding, )
 
@@ -1594,10 +1589,10 @@ class HamiltonianQED:
                     display(display_hamiltonian_mag)
                     print(latex(display_hamiltonian_mag))
         else:  # no gauge fields (e.g. 1d OBC case)
-            hamiltonian_mag_pauli = 0.0 * self.tensor_prod(
-                self.I,
-                (int(self.lattice.n_sitestot) + self._n_qubits_g() * (self.len_u_op)),
-            )#TODO check encoding ed
+            hamiltonian_mag_pauli = 0#.0 * self.tensor_prod(
+            #     self.I,
+            #     (int(self.lattice.n_sitestot) ),
+            # )
         if not self.puregauge:
             # ************************************  H_K   ************************************
             # Pauli expression of the kinetic term
@@ -1617,7 +1612,7 @@ class HamiltonianQED:
 
 
                 hamiltonian_k_pauli = (
-                    1j * (hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x))
+                    0.5j * (hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x))
                 ).simplify()  # (must be then multiplied by omega)
 
             elif self.lattice.dims == 2:
@@ -1637,9 +1632,9 @@ class HamiltonianQED:
                         encoding=self.encoding,
                     )
 
-                hamiltonian_k_pauli = 1j * (
+                hamiltonian_k_pauli = 0.5j * (
                     hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x)
-                ) - 1 * (
+                ) - 0.5 * (
                     hamiltonian_k_1y + self.hermitian_c(hamiltonian_k_1y)
                 )  # (must be then multiplied by omega)
 
@@ -1670,9 +1665,9 @@ class HamiltonianQED:
                     )
 
                 hamiltonian_k_pauli = (
-                    1j * (hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x))
-                    - 1 * (hamiltonian_k_1y + self.hermitian_c(hamiltonian_k_1y))
-                    + 1j * (hamiltonian_k_1z - self.hermitian_c(hamiltonian_k_1z))
+                    0.5j * (hamiltonian_k_1x - self.hermitian_c(hamiltonian_k_1x))
+                    - 0.5 * (hamiltonian_k_1y + self.hermitian_c(hamiltonian_k_1y))
+                    + 0.5j * (hamiltonian_k_1z - self.hermitian_c(hamiltonian_k_1z))
                 )  # (must be then multiplied by omega)
 
             else:
@@ -1956,7 +1951,7 @@ class HamiltonianQED:
         if isinstance(
             hamiltonian_suppress,
             (np.ndarray, sparse._csr.csr_matrix, sparse._coo.coo_matrix),
-        ):
+        ) or not self.sparse_pauli:
             self.hamiltonian_suppress = hamiltonian_suppress
         else:
             self.hamiltonian_suppress = hamiltonian_suppress.to_matrix(sparse=True)
