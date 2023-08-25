@@ -911,14 +911,16 @@ class HamiltonianQED:
             if self.sparse_pauli:
                 self.u_oper_dag = self.u_oper_dag.to_matrix(sparse=True)
         elif self.encoding == "ed":
-            size_op = 2 * self.l_par + 1
-            u_ed = np.zeros((size_op, size_op))
-            # Fill the upper diagonal with 1s: U
-            for i in range(size_op - 1):
-                u_ed[i, i + 1] = 1
-            self.u_oper_dag = sparse.csr_matrix(
-                u_ed
-            )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
+            self.u_oper_dag = sparse.diags([1]*(2 * self.l_par ),1,format='csr')
+
+            #size_op = 2 * self.l_par + 1
+            # u_ed = np.zeros((size_op, size_op))
+            # # Fill the upper diagonal with 1s: U
+            # for i in range(size_op - 1):
+            #     u_ed[i, i + 1] = 1
+            # self.u_oper_dag = sparse.csr_matrix(
+            #     u_ed
+            # )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
         else:
             raise ValueError("encoding not recognized")
 
@@ -934,13 +936,15 @@ class HamiltonianQED:
                 self.u_oper = self.u_oper.to_matrix(sparse=True)
 
         elif self.encoding == "ed":
-            u_ed_dag = np.zeros((2 * self.l_par + 1, 2 * self.l_par + 1))
-            # Fill the lower diagonal with 1s: U_dag
-            for i in range(2 * self.l_par):
-                u_ed_dag[i + 1, i] = 1
-            self.u_oper = sparse.csr_matrix(
-                u_ed_dag
-            )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
+            self.u_oper = sparse.diags([1]*(2 * self.l_par ),-1,format='csr')
+
+            # u_ed_dag = np.zeros((2 * self.l_par + 1, 2 * self.l_par + 1))
+            # # Fill the lower diagonal with 1s: U_dag
+            # for i in range(2 * self.l_par):
+            #     u_ed_dag[i + 1, i] = 1
+            # self.u_oper = sparse.csr_matrix(
+            #     u_ed_dag
+            # )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
         else:
             raise ValueError("encoding not recognized")
     @staticmethod
