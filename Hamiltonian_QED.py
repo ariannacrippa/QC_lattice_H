@@ -44,7 +44,7 @@ import gc
 
 SPARSE_PAULI = qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp
 
-from memory_profiler import profile#, memory_usage
+#from memory_profiler import profile#, memory_usage
 
 
 class HamiltonianQED:
@@ -503,7 +503,7 @@ class HamiltonianQED:
         else:
             raise ValueError("Invalid expression type")
 
-    @profile
+    #@profile
     def list_to_enc_hamilt( self,list_el , subst, ferm_lst=[], gauge_lst=[], encoding="gray",massterm=False ):#list_el
         """Return a list of Pauli operators or list of matrices (depending on the encoding used) from a list of symbolic operators.
         It consider only single operator, not entire pauli string, thus operation like (I^op^I)**2 and I^op1^I*I^op2^I are
@@ -1403,7 +1403,7 @@ class HamiltonianQED:
         self.hamiltonian_k_sym = hamiltonian_k_sym
 
     # build H
-    @profile
+    #@profile
     def build_hamiltonian_tot(self):
         """Builds the total Hamiltonian of the system."""
         # ************************************  H_E   ************************************
