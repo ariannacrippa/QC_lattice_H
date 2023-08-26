@@ -341,6 +341,7 @@ class HamiltonianQED:
 
         self.get_hamiltonian()
 
+    #TODO check sums do not define new variables if not needed
     def get_hamiltonian(
         self,
         g_var=1.0,
@@ -899,7 +900,7 @@ class HamiltonianQED:
                 self.e_oper = self.e_oper.to_matrix(sparse=True)
         elif self.encoding == "ed":
             self.e_oper = sparse.diags(
-                np.arange(-self.l_par, self.l_par + 1),dtype=np.float32,format='csr'
+                np.arange(-self.l_par, self.l_par + 1),format='csr'
             )  # NB: the operator are all sparse since power matrix M@M=M**2 does not work for non-sparse matrices (i.e. if non-sparse it does power element-wise))
         else:
             raise ValueError("encoding not recognized")
@@ -1277,7 +1278,7 @@ class HamiltonianQED:
         ]
 
         # Hamiltonian for substitution
-        hamiltonian_mag_subs = (
+        hamiltonian_mag_subs = [
             [
                 symbols(k).subs(symbols("iD"), 1)
                 if j < 2
@@ -1285,7 +1286,7 @@ class HamiltonianQED:
                 for j, k in enumerate(p_tmp)
             ]
             for p_tmp in plaq_u_op_gaus
-        )
+        ]
 
         self.plaq_u_op_gaus = plaq_u_op_gaus
         self.hamiltonian_mag_subs = hamiltonian_mag_subs
@@ -1447,7 +1448,7 @@ class HamiltonianQED:
         if self.len_e_op > 0:
             # Pauli expression
 
-            if self.magnetic_basis:#TODO check if cos eigenvalues of E
+            if self.magnetic_basis:
                 U_mag_subs = {
                     **{
                         el_uop: Symbol("E_" + el_uop.name[2:])
@@ -1476,45 +1477,71 @@ class HamiltonianQED:
                             id_eop[
                                 list(e_op_dict_mbasis.keys()).index(Symbol(e.name[:-1]))
                             ] = -1  #'m'== -
+                    if self.sparse_pauli:
+                        if self.encoding == "gray":
+                            arg_cos = np.zeros(2**(self._n_qubits_g()*self.len_e_op),dtype=np.complex128)
+                            left_factor = lambda key: 2**(self._n_qubits_g()*(self.len_e_op-key-1))
+                            e_vals_eop = np.linalg.eig(self.e_oper.toarray())[0]
+                            right_factor = lambda key: 2**(self._n_qubits_g()*key)
+                        elif self.encoding == "ed":
+                            arg_cos = np.zeros((2 * self.l_par + 1)**self.len_e_op,dtype=np.complex128)
+                            left_factor = lambda key:(2 * self.l_par + 1)**(self.len_e_op-key-1)
+                            e_vals_eop = np.arange(- self.l_par, self.l_par+1)
+                            right_factor = lambda key:(2 * self.l_par + 1)**key
+                        else:
+                            raise ValueError("encoding not recognized")
 
-                    if self.encoding == "gray":
-                        idx = self.tensor_prod(
-                            self.I, (self._n_qubits_g())
-                        )  # Gray encoding for E field
-                    elif (
-                        self.encoding == "ed"
-                    ):  # exact diagonaliz. dimensions of gauge fields 2l+1
-                        idx = sparse.eye(2 * self.l_par + 1,dtype=np.float32,format='csr')
+                        n_kron  = lambda arg_list:reduce( lambda x, y: np.kron( x, y ), arg_list)
 
-                    if len(ei) == 1:  # cos 1 operator is enough and rest is I
-                        cos1 = [
-                            self.cos_oper(ei_class(id_eop[i])) if i in id_eop else idx
-                            for i in range(self.len_e_op)[::-1]
-                        ]  # inverse because little endian
-                        hamiltonian_mag_pauli.append(HamiltonianQED.pauli_tns(*cos1))
+                        for key,val in id_eop.items():
+                            if key==self.len_e_op-1:
+                                arg_cos+= val*n_kron([e_vals_eop,np.ones(right_factor(key))] )
+                            elif key==0:
+                                arg_cos+= val*n_kron([np.ones(left_factor(key)),e_vals_eop] )
+                            else:
+                                arg_cos+= val*n_kron([np.ones(left_factor(key)),e_vals_eop,np.ones(right_factor(key))] )
 
-                    else:
-                        # compute cosine of multiple operators cos(E1+E2+...)=e^iE1 e^iE2 ... + e^-iE1 e^-iE2 ... /2
-                        cosn = self.cos_oper(
-                            self.pauli_tns(
-                                *[
-                                    ei_class(id_eop[i]) if i in id_eop else idx
-                                    for i in range(self.len_e_op)
-                                ][min(id_eop) : max(id_eop) + 1][::-1]
+                        hamiltonian_mag_pauli.append(sparse.diags(np.cos(self.alpha*arg_cos)))
+
+                    else:#old method with cosE as exp(iE)+exp(-iE)/2. necessary if gray and sparse_pauli=False
+                        if self.encoding == "gray":
+                            idx = self.tensor_prod(
+                                self.I, (self._n_qubits_g())
+                            )  # Gray encoding for E field
+                        elif (
+                            self.encoding == "ed"
+                        ):  # exact diagonaliz. dimensions of gauge fields 2l+1
+                            idx = sparse.eye(2 * self.l_par + 1,format='csr')
+
+                        if len(ei) == 1:  # cos 1 operator is enough and rest is I
+                            cos1 = [
+                                self.cos_oper(ei_class(id_eop[i])) if i in id_eop else idx
+                                for i in range(self.len_e_op)[::-1]
+                            ]  # inverse because little endian
+                            hamiltonian_mag_pauli.append(HamiltonianQED.pauli_tns(*cos1))
+
+                        else:
+                            # compute cosine of multiple operators cos(E1+E2+...)=e^iE1 e^iE2 ... + e^-iE1 e^-iE2 ... /2
+                            cosn = self.cos_oper(
+                                HamiltonianQED.pauli_tns(
+                                    *[
+                                        ei_class(id_eop[i]) if i in id_eop else idx
+                                        for i in range(self.len_e_op)
+                                    ][min(id_eop) : max(id_eop) + 1][::-1]
+                                )
                             )
-                        )
-                        # combine with identities, e.g. cos(E2+E3) -> I^cos(E2+E3)^I^I (q4^q3^q2^q1^q0)
-                        hamiltonian_mag_pauli.append(
-                            self.pauli_tns(
-                                *[idx for i in range(self.len_e_op)[::-1]][
-                                    max(id_eop) + 1 :
-                                ]
-                                + [cosn]
-                                + [idx for i in range(self.len_e_op)[::-1]][
-                                    : min(id_eop)
-                                ]
+                            # combine with identities, e.g. cos(E2+E3) -> I^cos(E2+E3)^I^I (q4^q3^q2^q1^q0)
+                            hamiltonian_mag_pauli.append(
+                                HamiltonianQED.pauli_tns(
+                                    *[idx for i in range(self.len_e_op)[::-1]][
+                                        max(id_eop) + 1 :
+                                    ]
+                                    + [cosn]
+                                    + [idx for i in range(self.len_e_op)[::-1]][
+                                        : min(id_eop)
+                                    ]
+                                )
                             )
-                        )
 
                 hamiltonian_mag_pauli = (
                     np.sum(hamiltonian_mag_pauli)
@@ -1891,7 +1918,7 @@ class HamiltonianQED:
                 self.I, (self._n_qubits_g() * (self.len_u_op))
             )  # Gray encoding for E fields
         elif self.encoding == "ed":  # exact diagonaliz. dimensions of gauge fields 2l+1
-            gauge = sparse.eye((2 * self.l_par + 1) ** (self.len_u_op),dtype=np.float32,format='csr')
+            gauge = sparse.eye((2 * self.l_par + 1) ** (self.len_u_op),format='csr')
 
         # ******* gauge
         if (
