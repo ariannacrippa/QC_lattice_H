@@ -316,7 +316,7 @@ class HamiltonianQED_oprt:
 
         self.get_hamiltonian()
 
-    #TODO check sums do not define new variables if not needed
+
     def get_hamiltonian(
         self,
         g_var=1.0,
@@ -359,40 +359,6 @@ class HamiltonianQED_oprt:
         if lambd != 0:
             hamiltonian_tot += lambd * self.hamiltonian_suppress
 
-
-        # Hamiltonian for fermions
-        # if self.puregauge:
-        #     self.hamiltonian_ferm = 0
-        # elif self.lattice.dims==1 and self.sparse_pauli:
-        #     self.hamiltonian_ferm = (
-        #         float(omega) * self.hamiltonian_k_pauli
-        #         + float(m_var) * self.hamiltonian_m_pauli
-        #     ).to_matrix(sparse=True)
-        # else:
-        #     self.hamiltonian_ferm = (
-        #         float(omega) * self.hamiltonian_k_pauli
-        #         + float(m_var) * self.hamiltonian_m_pauli
-        #     )
-
-        # # Hamiltonian for gauge fields
-        # if self.len_e_op == 0 and self.puregauge:
-        #     #self.hamiltonian_gauge = 0
-        #     raise ValueError("No gauge fields in pure gauge theory")
-        # elif self.len_e_op == 0 and not self.puregauge:
-        #     self.hamiltonian_gauge = 0
-        #     #self.hamiltonian_gauge =  self.hamiltonian_el_pauli if self.encoding == "gray" else self.hamiltonian_el_pauli.to_matrix(sparse=True)
-
-        # else:
-        #     self.hamiltonian_gauge = (
-        #         -fact_b_op / (float((g_var) ** 2)) * self.hamiltonian_mag_pauli
-        #         + fact_e_op * float((g_var) ** 2) * self.hamiltonian_el_pauli
-        #     )
-        # # Final result of the Hamiltonian in terms of Pauli matrices
-        # hamiltonian_tot = (
-        #     self.hamiltonian_gauge
-        #     + self.hamiltonian_ferm
-        #     + lambd * self.hamiltonian_suppress
-        # )
 
         return hamiltonian_tot
 
@@ -474,12 +440,11 @@ class HamiltonianQED_oprt:
         Last part is put everything together and add identity matrices where needed.
 
         encoding: gray, ed (exact diagonalization)"""
-        ham_encoded =0# np.empty(len(list_el), dtype=object)  # []
-        #for kk, ei in enumerate(list_el):
+        ham_encoded =0
         jj_mass = 0
         for ei in list_el:
-            index_op = []  # build index list order ..q2q1q0 (little endian)
-            for e in ei:
+            index_op = []
+            for e in ei:# build index list order ..q2q1q0 (little endian)
                 if not isinstance(
                     e, (int, float, complex, Float, Integer, str, ImaginaryUnit)
                 ):
@@ -491,11 +456,16 @@ class HamiltonianQED_oprt:
                         index_op.append( str( (ferm_lst[::-1] + gauge_lst[::-1]).index( *e.free_symbols ) ) )
 
 
+            #substitutions from symbols to dummy variables nameOP
             symb_el = lambdify(list(zip(*subst))[0], ei)(*list(zip(*subst))[1])
 
-            q10 = -0.5 * (self.I + self.Z)  # JW dependent
+            #charges (JW dependent)
+            q10 = -0.5 * (self.I + self.Z)
             q00 = 0.5 * (self.I - self.Z)
+
+            #substitutions from symbols to matrices
             sym_list_tomatrix = [(Symbol('q10OP'),q10),(Symbol('q00OP'),q00),(Symbol('EOP'),self.e_oper),(Symbol('UOP'),self.u_oper),(Symbol('UdagOP'),self.u_oper_dag)]
+
             if self.magnetic_basis: # U->exp(-i*alpha*E), U_dag->exp(i*alpha*E) in mag basis
                 ei_class = lambda fct: self.matx_exp(
                 fct * self.e_oper, 1j * self.alpha
@@ -516,6 +486,8 @@ class HamiltonianQED_oprt:
                     ct += 1
                 else:
                     numbers.append(el)
+
+            #build final list of operators: res. It is built as list of strings and then filled with matrices
             if subst[0][0] == Symbol("Phi_1D", commutative=False):  # ferm
                 res = ["id_f"] * len(ferm_lst) + ["id_g"] * self.len_e_op
                 f_index_op = [
@@ -534,6 +506,7 @@ class HamiltonianQED_oprt:
             del pauli_ei,index_op
             gc.collect()
 
+            #fill res with matrices. Last steps, empty spots are filled with identity matrices
             for i in range(start, len(res)):  # only for gauge or charges q
                 if str(i) in op_dct.keys() and isinstance(
                     res[i], str
@@ -561,20 +534,18 @@ class HamiltonianQED_oprt:
                     elif (
                         encoding == "ed"
                     ):  # exact diagonaliz. dimensions of gauge fields 2l+1
-                        res[i] = sparse.eye(2 * self.l_par + 1,dtype=np.float32,format='csr')
+                        res[i] = sparse.eye(2 * self.l_par + 1,format='csr')
 
             res = (
                 elem for elem in res if not isinstance(elem, str)
             )  # remove id_f when JW applied
 
-            if massterm:
-                #print(((-1) ** jj_mass))
-                ham_encoded+=((-1) ** jj_mass)* np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(*res) #reduce(tensor_or_kron,res ) # sum over all terms for mass hamiltonian
+            if massterm:# sum over all terms for mass hamiltonian
+                ham_encoded+=((-1) ** jj_mass)* np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(*res) #reduce(tensor_or_kron,res )
                 jj_mass+=1
-            else:
-                # ham= np.prod(numbers) * self.pauli_tns2(*res)
+            else:#sum over all terms
                 #TODO memory problematic part
-                ham_encoded+= np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(*res)#reduce(tensor_or_kron,res ) #sum over all terms
+                ham_encoded+= np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(*res)#reduce(tensor_or_kron,res )
 
 
             del res,op_dct,numbers
