@@ -328,39 +328,71 @@ class HamiltonianQED_oprt:
     ):
         """Returns the Hamiltonian of the system"""
 
+        hamiltonian_tot = 0
         # Hamiltonian for fermions
         if self.puregauge:
-            self.hamiltonian_ferm = 0
+            hamiltonian_tot += 0
         elif self.lattice.dims==1 and self.sparse_pauli:
-            self.hamiltonian_ferm = (
+            hamiltonian_tot += (
                 float(omega) * self.hamiltonian_k_pauli
                 + float(m_var) * self.hamiltonian_m_pauli
             ).to_matrix(sparse=True)
         else:
-            self.hamiltonian_ferm = (
+            hamiltonian_tot += (
                 float(omega) * self.hamiltonian_k_pauli
                 + float(m_var) * self.hamiltonian_m_pauli
             )
 
         # Hamiltonian for gauge fields
         if self.len_e_op == 0 and self.puregauge:
-            #self.hamiltonian_gauge = 0
             raise ValueError("No gauge fields in pure gauge theory")
         elif self.len_e_op == 0 and not self.puregauge:
-            self.hamiltonian_gauge = 0
-            #self.hamiltonian_gauge =  self.hamiltonian_el_pauli if self.encoding == "gray" else self.hamiltonian_el_pauli.to_matrix(sparse=True)
+            hamiltonian_tot += 0
 
         else:
-            self.hamiltonian_gauge = (
+            hamiltonian_tot += (
                 -fact_b_op / (float((g_var) ** 2)) * self.hamiltonian_mag_pauli
                 + fact_e_op * float((g_var) ** 2) * self.hamiltonian_el_pauli
             )
-        # Final result of the Hamiltonian in terms of Pauli matrices
-        hamiltonian_tot = (
-            self.hamiltonian_gauge
-            + self.hamiltonian_ferm
-            + lambd * self.hamiltonian_suppress
-        )
+
+        # Hamiltonian for suppression term
+        if lambd != 0:
+            hamiltonian_tot += lambd * self.hamiltonian_suppress
+
+
+        # Hamiltonian for fermions
+        # if self.puregauge:
+        #     self.hamiltonian_ferm = 0
+        # elif self.lattice.dims==1 and self.sparse_pauli:
+        #     self.hamiltonian_ferm = (
+        #         float(omega) * self.hamiltonian_k_pauli
+        #         + float(m_var) * self.hamiltonian_m_pauli
+        #     ).to_matrix(sparse=True)
+        # else:
+        #     self.hamiltonian_ferm = (
+        #         float(omega) * self.hamiltonian_k_pauli
+        #         + float(m_var) * self.hamiltonian_m_pauli
+        #     )
+
+        # # Hamiltonian for gauge fields
+        # if self.len_e_op == 0 and self.puregauge:
+        #     #self.hamiltonian_gauge = 0
+        #     raise ValueError("No gauge fields in pure gauge theory")
+        # elif self.len_e_op == 0 and not self.puregauge:
+        #     self.hamiltonian_gauge = 0
+        #     #self.hamiltonian_gauge =  self.hamiltonian_el_pauli if self.encoding == "gray" else self.hamiltonian_el_pauli.to_matrix(sparse=True)
+
+        # else:
+        #     self.hamiltonian_gauge = (
+        #         -fact_b_op / (float((g_var) ** 2)) * self.hamiltonian_mag_pauli
+        #         + fact_e_op * float((g_var) ** 2) * self.hamiltonian_el_pauli
+        #     )
+        # # Final result of the Hamiltonian in terms of Pauli matrices
+        # hamiltonian_tot = (
+        #     self.hamiltonian_gauge
+        #     + self.hamiltonian_ferm
+        #     + lambd * self.hamiltonian_suppress
+        # )
 
         return hamiltonian_tot
 
@@ -542,9 +574,8 @@ class HamiltonianQED_oprt:
             else:
                 # ham= np.prod(numbers) * self.pauli_tns2(*res)
                 #TODO memory problematic part
-                ham= np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(*res)#reduce(tensor_or_kron,res ) #sum over all terms
-                #print(type(ham))
-                ham_encoded+=ham
+                ham_encoded+= np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(*res)#reduce(tensor_or_kron,res ) #sum over all terms
+
 
             del res,op_dct,numbers
             gc.collect()
@@ -592,48 +623,8 @@ class HamiltonianQED_oprt:
         """
         # sgm = PauliSumOp( SparsePauliOp.from_sparse_list( [ ( "X", [ 0, ], 0.5, ), ] + [ ( "Y", [ 0, ], (-0.5j), ), ], num_qubits=1, ) )
         # sgp = PauliSumOp( SparsePauliOp.from_sparse_list( [ ( "X", [ 0, ], 0.5, ), ] + [ ( "Y", [ 0, ], (0.5j), ), ], num_qubits=1, ) )
-        sgm = SparsePauliOp.from_sparse_list(
-            [
-                (
-                    "X",
-                    [
-                        0,
-                    ],
-                    0.5,
-                ),
-            ]
-            + [
-                (
-                    "Y",
-                    [
-                        0,
-                    ],
-                    (-0.5j),
-                ),
-            ],
-            num_qubits=1,
-        )
-        sgp = SparsePauliOp.from_sparse_list(
-            [
-                (
-                    "X",
-                    [
-                        0,
-                    ],
-                    0.5,
-                ),
-            ]
-            + [
-                (
-                    "Y",
-                    [
-                        0,
-                    ],
-                    (0.5j),
-                ),
-            ],
-            num_qubits=1,
-        )
+        sgm = SparsePauliOp.from_sparse_list( [ ( "X", [ 0, ], 0.5, ), ] + [ ( "Y", [ 0, ], (-0.5j), ), ], num_qubits=1, )
+        sgp = SparsePauliOp.from_sparse_list( [ ( "X", [ 0, ], 0.5, ), ] + [ ( "Y", [ 0, ], (0.5j), ), ], num_qubits=1, )
 
         assert n_tmp > 0
         if n_tmp == 1:
