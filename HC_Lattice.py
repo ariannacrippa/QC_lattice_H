@@ -290,7 +290,7 @@ class HCLattice:
                 + "x".join(map(str, self.n_sites))
                 + "_"
                 + bc_title
-                + f"_gausslaw{gauss_law_fig}.pdf",
+                + f"_gausslaw{gauss_law_fig}.png",
                 bbox_inches="tight",
                 dpi=600,
             )
