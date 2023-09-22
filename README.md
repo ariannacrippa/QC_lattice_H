@@ -1,5 +1,7 @@
 # Lattice QED Hamiltonian for Quantum Computing
 
+In this repository one can write the QED Hamiltonian for a 1,2 or 3D lattice. Compatible with exact diagonalisation and Qiskit library.
+
 'HC_Lattice.py'
 A python code that builds a lattice in generic N dimensions, with periodic or open boundary conditions.
 It finds the set of links and sites, build plaquettes and chain for Jordan_Wigner definition (version up to 3D).
@@ -26,3 +28,5 @@ quantum hardware.
 
 'Hamiltonianqed.py'
 A python code that builds Hamiltonian on a generic N × N lattice, both with open and periodic boundary conditions. The formulation and methods like the other case, only this is limited to 1D and 2D lattices.
+
+![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/system_2x2_OBC_gausslawTrue.pdf)
