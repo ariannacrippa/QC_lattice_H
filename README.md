@@ -29,4 +29,4 @@ quantum hardware.
 'Hamiltonianqed.py'
 A python code that builds Hamiltonian on a generic N × N lattice, both with open and periodic boundary conditions. The formulation and methods like the other case, only this is limited to 1D and 2D lattices.
 
-![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/system_2x2_OBC_gausslawTrue.pdf)
+![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/system_2x2_OBC_gausslawTrue.png)
