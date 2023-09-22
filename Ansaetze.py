@@ -150,3 +150,6 @@ class Ansatz:
 
         self.qc_ferm=qc_ferm
         self.th_ferm=th_ferm
+
+
+        #TODO add gauge+fermionic circuit

@@ -14,6 +14,8 @@ quantum hardware.
 A python code that imports the Hamiltonian from symbolic expression and build the operator form (sparse matrices or PauliOp, suitable for qiskit quantum circuits).
 It considers two types of encoding: 'ed' returns sparse matrix, 'gray' with option sprase=False it returns PauliOp expression, otherwise a sparse matrix.
 
+'Ansaetze.py'
+Ansaetze proposal of variational circuit for Gray encoding (for gauge fields) and zero-charge sector (for femrionic d.o.f.).
 
 Old versions:
 'Hamiltonian_QED.py'
