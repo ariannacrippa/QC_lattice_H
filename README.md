@@ -38,23 +38,23 @@ Let us consider a 2x2 OBC system as in following figure:
 
 where the black arrow represent the gauge field that remains dynamical after Gauss law is applied. After this step, the Hamiltonian will be:
 
-\begin{align*}
+$$
 H_{E} = \frac{g^{2} \left(E_{10y}^{2} + \left(- E_{10y} + q_{11}\right)^{2} + \left(E_{10y} + q_{10}\right)^{2} + \left(- E_{10y} + q_{01} + q_{11}\right)^{2}\right)}{2}
-\end{align*}
+$$
 
 for the electric part,
 
-\begin{align*}
+$$
 H_{B} = - \frac{U_{10y} + h.c.}{2 g^{2}}
-\end{align*}
+$$
 
 for magnetic. If matter fields are considered, then we have a mass term
 
-\begin{align*}
+$$
 H_{m} = m \left(\Phi_{1}^{\dagger} \Phi_{1} - \Phi_{2}^{\dagger} \Phi_{2} + \Phi_{3}^{\dagger} \Phi_{3} - \Phi_{4}^{\dagger} \Phi_{4}\right)
-\end{align*}
+$$
 
 and a kinetic term
-\begin{align*}
+$$
 H_{K} = \Omega \left(0.5 i \left(- h.c.(x) + \Phi_{1}^{\dagger} \Phi_{2} + \Phi_{4}^{\dagger} \Phi_{3}\right) - 0.5 \left(h.c.(y) + \Phi_{1}^{\dagger} \Phi_{4} - \Phi_{2}^{\dagger} U_{10y}^{\dagger} \Phi_{3}\right)\right).
-\end{align*}
+$$
