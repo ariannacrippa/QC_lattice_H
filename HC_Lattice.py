@@ -139,10 +139,13 @@ class HCLattice:
             _graph_new = next(func)(current_dim, create_using=nx.DiGraph)
             graph_g = cartesian_product(graph_g, _graph_new)
         graph = relabel_nodes(graph_g, flatten)
+
+
         self.graph = graph
 
     def draw_graph_func(
-        self, gauss_law_fig: bool = False, e_op_free=None, static_charges=None,savefig_dir=None
+        self, gauss_law_fig: bool = False, e_op_free=None, static_charges=None,savefig_dir=None,
+        weight : dict| None = None
     ):
         """Draw the graph of the lattice with the dynamical links.
         Parameters
@@ -186,6 +189,21 @@ class HCLattice:
             raise ValueError("e_op_free must be not None if gauss_law_fig is True")
         else:
             edge_color_list = ["black" for e in self.graph_edges_system]
+
+        if weight:
+            dict_label = {}
+            for key,val in weight.items(): #weight is dict of type E_00x:1 with val the values of el. field
+                key = key.name
+                # List of directions for the edges if D<=3 or more
+                if self.dims < 4:
+                    ax_direct = ["x", "y", "z"]
+                else:
+                    ax_direct = list(map(chr, range(97, 123)))
+                inpoint = [int(n) for n in re.findall(r'\d+',key)[0]]
+                inpoint2=inpoint.copy()
+                inpoint2[ax_direct.index(key[-1])]+=1
+                dict_label[tuple([tuple(inpoint),tuple(inpoint2)])]=val
+            self.dict_label = dict_label
 
         fig = plt.figure(figsize=(8, 6))
 
@@ -250,15 +268,33 @@ class HCLattice:
                 arrowstyle="-|>", mutation_scale=15, lw=1.5, connectionstyle=connection
             )
 
-            for vizedge, col in zip(np.array(self.graph.edges), edge_color_list):
+            #label the edges if weight
+            if weight:
+                label_edges = [str(self.dict_label[i]) for i in self.graph_edges_system]
+            else:
+                label_edges =[None for i in self.graph_edges_system]
+
+            for vizedge, col,lbl in zip(np.array(self.graph.edges), edge_color_list,label_edges):
                 if self.dims == 2:
                     arrow = Arrow3D(
-                        *vizedge.T, [0, 0], ec=col, color=col, **arrow_options
+                        *vizedge.T, [0, 0], ec=col, color=col,linewidth=5,  **arrow_options
                     )
                 else:
                     arrow = Arrow3D(*vizedge.T, ec=col, color=col, **arrow_options)
 
                 ax_plt.add_artist(arrow)
+
+                #Add label the edges if weight
+                if weight:
+                    if int(lbl)>0:
+                        clr_lbl='red'
+                    elif int(lbl)<0:
+                        clr_lbl='blue'
+                    else:
+                        clr_lbl='grey'
+
+                    ax_plt.annotate(lbl, (.5, .5), xycoords=arrow, ha='center', va='bottom',color=clr_lbl )
+
 
             def _format_axes(ax_plt):
                 """Visualization options for the 3D axes."""
@@ -632,5 +668,4 @@ class Arrow3D(FancyArrowPatch):
         xs3d, ys3d, zs3d = self._verts3d
         xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
         self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
-
         return np.min(zs)
