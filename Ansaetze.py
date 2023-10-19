@@ -96,6 +96,8 @@ class Ansatz:
         qgaug = QuantumRegister(self.n_qubits*self.ngauge,name='gaug')
         qc_gauge = QuantumCircuit(qgaug)
 
+        #list of thetas that will be used to start from vacuum i.e. ..010101
+        first_layer_par = [0,]
         th_gauge=0
         #first gauge field
         qc_gauge.compose(self.qc,list(range(self.n_qubits)),inplace=True)
@@ -104,6 +106,7 @@ class Ansatz:
 
         for i in range(1,self.ngauge):
             qc_gauge.ry(Parameter(f'theta_{th_gauge}'),self.n_qubits*i)
+            first_layer_par+=[th_gauge,]
             th_gauge+=1
             for j in range(self.n_qubits*i):
                 qc_gauge.cry(Parameter(f'theta_{th_gauge}'),j,self.n_qubits*i)
@@ -116,6 +119,8 @@ class Ansatz:
             for j in range(self.n_qubits*i):
                 qc_gauge.mcry(Parameter(f'theta_{th_gauge}'),[j,self.n_qubits*i],self.n_qubits*i+1)
                 th_gauge+=1
+
+        self.first_layer_par=first_layer_par
         self.qc_gauge=qc_gauge
         self.th_gauge=th_gauge
 
@@ -153,3 +158,9 @@ class Ansatz:
 
 
         #TODO add gauge+fermionic circuit
+
+
+
+    #Rule to see how many parameters I need
+    def parameters_count(self,n_qubits,ngauge):#TODO add fermions
+        return n_qubits*ngauge+n_qubits*sum(i for i in range(2,n_qubits*(ngauge-1)+1,2))+n_qubits*ngauge
