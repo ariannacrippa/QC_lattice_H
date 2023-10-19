@@ -59,43 +59,43 @@ class HamiltonianQED_sym:
     Parameters
     ----------
 
-    lattice: class
-        Instance of the class Lattice.
+    config: dict
+        Contains the following arguments:
+        {
+        lattice: class
+            Instance of the class Lattice.
 
-    n_sites: list
-        Number of sites in each direction.
+        n_sites: list
+            Number of sites in each direction.
 
-    l: int
-        Truncation parameter. Defines how many values the gauge fields take,
-        e.g. l=1 -> ±1,0 .
+        ll: int
+            Discretisation parameter L.
 
-    ll: int
-        Discretisation parameter L.
+        encoding: str
+            Encoding used for the gauge fields. Can be "gray" or "ed" (exact diagonalisation).
 
-    encoding: str
-        Encoding used for the gauge fields. Can be "gray" or "ed" (exact diagonalisation).
+        magnetic_basis: bool
+            If True, then the magnetic basis is considered, False for electric basis.
 
-    magnetic_basis: bool
-        If True, then the magnetic basis is considered, False for electric basis.
+        pbc : bool
+                If `pbc` is True, both dimensions are periodic. If False, none
+                are periodic.
 
-    pbc : bool
-            If `pbc` is True, both dimensions are periodic. If False, none
-            are periodic.
+        puregauge: bool
+            If False, then we have fermionic degrees of freedom in the system, if True only
+            gauge fields.
 
-    puregauge: bool
-        If False, then we have fermionic degrees of freedom in the system, if True only
-        gauge fields.
+        static_charges_values: dict or None
+            If dict, set of static charges with coordinates and values,
+            e.g. a charge Q=-1 in site
+            (0,0) and a Q=1 in (1,0) will be: {(0,0):-1,(1,0):1}.
 
-    static_charges_values: dict or None
-        If dict, set of static charges with coordinates and values,
-        e.g. a charge Q=-1 in site
-         (0,0) and a Q=1 in (1,0) will be: {(0,0):-1,(1,0):1}.
-
-    e_op_out_plus:bool
-        Boolean variable that specifies if the outgoing electric fields from a certain
-        site have positive (True) or negative (False) sign. This definition influences
-        the plaquette term and
-        the kinetic term (H_k): if + sign then U^dag in H_k / if - then U in H_k.
+        e_op_out_plus:bool
+            Boolean variable that specifies if the outgoing electric fields from a certain
+            site have positive (True) or negative (False) sign. This definition influences
+            the plaquette term and
+            the kinetic term (H_k): if + sign then U^dag in H_k / if - then U in H_k.
+        }
 
     display_hamiltonian: bool
         If True, the Hamiltonian and the Gauss law equations are displayed in the output.
@@ -105,34 +105,23 @@ class HamiltonianQED_sym:
 
     def __init__(
         self,
-        lattice,
-        n_sites: list,
-        l: int,
-        ll: int = 2,
-        encoding: str = "gray",
-        rotors: bool = False,  # TODO rotors
-        magnetic_basis: bool = False,
-        pbc: bool = False,
-        puregauge: bool = False,
-        static_charges_values: dict | None = None,
-        e_op_out_plus: bool = False,
+        config : dict,
         display_hamiltonian: bool = False,
     ) -> None:
-        self.n_sites = n_sites
-        self.pbc = pbc
-        self.lattice = lattice
-        self.l_par = l
-        self.ll_par = ll
-        self.encoding = encoding
-        self.rotors = rotors
-        self.magnetic_basis = magnetic_basis
-        self.puregauge = puregauge
-        self.static_charges_values = static_charges_values
-        self.e_op_out_plus = e_op_out_plus
-        self.display_hamiltonian = display_hamiltonian
 
-        if self.magnetic_basis and self.ll_par <= self.l_par:
-            raise ValueError("l must be smaller than L")
+        #dict config inputs
+        self.lattice = config.get('latt')
+        self.n_sites = config['n_sites']
+        self.ll_par = config['L'] if 'L' in config else 2
+        self.encoding = config['encoding'] if 'encoding' in config else "gray"
+        self.magnetic_basis = config['magnetic_basis']
+        self.pbc = config['pbc'] if 'pbc' in config else False
+        self.puregauge = config['puregauge'] if 'puregauge' in config else False
+        self.static_charges_values = config['static_charges_values'] if 'static_charges_values' in config else None
+        self.e_op_out_plus = config['e_op_out_plus'] if 'e_op_out_plus' in config else True
+
+        #external inputs
+        self.display_hamiltonian = display_hamiltonian
 
         if self.magnetic_basis and self.lattice.dims != 2:
             raise ValueError("Magnetic basis is only implemented for 2D lattices")
@@ -163,101 +152,82 @@ class HamiltonianQED_sym:
             if self.static_charges_values is not None
         ]
         # Dictionary of all elements (E and charges q) in the system with their symbols
-        if not self.rotors:
-            self.e_op_dict = {
-                s_tmp: symbols(s_tmp)
-                for s_tmp in self.lattice.list_edges2_e_op
-                + self.q_charge_str_list
-                + self.static_charges_str_list
-            }
+        self.e_op_dict = {
+            s_tmp: symbols(s_tmp)
+            for s_tmp in self.lattice.list_edges2_e_op
+            + self.q_charge_str_list
+            + self.static_charges_str_list
+        }
 
-            self.u_op_dict = {
-                s_tmp: symbols(s_tmp) for s_tmp in self.lattice.list_edges2_u_op
-            }
-            self.rotor_list = []
+        self.u_op_dict = {
+            s_tmp: symbols(s_tmp) for s_tmp in self.lattice.list_edges2_u_op
+        }
+        self.rotor_list = []
 
-        else:
-            self.rotor_list = [
-                "R_" + self.str_node_f(node) for node in self.lattice.graph.nodes
-            ] + [
-                "R_" + str(d) for i, d in zip(range(self.lattice.dims), ["x", "y", "z"])
-            ]
-            self.e_op_dict = {
-                s_tmp: symbols(s_tmp)
-                for s_tmp in self.rotor_list
-                + self.q_charge_str_list
-                + self.static_charges_str_list
-            }
-
-            self.u_op_dict = {}  # TODO use P
-
-        if not rotors:
-            # #Gauss law equations in a list and display them if links not rotors
-            self.gauss_equations()
-            if self.display_hamiltonian:
-                print(">> Gauss law system of equations (symbolic + latex):")
-                print(
-                    "static charges:",
-                    [
-                        "Q_" + self.str_node_f(key) + f"={val}"
-                        for key, val in self.static_charges_values.items()
-                    ] if self.static_charges_values is not None else "None"
-                )
-                [display(Eq(i, 0)) for i in self.list_gauss]
+        # #Gauss law equations in a list and display them if links
+        self.gauss_equations()
+        if self.display_hamiltonian:
+            print(">> Gauss law system of equations (symbolic + latex):")
+            print(
+                "static charges:",
                 [
-                    print(latex(i) + " &= 0 \\\\ \\nonumber")
-                    for i in self.list_gauss[:-1]
-                ]
-                print(latex(self.list_gauss[-1]) + " &= 0", "\n")
+                    "Q_" + self.str_node_f(key) + f"={val}"
+                    for key, val in self.static_charges_values.items()
+                ] if self.static_charges_values is not None else "None"
+            )
+            [display(Eq(i, 0)) for i in self.list_gauss]
+            [
+                print(latex(i) + " &= 0 \\\\ \\nonumber")
+                for i in self.list_gauss[:-1]
+            ]
+            print(latex(self.list_gauss[-1]) + " &= 0", "\n")
 
-            # Solution of gauss law equations
-            self.sol_gauss = solve(self.list_gauss, dict=True)[0]
-            print("> Gauss law equations solved")
-            # e_op_free from solution of Guass equations and edges
-            self.e_op_free = list(
-                set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
-                    set(
-                        [
-                            item
-                            for sublist in [
-                                eq.free_symbols for eq in self.sol_gauss.values()
-                            ]
-                            for item in sublist
+        # Solution of gauss law equations
+        self.sol_gauss = solve(self.list_gauss, dict=True)[0]
+        print("> Gauss law equations solved")
+        # e_op_free from solution of Guass equations and edges
+        self.e_op_free = list(
+            set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
+                set(
+                    [
+                        item
+                        for sublist in [
+                            eq.free_symbols for eq in self.sol_gauss.values()
                         ]
-                    )
+                        for item in sublist
+                    ]
                 )
             )
-            # Build u_op_free from e_op_free and edges
-            self.u_op_free = [
-                k.subs(
-                    [
-                        (symbols(j), symbols(k))
-                        for j, k in zip(
-                            self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
-                        )
-                    ]
-                )
-                for k in self.e_op_free
-            ]
-            self.u_op_free_dag = [
-                k.subs(
-                    [
-                        (symbols(j), Symbol(k + "D"))
-                        for j, k in zip(
-                            self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
-                        )
-                    ]
-                )
-                for k in self.e_op_free
-            ]  # U^dag
+        )
+        # Build u_op_free from e_op_free and edges
+        self.u_op_free = [
+            k.subs(
+                [
+                    (symbols(j), symbols(k))
+                    for j, k in zip(
+                        self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
+                    )
+                ]
+            )
+            for k in self.e_op_free
+        ]
+        self.u_op_free_dag = [
+            k.subs(
+                [
+                    (symbols(j), Symbol(k + "D"))
+                    for j, k in zip(
+                        self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
+                    )
+                ]
+            )
+            for k in self.e_op_free
+        ]  # U^dag
 
-            # length of e_op_free and u_op_free
-            self.len_e_op = len(self.e_op_free)
-            self.len_u_op = len(self.u_op_free)
-            print("> e_op_free and u_op_free built")
-        else:
-            self.rotors_conversion()
-            print("put rotors here")
+        # length of e_op_free and u_op_free
+        self.len_e_op = len(self.e_op_free)
+        self.len_u_op = len(self.u_op_free)
+        print("> e_op_free and u_op_free built")
+
 
         if display_hamiltonian:
             print(">> Hamiltonian (symbolic + latex):")
@@ -335,17 +305,13 @@ class HamiltonianQED_sym:
     def _hamiltonian_el_autom(self):
         """Hamiltonian for E field"""
         hamiltonian_el_sym = (Symbol(str(s)) for s in self.lattice.list_edges2_e_op)
-        if not self.rotors:
-            hamiltonian_el_sym = sum(
-                (
-                    x**2 if x not in self.sol_gauss else (self.sol_gauss[x]) ** 2
-                    for x in hamiltonian_el_sym
-                )
-            )  # Gauss law applied
-        else:  # if rotors not considered gauss law , they already satisfy it
-            hamiltonian_el_sym = sum(
-                [(x.subs(self.rotors_dict)) ** 2 for x in hamiltonian_el_sym]
+
+        hamiltonian_el_sym = sum(
+            (
+                x**2 if x not in self.sol_gauss else (self.sol_gauss[x]) ** 2
+                for x in hamiltonian_el_sym
             )
+        )  # Gauss law applied
 
         self.hamiltonian_el_sym = (
             hamiltonian_el_sym  # symbolic expression (useful for diplay)

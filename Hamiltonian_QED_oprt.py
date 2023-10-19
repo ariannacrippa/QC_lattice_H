@@ -139,32 +139,25 @@ class HamiltonianQED_oprt:
 
     def __init__(
         self,
-        lattice,
+        config,
         hamilt_sym,
-        n_sites: list,
-        l: int,
-        ll: int = 2,
-        encoding: str = "gray",
-        rotors: bool = False,  # TODO rotors
-        magnetic_basis: bool = False,
-        pbc: bool = False,
-        puregauge: bool = False,
-        static_charges_values: dict | None = None,
-        e_op_out_plus: bool = False,
         sparse_pauli: bool = True,
     ) -> None:
-        self.n_sites = n_sites
-        self.pbc = pbc
-        self.lattice = lattice
+
+        #dict config inputs
+        self.lattice = config.get('latt')
+        self.n_sites = config['n_sites']
+        self.ll_par = config['L'] if 'L' in config else 2
+        self.l_par = config['L'] if 'L' in config else 1
+        self.encoding = config['encoding'] if 'encoding' in config else "gray"
+        self.magnetic_basis = config['magnetic_basis']
+        self.pbc = config['pbc'] if 'pbc' in config else False
+        self.puregauge = config['puregauge'] if 'puregauge' in config else False
+        self.static_charges_values = config['static_charges_values'] if 'static_charges_values' in config else None
+        self.e_op_out_plus = config['e_op_out_plus'] if 'e_op_out_plus' in config else True
+
+        #external inputs
         self.hamilt_sym = hamilt_sym
-        self.l_par = l
-        self.ll_par = ll
-        self.encoding = encoding
-        self.rotors = rotors
-        self.magnetic_basis = magnetic_basis
-        self.puregauge = puregauge
-        self.static_charges_values = static_charges_values
-        self.e_op_out_plus = e_op_out_plus
         self.sparse_pauli = sparse_pauli
 
         if not self.sparse_pauli and self.encoding == "ed":
@@ -208,81 +201,63 @@ class HamiltonianQED_oprt:
             if self.static_charges_values is not None
         ]
         # Dictionary of all elements (E and charges q) in the system with their symbols
-        if not self.rotors:
-            self.e_op_dict = {
-                s_tmp: symbols(s_tmp)
-                for s_tmp in self.lattice.list_edges2_e_op
-                + self.q_charge_str_list
-                + self.static_charges_str_list
-            }
 
-            self.u_op_dict = {
-                s_tmp: symbols(s_tmp) for s_tmp in self.lattice.list_edges2_u_op
-            }
-            self.rotor_list = []
+        self.e_op_dict = {
+            s_tmp: symbols(s_tmp)
+            for s_tmp in self.lattice.list_edges2_e_op
+            + self.q_charge_str_list
+            + self.static_charges_str_list
+        }
 
-        else:
-            self.rotor_list = [
-                "R_" + self.str_node_f(node) for node in self.lattice.graph.nodes
-            ] + [
-                "R_" + str(d) for i, d in zip(range(self.lattice.dims), ["x", "y", "z"])
-            ]
-            self.e_op_dict = {
-                s_tmp: symbols(s_tmp)
-                for s_tmp in self.rotor_list
-                + self.q_charge_str_list
-                + self.static_charges_str_list
-            }
+        self.u_op_dict = {
+            s_tmp: symbols(s_tmp) for s_tmp in self.lattice.list_edges2_u_op
+        }
+        self.rotor_list = []
 
-            self.u_op_dict = {}  # TODO use P
 
-        if not rotors:
 
-            # e_op_free from solution of Guass equations and edges
-            self.e_op_free = list(
-                set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
-                    set(
-                        [
-                            item
-                            for sublist in [
-                                eq.free_symbols for eq in self.hamilt_sym.sol_gauss.values()
-                            ]
-                            for item in sublist
+        # e_op_free from solution of Guass equations and edges
+        self.e_op_free = list(
+            set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
+                set(
+                    [
+                        item
+                        for sublist in [
+                            eq.free_symbols for eq in self.hamilt_sym.sol_gauss.values()
                         ]
-                    )
+                        for item in sublist
+                    ]
                 )
             )
-            # Build u_op_free from e_op_free and edges
-            self.u_op_free = [
-                k.subs(
-                    [
-                        (symbols(j), symbols(k))
-                        for j, k in zip(
-                            self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
-                        )
-                    ]
-                )
-                for k in self.e_op_free
-            ]
-            self.u_op_free_dag = [
-                k.subs(
-                    [
-                        (symbols(j), Symbol(k + "D"))
-                        for j, k in zip(
-                            self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
-                        )
-                    ]
-                )
-                for k in self.e_op_free
-            ]  # U^dag
+        )
+        # Build u_op_free from e_op_free and edges
+        self.u_op_free = [
+            k.subs(
+                [
+                    (symbols(j), symbols(k))
+                    for j, k in zip(
+                        self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
+                    )
+                ]
+            )
+            for k in self.e_op_free
+        ]
+        self.u_op_free_dag = [
+            k.subs(
+                [
+                    (symbols(j), Symbol(k + "D"))
+                    for j, k in zip(
+                        self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
+                    )
+                ]
+            )
+            for k in self.e_op_free
+        ]  # U^dag
 
-            # length of e_op_free and u_op_free
-            self.len_e_op = len(self.e_op_free)
-            self.len_u_op = len(self.u_op_free)
-            print("> e_op_free and u_op_free built")
-        else:
-            self.rotors_conversion()
-            print("put rotors here")
+        # length of e_op_free and u_op_free
+        self.len_e_op = len(self.e_op_free)
+        self.len_u_op = len(self.u_op_free)
+        print("> e_op_free and u_op_free built")
 
         # Define the espressions for substituting symbols into Pauli strings
 
@@ -899,78 +874,14 @@ class HamiltonianQED_oprt:
         else:
             raise ValueError("encoding not recognized")
 
-    def rotors_conversion(self):  # TODO test this function
-        rotors_dict = {}
-        for (
-            s
-        ) in (
-            self.lattice.list_edges2_e_op
-        ):  # index of rotors is the bottom left index (nx,ny coordinates)
-            coord_s = re.findall(r"\d+", s)[0]
-            if coord_s[0] == "0" and coord_s[1] == str(
-                self.n_sites[1]
-            ):  # if nx==0 and ny!=n_y_max
-                eop_tmp = 0
-            else:
-                eop_tmp = Symbol("R_" + coord_s)
-
-            if s[-1] == "x":
-                if coord_s[1] == "0":  # ny==0
-                    eop_tmp += Symbol("R_x")
-                    if self.pbc:  # only if pbc in y direction
-                        eop_tmp -= Symbol("R_" + coord_s[0] + str(self.n_sites[1] - 1))
-
-                else:
-                    eop_tmp -= Symbol("R_" + coord_s[0] + str(int(coord_s[1]) - 1))
-
-                if not self.puregauge:
-                    q_tmp = -sum(
-                        [
-                            Symbol("q_" + str(x) + str(y))
-                            for x in range(int(coord_s[0]) + 1, self.n_sites[0])
-                            for y in range(self.n_sites[1])
-                            if int(coord_s[1]) == 0
-                        ]
-                    )
-                    eop_tmp += q_tmp
-
-            elif s[-1] == "y":
-                eop_tmp *= -1
-                if coord_s[0] == "0":  # if n_x ==0
-                    eop_tmp += Symbol("R_y")
-                    if self.pbc:  # only if pbc in x direction
-                        eop_tmp += Symbol("R_" + str(self.n_sites[0] - 1) + coord_s[1])
-                else:
-                    eop_tmp += Symbol("R_" + str(int(coord_s[0]) - 1) + coord_s[1])
-
-                if not self.puregauge:
-                    q_tmp = -sum(
-                        [
-                            Symbol("q_" + str(x) + str(y))
-                            for x in range(self.n_sites[0])
-                            for y in range(int(coord_s[1]) + 1, self.n_sites[1])
-                            if x == int(coord_s[0])
-                        ]
-                    )
-                    eop_tmp += q_tmp
-
-            # if coordinates of R_xy are 0 and n_sites-1, then R is 0 convenient to fix this to zero
-            for i in eop_tmp.free_symbols:
-                if i.name[0] == "R" and i.name[2] == "0":
-                    if i.name[3] == str(self.n_sites[1] - 1):
-                        eop_tmp = eop_tmp.subs(i, 0)
-
-            rotors_dict[s] = eop_tmp
-
-        self.rotors_dict = rotors_dict
 
     def _get_symbol_subs(self):
         """Return list of substitutions for symbols in the Hamiltonian.
         Suitable for every encoding (gauge fields) defined in el_op_enc(), u_op_enc(), u_op_dag_enc()
         """
         # list of symbols only (encoding not needed)
-        self.eop_list = self.e_op_free if not self.rotors else self.rotor_list
-        self.uop_list = self.u_op_free if not self.rotors else []
+        self.eop_list = self.e_op_free
+        self.uop_list = self.u_op_free
         self.qop_list = (
             []
             if self.puregauge
