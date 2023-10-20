@@ -200,8 +200,12 @@ class HCLattice:
                 else:
                     ax_direct = list(map(chr, range(97, 123)))
                 inpoint = [int(n) for n in re.findall(r'\d+',key)[0]]
-                inpoint2=inpoint.copy()
-                inpoint2[ax_direct.index(key[-1])]+=1
+                # inpoint2=inpoint.copy()
+                # direction = ax_direct.index(key[-1])
+                # inpoint2[direction]+=1%n_sites[direction]
+                # inpoint2[direction]=inpoint2[direction]%n_sites[direction]
+                inpoint2 = [(inpoint[i] + (1 if i == ax_direct.index(key[-1]) else 0)) % self.n_sites[i] for i in range(len(inpoint))]
+
                 dict_label[tuple([tuple(inpoint),tuple(inpoint2)])]=val
             self.dict_label = dict_label
 
