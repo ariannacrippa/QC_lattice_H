@@ -123,6 +123,9 @@ class HamiltonianQED_sym:
         #external inputs
         self.display_hamiltonian = display_hamiltonian
 
+        if not self.puregauge and np.prod(self.n_sites)%2!=0:
+            raise Warning("Attention: total number of staggered fermionic degrees of freedom doesn't respect two-component spinors.")
+
         if self.magnetic_basis and self.lattice.dims != 2:
             raise ValueError("Magnetic basis is only implemented for 2D lattices")
 
