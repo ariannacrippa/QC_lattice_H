@@ -264,12 +264,12 @@ class Ansatz:
                         th_gauge+=1
                         #qc_gauge.barrier()
 
-                    #multi-controlled gates
-                    for k in range(nlayers):
-                        for j in mcry_gates(i):
-                            qc_gauge.mcry(Parameter(f'theta_{th_gauge}'),[j,self.n_qubits*(i+1)-3],self.n_qubits*(i+1)-1)
-                            th_gauge+=1
-                            #qc_gauge.barrier()
+                    # #multi-controlled gates
+                    # for k in range(nlayers):
+                    #     for j in mcry_gates(i):
+                    #         qc_gauge.mcry(Parameter(f'theta_{th_gauge}'),[j,self.n_qubits*(i+1)-3],self.n_qubits*(i+1)-1)
+                    #         th_gauge+=1
+                    #         #qc_gauge.barrier()
 
                 if self.l==7:
                     for k in range(nlayers):#third gate of gray structure
@@ -277,12 +277,12 @@ class Ansatz:
                         th_gauge+=1
                         #qc_gauge.barrier()
 
-                    #multi-controlled gates
-                    for k in range(nlayers):
-                        for j in mcry7_gates(i):
-                            qc_gauge.mcry(Parameter(f'theta_{th_gauge}'),[j,self.n_qubits*i],self.n_qubits*i+1)
-                            th_gauge+=1
-                            #qc_gauge.barrier()
+                    # #multi-controlled gates
+                    # for k in range(nlayers):
+                    #     for j in mcry7_gates(i):
+                    #         qc_gauge.mcry(Parameter(f'theta_{th_gauge}'),[j,self.n_qubits*i],self.n_qubits*i+1)
+                    #         th_gauge+=1
+                    #         #qc_gauge.barrier()
 
         if rzlayer:
             for k in range(self.n_qubits*self.ngauge):
