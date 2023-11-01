@@ -80,6 +80,7 @@ class HCLattice:
         self,
         n_sites: list,
         pbc: bool | list = False,
+        puregauge: bool =True,
     ) -> None:
         self.n_sites = n_sites
         while 1 in self.n_sites:  # avoid 1 dimension useless input
@@ -87,6 +88,7 @@ class HCLattice:
         self.n_sitestot = np.prod(self.n_sites)
         self.dims = len(self.n_sites)  # how many dimensions
         self.pbc = pbc
+        self.puregauge = puregauge
 
         # define graph and edges
         self.graph_lattice()
@@ -622,7 +624,8 @@ class HCLattice:
         If the charge is on an odd site, then it is connected to the even sites.
         2. A list of distances between the charge and the sites to which it is connected.
 
-        The choice of charges respects the Gauss law, i.e. the sum of the charges is zero."""
+        The choice of charges respects the Gauss law, i.e. the sum of the charges is zero and if fermions, it respect staggered formulation.
+        If puregauge then opposite charges can be anywhere."""
 
         #set initial charge position and charge value:(fermions (staggered m>0) have charge q= 1, antifermions (staggered m<0) have charge q=-1)
         if charge is None and ch_val is None:
@@ -642,17 +645,25 @@ class HCLattice:
         if self.dims == 1:
             if len(charge) != 1:
                 raise ValueError("Charge must be a tuple of length 1 for a 1D lattice.")
-            if (charge[0]+1)%2:#even site
-                distances_coord = np.array([{charge[0]:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if j%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+
+            if self.puregauge:
+                distances_coord = np.array([{charge[0]:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if j!=charge],dtype=object)#puregaguge connect all sites
             else:
-                distances_coord = np.array([{charge[0]:ch_val_o,j:ch_val_e} for j in list(self.graph.nodes) if (j+1)%2 and j!=charge],dtype=object)#connect (odd,) to only even sites
+                if (charge[0]+1)%2:#even site
+                    distances_coord = np.array([{charge[0]:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if j%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+                else:
+                    distances_coord = np.array([{charge[0]:ch_val_o,j:ch_val_e} for j in list(self.graph.nodes) if (j+1)%2 and j!=charge],dtype=object)#connect (odd,) to only even sites
         else:
             if len(charge) != self.dims:
                 raise ValueError("Charge must be a tuple of length self.dims for a {}D lattice.".format(self.dims))
-            if (sum(charge)+1)%2:#even site
-                distances_coord = np.array([{charge:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if sum(j)%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+
+            if self.puregauge:
+                distances_coord = np.array([{charge:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if  j!=charge],dtype=object)
             else:
-                distances_coord = np.array([{charge:ch_val_o,j:ch_val_e} for j in list(self.graph.nodes) if (sum(j)+1)%2 and j!=charge],dtype=object)
+                if (sum(charge)+1)%2:#even site
+                    distances_coord = np.array([{charge:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if sum(j)%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+                else:
+                    distances_coord = np.array([{charge:ch_val_o,j:ch_val_e} for j in list(self.graph.nodes) if (sum(j)+1)%2 and j!=charge],dtype=object)
 
         r_list = np.empty(len(distances_coord),dtype=object)
         for i,dd in enumerate(distances_coord):
