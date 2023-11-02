@@ -142,6 +142,7 @@ class HamiltonianQED_oprt:
         config,
         hamilt_sym,
         sparse_pauli: bool = True,
+        extended_enc:bool=False#Test of extended encoding for l=1,3,7
     ) -> None:
 
         #dict config inputs
@@ -159,6 +160,14 @@ class HamiltonianQED_oprt:
         #external inputs
         self.hamilt_sym = hamilt_sym
         self.sparse_pauli = sparse_pauli
+
+        self.extended_enc = extended_enc
+
+        ext_enc_set = [2**n-1 for n in range(1,10)]
+        if self.extended_enc and self.l_par not in ext_enc_set:
+            raise ValueError(f"Extended encoding valid only for {ext_enc_set}")
+
+        self.ext_fact = 1 if self.extended_enc else 0
 
         if not self.sparse_pauli and self.encoding == "ed":
             raise ValueError("PauliSumOp not supported with exact diagonalization encoding")
@@ -595,7 +604,7 @@ class HamiltonianQED_oprt:
         """Gray map dictionary for a certain value of the truncation parameter l.
         for example if l = 1, it returns:{-1: '00', 0: '01', 1: '11'}"""
         ret = {}
-        for i in range(0, 2 * self.l_par + 1):
+        for i in range(0, 2 * self.l_par + 1+self.ext_fact):
             gray_decimal = i ^ (i >> 1)
             ret[i - self.l_par] = "{0:0{1}b}".format(gray_decimal, self._n_qubits_g())
         return ret
@@ -630,7 +639,7 @@ class HamiltonianQED_oprt:
         Function equivalent to S_z term.
         Defined for Gray encoding"""
 
-        states_list = list(range(-self.l_par, self.l_par + 1))  # states: -l, ..., l
+        states_list = list(range(-self.l_par, self.l_par + 1+self.ext_fact))  # states: -l, ..., l
         e_op_list = []
         for st_fact in states_list:
             if st_fact != 0:
@@ -667,7 +676,7 @@ class HamiltonianQED_oprt:
     def _l_c(self):
         """Ladder function equivalent to V^- terms
         Defined for Gray encoding"""
-        states_list = list(range(-self.l_par, self.l_par + 1))  # states: -l, ..., l
+        states_list = list(range(-self.l_par, self.l_par + 1+self.ext_fact))  # states: -l, ..., l
 
         u_op_list = []
         for st_fact in states_list:
@@ -1272,14 +1281,19 @@ class HamiltonianQED_oprt:
             suppr1 = h_s
             hamiltonian_gauge_suppr = 0.0 * gauge
 
-            for i in range(1, self.len_u_op + 1):
-                hamiltonian_gauge_suppr += HamiltonianQED_oprt.pauli_tns(
-                    self.tensor_prod(
-                        self.I, (self._n_qubits_g() * (self.len_u_op - i))
-                    ),
-                    (suppr1),
-                    self.tensor_prod(self.I, (self._n_qubits_g() * (i - 1))),
-                ).simplify()
+            if self.extended_enc:#extended encoding does not have unphysical states
+                pass
+
+            else:
+
+                for i in range(1, self.len_u_op + 1):
+                    hamiltonian_gauge_suppr += HamiltonianQED_oprt.pauli_tns(
+                        self.tensor_prod(
+                            self.I, (self._n_qubits_g() * (self.len_u_op - i))
+                        ),
+                        (suppr1),
+                        self.tensor_prod(self.I, (self._n_qubits_g() * (i - 1))),
+                    )#.simplify()
 
         elif self.len_u_op > 0 and self.encoding == "ed":  # only for ED encoding
             hamiltonian_gauge_suppr = 0.0 * gauge
