@@ -126,21 +126,21 @@ class Ansatz:
     #     self.qc_gauge=qc_gauge
     #     self.th_gauge=th_gauge
 
-    def puregauge_circuit_entang(self,entaglement='linear',rzlayer=False,nlayers=1):
+    def puregauge_circuit_entang(self,entanglement='linear',rzlayer=False,nlayers=1):
         """Return circuit of n gauge fields with Gray encoding and no fermions.
-        Entaglement structure between gauge fields for l=1,3,7
+        Entanglement structure between gauge fields for l=1,3,7
          with options: linear, full, none """
 
         #full entanglement or linear
-        if entaglement=='linear':
+        if entanglement=='linear':
             cry_gates =lambda i: range(0,self.n_qubits*i,self.n_qubits)
             mcry_gates = lambda i: range(self.n_qubits*i-1,self.n_qubits*i,self.n_qubits)
             mcry7_gates = lambda i: range(0,self.n_qubits*i,self.n_qubits)
-        elif entaglement=='full':
+        elif entanglement=='full':
             cry_gates =lambda i: range(self.n_qubits*i)
             mcry_gates = lambda i: range(self.n_qubits*i)
             mcry7_gates = lambda i: range(self.n_qubits*i)
-        elif entaglement=='triangular':
+        elif entanglement=='triangular':
             if self.ngauge<=2:
                 raise ValueError('Triangular entanglement implemented for n gauge fields>2.')
             #layer of cry triangular
@@ -165,7 +165,7 @@ class Ansatz:
         th_gauge=int(''.join(list(filter(str.isdigit, str(self.gray_code_lim(theta=th_gauge,layers=nlayers)[1][-1])))))+1
         first_layer_par = [self.n_qubits-2,]
 
-        if entaglement=='triangular':
+        if entanglement=='triangular':
             qc_gauge.compose(self.gray_code_lim(theta=th_gauge,layers=nlayers)[0],list(range(self.n_qubits*(self.ngauge-1),self.n_qubits*self.ngauge)),inplace=True)
 
             first_layer_par+=[th_gauge,]
