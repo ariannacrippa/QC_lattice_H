@@ -1,0 +1,142 @@
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+run 0
+time computation 3554.142551459023
+Time for each cost function evaluation (tot evaluations=[8125]): ['E_0:s 1.4374318917201117 ']
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+E_i ED vs VQD test:2D_3x3mbasisFalse puregaugeTrue g1 pbcFalse l1_factE1_factB1_m-2_Omega1iterations[4000] entanglement circuitfull optimizerNFT
+Q_static: {(0, 0): -1, (0, 1): 1}
+E_0(ED)= -0.42465209
+E_0(VQD)= -0.4123134134490866
+last point of callback data:
+[8125, -0.4123134134490866, {'variance': 0.04314651286596485, 'shots': 4096}] std. dev. 0.0032455841720200698
+Fidelity (|psi_VQDXpsi_ED|^2):
+E_0: 0.9950516975869977
+final parameters: {Parameter(theta_0): 2.6696597717208497, Parameter(theta_1): 0.7692522141387564, Parameter(theta_10): -0.027390948902690324, Parameter(theta_11): 0.15514422415784807, Parameter(theta_12): 57.27792645365736, Parameter(theta_13): -0.3142518365693722, Parameter(theta_14): -0.0860370721658796, Parameter(theta_15): -0.05046011575245437, Parameter(theta_16): -0.023943261044109442, Parameter(theta_17): 6.198547667029685, Parameter(theta_18): 2.9830007509065823, Parameter(theta_19): 0.0711304178683955, Parameter(theta_2): 3.1790152297749827, Parameter(theta_20): 0.08702382157355719, Parameter(theta_21): 0.08026062307469901, Parameter(theta_22): 6.355145579290597, Parameter(theta_23): -0.41477611012913757, Parameter(theta_24): 3.191294495641728, Parameter(theta_25): 2.3098693457016974, Parameter(theta_26): 0.14731392376392827, Parameter(theta_27): 0.04875687257785599, Parameter(theta_28): 0.13308800930642112, Parameter(theta_29): 0.10435288281631253, Parameter(theta_3): -0.12484450492776059, Parameter(theta_30): -2.1808707376717607, Parameter(theta_31): 5.707260422091833, Parameter(theta_4): -1.0809105608785705, Parameter(theta_5): -1.7450692537920256, Parameter(theta_6): 1.4820506317316926, Parameter(theta_7): 0.19486998836788533, Parameter(theta_8): 2.55394098430678, Parameter(theta_9): 0.028103022893683674}
+Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
+E_0 all physical states reached gauge fields: OK!
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+run 0
+time computation 3737.217405374977
+Time for each cost function evaluation (tot evaluations=[8125]): ['E_0:s 1.4599690530630258 ']
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+E_i ED vs VQD test:2D_3x3mbasisFalse puregaugeTrue g1 pbcFalse l1_factE1_factB1_m-2_Omega1iterations[4000] entanglement circuitfull optimizerNFT
+Q_static: {(0, 0): -1, (0, 2): 1}
+E_0(ED)= 0.00967512
+E_0(VQD)= 0.02874743365795583
+last point of callback data:
+[8125, 0.02874743365795583, {'variance': 0.06865409022467156, 'shots': 4096}] std. dev. 0.004094050866349575
+Fidelity (|psi_VQDXpsi_ED|^2):
+E_0: 0.9910067597696673
+final parameters: {Parameter(theta_0): 2.6693698667317687, Parameter(theta_1): 0.8350349126016087, Parameter(theta_10): -0.03196801721678379, Parameter(theta_11): 0.11742101602336168, Parameter(theta_12): 6.984344965688613, Parameter(theta_13): 0.3603353444930182, Parameter(theta_14): 0.033381028972484426, Parameter(theta_15): 0.07323813688067574, Parameter(theta_16): 0.087784370599138, Parameter(theta_17): 6.482083584887303, Parameter(theta_18): 3.083552258906281, Parameter(theta_19): 0.06720468139552171, Parameter(theta_2): 3.2101707036263947, Parameter(theta_20): 0.010034348850450497, Parameter(theta_21): 0.01931018948438472, Parameter(theta_22): -0.034497967574132704, Parameter(theta_23): -0.2768772656820863, Parameter(theta_24): -1.9037225648137235, Parameter(theta_25): 2.581806501620673, Parameter(theta_26): 0.020009809989175096, Parameter(theta_27): 0.23865084993828872, Parameter(theta_28): 0.2590971900345158, Parameter(theta_29): 0.08087516747991605, Parameter(theta_3): -0.16595792097399586, Parameter(theta_30): -2.1662444252180926, Parameter(theta_31): -0.7386275062054011, Parameter(theta_4): -0.9617338853055345, Parameter(theta_5): 1.6566245595997964, Parameter(theta_6): -1.391195914911022, Parameter(theta_7): -0.1749848713564494, Parameter(theta_8): 2.64814857592825, Parameter(theta_9): -0.017866220647779298}
+Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
+E_0 all physical states reached gauge fields: OK!
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+run 0
+time computation 3719.7021839579975
+Time for each cost function evaluation (tot evaluations=[8125]): ['E_0:s 1.457813887640146 ']
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+E_i ED vs VQD test:2D_3x3mbasisFalse puregaugeTrue g1 pbcFalse l1_factE1_factB1_m-2_Omega1iterations[4000] entanglement circuitfull optimizerNFT
+Q_static: {(0, 0): -1, (1, 0): 1}
+E_0(ED)= -0.42465209
+E_0(VQD)= -0.41324046036836676
+last point of callback data:
+[8125, -0.41324046036836676, {'variance': 0.06825010577100679, 'shots': 4096}] std. dev. 0.004081987687297661
+Fidelity (|psi_VQDXpsi_ED|^2):
+E_0: 0.9918664484273528
+final parameters: {Parameter(theta_0): 2.283176770684069, Parameter(theta_1): 0.5106412135771328, Parameter(theta_10): -0.015966608018307297, Parameter(theta_11): 0.018788111133313037, Parameter(theta_12): 0.263474938679429, Parameter(theta_13): 0.3360990752806503, Parameter(theta_14): -0.020616250122426037, Parameter(theta_15): 0.06687071686249302, Parameter(theta_16): 0.07654706087007349, Parameter(theta_17): -0.062009235467183614, Parameter(theta_18): 3.028226023892248, Parameter(theta_19): 0.08673349320009446, Parameter(theta_2): 3.197926229672466, Parameter(theta_20): 0.04483104234851623, Parameter(theta_21): -0.023929247959798113, Parameter(theta_22): 0.0995805684055914, Parameter(theta_23): -0.41888022484057563, Parameter(theta_24): -2.2022888044065416, Parameter(theta_25): 2.3614499107771745, Parameter(theta_26): 0.08850149898573666, Parameter(theta_27): 0.0598187850210684, Parameter(theta_28): 0.04226851383370749, Parameter(theta_29): 0.1381875426284087, Parameter(theta_3): -0.3973200074070802, Parameter(theta_30): -2.1018700390642255, Parameter(theta_31): -0.3167142122859307, Parameter(theta_4): -1.5573647738161813, Parameter(theta_5): 0.6944939075948038, Parameter(theta_6): -0.6144077815522964, Parameter(theta_7): -0.13170961618771504, Parameter(theta_8): 2.6675104868535007, Parameter(theta_9): 0.02970172860094496}
+Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
+E_0 all physical states reached gauge fields: OK!
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+run 0
+run 1
+run 2
+time computation 3667.49845795898
+Time for each cost function evaluation (tot evaluations=[8125]): ['E_0:s 1.4513853360102726 ']
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+E_i ED vs VQD test:2D_3x3mbasisFalse puregaugeTrue g1 pbcFalse l1_factE1_factB1_m-2_Omega1iterations[4000] entanglement circuitfull optimizerNFT
+Q_static: {(0, 0): -1, (1, 1): 1}
+E_0(ED)= -0.19201086
+E_0(VQD)= -0.18042912902622324
+last point of callback data:
+[8125, -0.18042912902622324, {'variance': 0.04864030523327754, 'shots': 4096}] std. dev. 0.0034460230004808657
+Fidelity (|psi_VQDXpsi_ED|^2):
+E_0: 0.9909896553426284
+final parameters: {Parameter(theta_0): 2.7450751863406926, Parameter(theta_1): 1.299247342266594, Parameter(theta_10): 0.03033681974352819, Parameter(theta_11): 0.15534422234547435, Parameter(theta_12): 0.13214901007772273, Parameter(theta_13): -0.2870729313641461, Parameter(theta_14): -0.05638309094540382, Parameter(theta_15): -0.009667136882542497, Parameter(theta_16): -0.056893968705336695, Parameter(theta_17): -0.23933020974185307, Parameter(theta_18): 2.8780424195793914, Parameter(theta_19): 0.07155994415884187, Parameter(theta_2): 3.2212784062671664, Parameter(theta_20): 0.12281929528532931, Parameter(theta_21): 0.09402697968910174, Parameter(theta_22): 0.026752593649131046, Parameter(theta_23): -0.5512463544682831, Parameter(theta_24): 4.2232134616993795, Parameter(theta_25): 2.0010357801372414, Parameter(theta_26): 0.1382246306520108, Parameter(theta_27): 0.13151370806538346, Parameter(theta_28): 0.12629243344786917, Parameter(theta_29): 0.022065725176040496, Parameter(theta_3): -0.13240186543076507, Parameter(theta_30): -1.9656886876939301, Parameter(theta_31): 25.051668103031062, Parameter(theta_4): -0.5565520735878194, Parameter(theta_5): 2.1425485339993866, Parameter(theta_6): -1.591670298807465, Parameter(theta_7): -0.4595243249256342, Parameter(theta_8): 2.416722757822395, Parameter(theta_9): 0.10943434999784843}
+Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
+E_0 all physical states reached gauge fields: OK!
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+run 0
+run 1
+run 2
+run 3
+run 4
+time computation 3778.644104457984
+Time for each cost function evaluation (tot evaluations=[8125]): ['E_0:s 1.4650769105471098 ']
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+E_i ED vs VQD test:2D_3x3mbasisFalse puregaugeTrue g1 pbcFalse l1_factE1_factB1_m-2_Omega1iterations[4000] entanglement circuitfull optimizerNFT
+Q_static: {(0, 0): -1, (1, 2): 1}
+E_0(ED)= 0.16315688
+E_0(VQD)= 0.20135902261457364
+last point of callback data:
+[8125, 0.20135902261457364, {'variance': 0.08573933484184733, 'shots': 4096}] std. dev. 0.004575199973265965
+Fidelity (|psi_VQDXpsi_ED|^2):
+E_0: 0.9732018068796532
+final parameters: {Parameter(theta_0): 2.695587166538342, Parameter(theta_1): 1.0158837073621858, Parameter(theta_10): 0.044627204775411614, Parameter(theta_11): 0.1950962954973391, Parameter(theta_12): 0.4160413910488739, Parameter(theta_13): 0.36485433782851256, Parameter(theta_14): 0.07560038351825756, Parameter(theta_15): 0.08303965955358568, Parameter(theta_16): 0.14240899667213824, Parameter(theta_17): 6.548996590444586, Parameter(theta_18): 3.0277433419491824, Parameter(theta_19): 0.014765865565496493, Parameter(theta_2): 3.1734142630096285, Parameter(theta_20): 0.03401365766504976, Parameter(theta_21): 0.10368247408711545, Parameter(theta_22): 0.041389245159582005, Parameter(theta_23): -0.1469789531353195, Parameter(theta_24): -1.1217250680097455, Parameter(theta_25): 2.6910839962834063, Parameter(theta_26): 0.1839776845558063, Parameter(theta_27): 0.3259154059693699, Parameter(theta_28): 0.3761724610497432, Parameter(theta_29): 0.3700622109319792, Parameter(theta_3): -0.11093122529390179, Parameter(theta_30): -1.7727434494259888, Parameter(theta_31): -1.2884057867591943, Parameter(theta_4): -0.6857480135068383, Parameter(theta_5): -1.8807559446293212, Parameter(theta_6): 1.4630322097085193, Parameter(theta_7): 0.3012666337711577, Parameter(theta_8): 2.695335718182965, Parameter(theta_9): 0.01836676463611317}
+Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
+E_0 all physical states reached gauge fields: OK!
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+run 0
+time computation 3660.9402947920025
+Time for each cost function evaluation (tot evaluations=[8125]): ['E_0:s 1.4505913664304293 ']
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+E_i ED vs VQD test:2D_3x3mbasisFalse puregaugeTrue g1 pbcFalse l1_factE1_factB1_m-2_Omega1iterations[4000] entanglement circuitfull optimizerNFT
+Q_static: {(0, 0): -1, (2, 0): 1}
+E_0(ED)= -0.00169117
+E_0(VQD)= 0.01429026830852993
+last point of callback data:
+[8125, 0.01429026830852993, {'variance': 0.06865301036086367, 'shots': 4096}] std. dev. 0.004094018668451908
+Fidelity (|psi_VQDXpsi_ED|^2):
+E_0: 0.9928996968282309
+final parameters: {Parameter(theta_0): 2.3690437182231117, Parameter(theta_1): 0.7683907234181679, Parameter(theta_10): 0.04044253908582093, Parameter(theta_11): 0.19476601353679185, Parameter(theta_12): 6.392414998517866, Parameter(theta_13): 0.2748838098548658, Parameter(theta_14): 0.048024006640725925, Parameter(theta_15): -0.004918636860781183, Parameter(theta_16): 0.07730726271685588, Parameter(theta_17): 25.14835416157321, Parameter(theta_18): 2.794399437147659, Parameter(theta_19): 0.13866948030676768, Parameter(theta_2): 3.0634168795411836, Parameter(theta_20): 0.14865029726492143, Parameter(theta_21): 0.18649801588486195, Parameter(theta_22): -0.112355074070629, Parameter(theta_23): -0.4064371375247347, Parameter(theta_24): -2.1683176208929056, Parameter(theta_25): 2.2819085949864157, Parameter(theta_26): 0.1223606312687203, Parameter(theta_27): 0.10950231691761159, Parameter(theta_28): 0.12613412751543157, Parameter(theta_29): -0.1940019443655536, Parameter(theta_3): -0.6566151323312391, Parameter(theta_30): -2.087798521895997, Parameter(theta_31): 0.289410496279641, Parameter(theta_4): -1.6940247578922596, Parameter(theta_5): -0.5261519027237082, Parameter(theta_6): 0.46569852129296685, Parameter(theta_7): -0.04377463072087355, Parameter(theta_8): 2.4741708630744044, Parameter(theta_9): 0.04813383252808976}
+Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
+E_0 all physical states reached gauge fields: OK!
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+run 0
+run 1
+run 2
+run 3
+run 4
+time computation 3622.8458427499863
+Time for each cost function evaluation (tot evaluations=[8125]): ['E_0:s 1.4458780202132004 ']
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+E_i ED vs VQD test:2D_3x3mbasisFalse puregaugeTrue g1 pbcFalse l1_factE1_factB1_m-2_Omega1iterations[4000] entanglement circuitfull optimizerNFT
+Q_static: {(0, 0): -1, (2, 1): 1}
+E_0(ED)= 0.10796402
+E_0(VQD)= 0.12744476387602804
+last point of callback data:
+[8125, 0.12744476387602804, {'variance': 0.08688351438127967, 'shots': 4096}] std. dev. 0.00460562650496565
+Fidelity (|psi_VQDXpsi_ED|^2):
+E_0: 0.983774963656347
+final parameters: {Parameter(theta_0): 2.556347009412669, Parameter(theta_1): 1.2042566142705395, Parameter(theta_10): 0.09103290876285383, Parameter(theta_11): 0.2909027442915989, Parameter(theta_12): 0.22367773933388674, Parameter(theta_13): 0.13392930006752157, Parameter(theta_14): 0.04596260970900549, Parameter(theta_15): 0.02575483009618921, Parameter(theta_16): 0.06149707673170644, Parameter(theta_17): 0.09685818596756543, Parameter(theta_18): 2.7569395441753044, Parameter(theta_19): 0.15293172569198762, Parameter(theta_2): 3.1304891840025566, Parameter(theta_20): 0.1369454677203066, Parameter(theta_21): 0.1202169071567899, Parameter(theta_22): 0.22343220009186637, Parameter(theta_23): -0.5397293386920452, Parameter(theta_24): -2.3616526041451835, Parameter(theta_25): 1.8564277694732314, Parameter(theta_26): 0.07537171693367711, Parameter(theta_27): 0.16337553578523467, Parameter(theta_28): 0.1485714368891383, Parameter(theta_29): 0.14283030993056495, Parameter(theta_3): -0.01644924236281245, Parameter(theta_30): -1.814459600041328, Parameter(theta_31): 73.29911249163342, Parameter(theta_4): -0.419137638503701, Parameter(theta_5): 2.5631632104182462, Parameter(theta_6): -1.4290262177819621, Parameter(theta_7): -0.8406127061010539, Parameter(theta_8): 2.0005321977109665, Parameter(theta_9): 0.07726810416634869}
+Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
+E_0 all physical states reached gauge fields: OK!
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+run 0
+run 1
+run 2
+run 3
+run 4
+time computation 3616.3968803329917
+Time for each cost function evaluation (tot evaluations=[8125]): ['E_0:s 1.4450931617443379 ']
+Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
+E_i ED vs VQD test:2D_3x3mbasisFalse puregaugeTrue g1 pbcFalse l1_factE1_factB1_m-2_Omega1iterations[4000] entanglement circuitfull optimizerNFT
+Q_static: {(0, 0): -1, (2, 2): 1}
+E_0(ED)= 0.40138187
+E_0(VQD)= 0.4367853841258102
+last point of callback data:
+[8125, 0.4367853841258102, {'variance': 0.12090088955908626, 'shots': 4096}] std. dev. 0.005432938315498465
+Fidelity (|psi_VQDXpsi_ED|^2):
+E_0: 0.9762480992534216
+final parameters: {Parameter(theta_0): 2.6424726059639325, Parameter(theta_1): 1.123615047574523, Parameter(theta_10): 0.06374744312448413, Parameter(theta_11): 0.046015362663854184, Parameter(theta_12): -0.019303600473987492, Parameter(theta_13): 0.7842413855549567, Parameter(theta_14): 0.21590752927642023, Parameter(theta_15): 0.18791692235259466, Parameter(theta_16): 0.39339747353779286, Parameter(theta_17): 0.4858246097841054, Parameter(theta_18): 2.877030256036599, Parameter(theta_19): 0.03411611746624875, Parameter(theta_2): 3.2166962718226846, Parameter(theta_20): 0.0873446227367088, Parameter(theta_21): 0.055784389113751595, Parameter(theta_22): 0.07724505503312262, Parameter(theta_23): 0.07159921374960235, Parameter(theta_24): -0.7475165686397053, Parameter(theta_25): 3.276473965337483, Parameter(theta_26): 0.15448884965083698, Parameter(theta_27): 0.21898987883493043, Parameter(theta_28): 0.27640731138026775, Parameter(theta_29): 0.2318690795019156, Parameter(theta_3): -0.11910806152447775, Parameter(theta_30): -1.9481494708385734, Parameter(theta_31): -1.512536949108706, Parameter(theta_4): -0.5555092736605284, Parameter(theta_5): 2.255933104836134, Parameter(theta_6): -1.5587586279476855, Parameter(theta_7): -0.5439908354390648, Parameter(theta_8): 2.9605570708522104, Parameter(theta_9): 0.04013413800513963}
+Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
+E_0 all physical states reached gauge fields: OK!
