@@ -1,12 +1,3 @@
-HamiltonianQED_sym: Initializing...
-> Gauss law equations solved
-> e_op_free and u_op_free built
->> Gauss law applied and Hamiltonian built.  Execution time: 0.013105154037475586 seconds
-HamiltonianQED_oprt: Initializing...
-> e_op_free and u_op_free built
-> Pauli strings built
->> Hamiltonian built.  Execution time: 13.807032108306885 seconds
->> Suppression term built.  Execution time: 0.0018889904022216797 seconds
 Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
 run 0
 fidelity 0.99249385423937
@@ -24,15 +15,6 @@ E_0: 0.99249385423937
 final parameters: {Parameter(theta_0): 2.688794106386043, Parameter(theta_1): 0.7633931368535031, Parameter(theta_10): -0.06093925577652445, Parameter(theta_11): 0.08364434520540451, Parameter(theta_12): 32.332820923798884, Parameter(theta_13): 0.3836689335465932, Parameter(theta_14): -0.024671251978877574, Parameter(theta_15): -0.01200419744115594, Parameter(theta_16): 0.05074176256260616, Parameter(theta_17): 6.365910936127768, Parameter(theta_18): 3.0143534028339802, Parameter(theta_19): 0.050493295950895405, Parameter(theta_2): 3.2048480340907215, Parameter(theta_20): -0.006587130745650843, Parameter(theta_21): 0.02249290134110017, Parameter(theta_22): 0.022651494586271192, Parameter(theta_23): -0.3463372430865973, Parameter(theta_24): -2.2518444009795897, Parameter(theta_25): 2.2449192280685266, Parameter(theta_26): 0.09103755406369429, Parameter(theta_27): 0.023333641439833706, Parameter(theta_28): 0.10990426803863787, Parameter(theta_29): 0.1198736237227297, Parameter(theta_3): -0.1573551160695764, Parameter(theta_30): -2.042406710321183, Parameter(theta_31): -0.17580261878546102, Parameter(theta_4): -1.0889405926544522, Parameter(theta_5): 1.5974793467287534, Parameter(theta_6): -1.3688576995070727, Parameter(theta_7): -0.13996109899315856, Parameter(theta_8): 2.5681029888116678, Parameter(theta_9): 0.041678221517212406}
 Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
 E_0 all physical states reached gauge fields: OK!
-HamiltonianQED_sym: Initializing...
-> Gauss law equations solved
-> e_op_free and u_op_free built
->> Gauss law applied and Hamiltonian built.  Execution time: 0.013352155685424805 seconds
-HamiltonianQED_oprt: Initializing...
-> e_op_free and u_op_free built
-> Pauli strings built
->> Hamiltonian built.  Execution time: 15.211035013198853 seconds
->> Suppression term built.  Execution time: 0.0018906593322753906 seconds
 Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
 run 0
 fidelity 0.9619131343612828
@@ -52,15 +34,6 @@ E_0: 0.9903342158365079
 final parameters: {Parameter(theta_0): 3.609172070117104, Parameter(theta_1): 5.480868122504802, Parameter(theta_10): 6.2244392279843135, Parameter(theta_11): 0.03782816039823899, Parameter(theta_12): 138.77262984398956, Parameter(theta_13): 0.4397637193173752, Parameter(theta_14): 0.007263162372279794, Parameter(theta_15): -0.08591299784003159, Parameter(theta_16): 0.022716098288826335, Parameter(theta_17): 18.908553172498948, Parameter(theta_18): 3.074001756502796, Parameter(theta_19): 0.045962170515515086, Parameter(theta_2): 3.211355223331382, Parameter(theta_20): 0.07970426323510342, Parameter(theta_21): 0.03530187501386527, Parameter(theta_22): 6.362765888086288, Parameter(theta_23): -0.2781022963209191, Parameter(theta_24): -1.8423512326313316, Parameter(theta_25): 2.593501645534731, Parameter(theta_26): 0.08709786241136108, Parameter(theta_27): 0.21413718202171556, Parameter(theta_28): 0.1695368968695879, Parameter(theta_29): 0.15681648305015244, Parameter(theta_3): -0.141904947717261, Parameter(theta_30): -2.1457882326031545, Parameter(theta_31): -0.5878393318926596, Parameter(theta_4): -1.036996894876958, Parameter(theta_5): 1.7870208110362678, Parameter(theta_6): -1.5318353273728298, Parameter(theta_7): -0.17338600728834144, Parameter(theta_8): -3.5417925700548403, Parameter(theta_9): 0.009403203509756784}
 Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
 E_0 all physical states reached gauge fields: OK!
-HamiltonianQED_sym: Initializing...
-> Gauss law equations solved
-> e_op_free and u_op_free built
->> Gauss law applied and Hamiltonian built.  Execution time: 0.015888214111328125 seconds
-HamiltonianQED_oprt: Initializing...
-> e_op_free and u_op_free built
-> Pauli strings built
->> Hamiltonian built.  Execution time: 13.446532249450684 seconds
->> Suppression term built.  Execution time: 0.0019466876983642578 seconds
 Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
 run 0
 fidelity 0.9916429335075454
@@ -78,15 +51,6 @@ E_0: 0.9916429335075454
 final parameters: {Parameter(theta_0): 2.323236759500254, Parameter(theta_1): -0.49857249843249724, Parameter(theta_10): 132.18584543307455, Parameter(theta_11): 0.4689416438052011, Parameter(theta_12): 13.15065592987955, Parameter(theta_13): 0.4513234372926022, Parameter(theta_14): 0.034036471397858106, Parameter(theta_15): 24.958985324537462, Parameter(theta_16): -0.07768692511795477, Parameter(theta_17): 5.634782925607809, Parameter(theta_18): 3.173169570653027, Parameter(theta_19): 0.09348683310175963, Parameter(theta_2): 3.226607939841384, Parameter(theta_20): 12.556261607073994, Parameter(theta_21): -0.08872066852257388, Parameter(theta_22): 0.9138589820830079, Parameter(theta_23): -0.4649023276522724, Parameter(theta_24): -2.295444454388454, Parameter(theta_25): 2.8510784716606974, Parameter(theta_26): 0.10088776008211202, Parameter(theta_27): -0.11533235080620666, Parameter(theta_28): -0.10576502028170151, Parameter(theta_29): -6.1415809344323735, Parameter(theta_3): -0.36566860309685956, Parameter(theta_30): -2.4518821516377924, Parameter(theta_31): -0.025907092922004535, Parameter(theta_4): -1.6004073072140184, Parameter(theta_5): 0.8071592494018649, Parameter(theta_6): -0.7064641444977233, Parameter(theta_7): -0.010501754790055662, Parameter(theta_8): 2.1831979825995367, Parameter(theta_9): 0.10385862822442077}
 Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
 E_0 all physical states reached gauge fields: OK!
-HamiltonianQED_sym: Initializing...
-> Gauss law equations solved
-> e_op_free and u_op_free built
->> Gauss law applied and Hamiltonian built.  Execution time: 0.00943899154663086 seconds
-HamiltonianQED_oprt: Initializing...
-> e_op_free and u_op_free built
-> Pauli strings built
->> Hamiltonian built.  Execution time: 14.733752965927124 seconds
->> Suppression term built.  Execution time: 0.001901865005493164 seconds
 Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
 run 0
 fidelity 0.3843387620762422
@@ -108,15 +72,6 @@ E_0: 0.9843071414124149
 final parameters: {Parameter(theta_0): 2.7582619177142176, Parameter(theta_1): 1.3027015458753048, Parameter(theta_10): 0.061373565425094256, Parameter(theta_11): 1.899758239964492, Parameter(theta_12): 31.285204072539603, Parameter(theta_13): 0.40295121378025556, Parameter(theta_14): 0.0025272266605046137, Parameter(theta_15): 0.003174153606105189, Parameter(theta_16): 6.263883713523088, Parameter(theta_17): 12.693157243120998, Parameter(theta_18): 2.817280174755708, Parameter(theta_19): 0.15594276291293604, Parameter(theta_2): 3.1056402787483286, Parameter(theta_20): 0.17056056358088784, Parameter(theta_21): 6.433337861602746, Parameter(theta_22): 0.08810233333400136, Parameter(theta_23): -0.6509548306468018, Parameter(theta_24): -2.8536831027142586, Parameter(theta_25): 2.0594243424009973, Parameter(theta_26): 0.010504631590018526, Parameter(theta_27): 0.08955357084474909, Parameter(theta_28): 0.14332575929239172, Parameter(theta_29): 0.09938193557793795, Parameter(theta_3): 0.011434051154543996, Parameter(theta_30): -1.9117190244921893, Parameter(theta_31): 23.048079325222492, Parameter(theta_4): -0.5118247300460201, Parameter(theta_5): -2.121669176273444, Parameter(theta_6): 1.5492520844851136, Parameter(theta_7): 0.47925461701870786, Parameter(theta_8): 1.714177295895196, Parameter(theta_9): 0.0031219210767794003}
 Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
 E_0 all physical states reached gauge fields: OK!
-HamiltonianQED_sym: Initializing...
-> Gauss law equations solved
-> e_op_free and u_op_free built
->> Gauss law applied and Hamiltonian built.  Execution time: 0.013716936111450195 seconds
-HamiltonianQED_oprt: Initializing...
-> e_op_free and u_op_free built
-> Pauli strings built
->> Hamiltonian built.  Execution time: 15.771172046661377 seconds
->> Suppression term built.  Execution time: 0.0018439292907714844 seconds
 Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
 run 0
 fidelity 0.9697073300328758
@@ -138,15 +93,6 @@ E_0: 0.9556395855474238
 final parameters: {Parameter(theta_0): 2.676537158414351, Parameter(theta_1): 0.948889100624115, Parameter(theta_10): 38.1596553755878, Parameter(theta_11): -0.10710630104400751, Parameter(theta_12): 6.347149183764587, Parameter(theta_13): 0.34673774593308065, Parameter(theta_14): 0.05480881075913731, Parameter(theta_15): 6.117882481420178, Parameter(theta_16): 0.1652742007168872, Parameter(theta_17): 0.0731145469618063, Parameter(theta_18): 3.0389703185834183, Parameter(theta_19): 0.06556446656988027, Parameter(theta_2): 3.249456333843198, Parameter(theta_20): 0.28096819048720617, Parameter(theta_21): -0.05970936193634853, Parameter(theta_22): 6.400410848545838, Parameter(theta_23): -0.06273767624423626, Parameter(theta_24): -0.6486879488613797, Parameter(theta_25): 2.6493292741287022, Parameter(theta_26): 0.16805526969568174, Parameter(theta_27): 6.6381005133910405, Parameter(theta_28): 0.3984933429791725, Parameter(theta_29): 0.22196825145605792, Parameter(theta_3): -0.1848112624958897, Parameter(theta_30): -1.6206218833858557, Parameter(theta_31): -1.458724553111846, Parameter(theta_4): -0.7858074126392034, Parameter(theta_5): 1.8618565105890583, Parameter(theta_6): -1.472603558687027, Parameter(theta_7): -0.2998849994802384, Parameter(theta_8): 3.0554464063470346, Parameter(theta_9): -0.04317866446323639}
 Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
 E_0 all physical states reached gauge fields: OK!
-HamiltonianQED_sym: Initializing...
-> Gauss law equations solved
-> e_op_free and u_op_free built
->> Gauss law applied and Hamiltonian built.  Execution time: 0.009107828140258789 seconds
-HamiltonianQED_oprt: Initializing...
-> e_op_free and u_op_free built
-> Pauli strings built
->> Hamiltonian built.  Execution time: 12.485024690628052 seconds
->> Suppression term built.  Execution time: 0.002002239227294922 seconds
 Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
 run 0
 fidelity 0.9928008718020497
@@ -164,15 +110,6 @@ E_0: 0.9928008718020497
 final parameters: {Parameter(theta_0): 2.359767588354938, Parameter(theta_1): 0.7372692826227938, Parameter(theta_10): 6.370256361784109, Parameter(theta_11): 0.17236997079479657, Parameter(theta_12): -0.018406511648300372, Parameter(theta_13): 0.3329348582355491, Parameter(theta_14): -0.0008659149731911377, Parameter(theta_15): -0.1379630853929364, Parameter(theta_16): 0.04639825076242958, Parameter(theta_17): -0.1789017042469851, Parameter(theta_18): 2.94615275178236, Parameter(theta_19): 0.13375730537501146, Parameter(theta_2): 3.119232666163193, Parameter(theta_20): 6.337027820454631, Parameter(theta_21): 0.0896924050984187, Parameter(theta_22): 0.07682573241569879, Parameter(theta_23): -0.49572584491386673, Parameter(theta_24): -2.13159959241818, Parameter(theta_25): 2.3356506355537787, Parameter(theta_26): 0.0356276736966373, Parameter(theta_27): 0.0777647654093737, Parameter(theta_28): 0.08036424987273001, Parameter(theta_29): 0.15996660122685652, Parameter(theta_3): -0.652057006593209, Parameter(theta_30): -2.0769954444736953, Parameter(theta_31): -0.3656545572140298, Parameter(theta_4): -1.678417497258904, Parameter(theta_5): 0.512038831773436, Parameter(theta_6): -0.47066112218047523, Parameter(theta_7): -0.0998040575251107, Parameter(theta_8): 2.504841631554454, Parameter(theta_9): -0.007934472153200756}
 Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
 E_0 all physical states reached gauge fields: OK!
-HamiltonianQED_sym: Initializing...
-> Gauss law equations solved
-> e_op_free and u_op_free built
->> Gauss law applied and Hamiltonian built.  Execution time: 0.008755922317504883 seconds
-HamiltonianQED_oprt: Initializing...
-> e_op_free and u_op_free built
-> Pauli strings built
->> Hamiltonian built.  Execution time: 13.9805269241333 seconds
->> Suppression term built.  Execution time: 0.0018329620361328125 seconds
 Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
 run 0
 fidelity 0.9879805466838598
@@ -194,15 +131,6 @@ E_0: 0.9866055975816529
 final parameters: {Parameter(theta_0): 3.7506350616953417, Parameter(theta_1): 5.047054899930262, Parameter(theta_10): 6.3594061262733135, Parameter(theta_11): -3.371136950073153, Parameter(theta_12): 51.617928733080525, Parameter(theta_13): -0.13084651577042547, Parameter(theta_14): 0.0631978231760087, Parameter(theta_15): -0.018276545969683144, Parameter(theta_16): 0.3437329221629034, Parameter(theta_17): 6.356246102364279, Parameter(theta_18): 3.618574964457966, Parameter(theta_19): 0.11604453035544575, Parameter(theta_2): 3.1779439267211975, Parameter(theta_20): 0.1546081066728921, Parameter(theta_21): -0.7028360998207206, Parameter(theta_22): 6.431291883517664, Parameter(theta_23): -0.5488814515299862, Parameter(theta_24): -2.372827879759636, Parameter(theta_25): 2.0468028667593923, Parameter(theta_26): 0.15422513626527043, Parameter(theta_27): 0.08499869774691066, Parameter(theta_28): -0.06365444690291831, Parameter(theta_29): 0.16470171960766317, Parameter(theta_3): -0.0442261668959681, Parameter(theta_30): -1.8692034248562903, Parameter(theta_31): 98.88651230641388, Parameter(theta_4): 0.021734649465008304, Parameter(theta_5): 2.720579908974949, Parameter(theta_6): -1.4794982585529577, Parameter(theta_7): -0.9655833543858935, Parameter(theta_8): -0.6135431533850967, Parameter(theta_9): 0.04485004219532433}
 Check if in VQD sol. there are unphysical states: Gauge fields: ['10'] Fermions: only zero charge are considered physical
 E_0 all physical states reached gauge fields: OK!
-HamiltonianQED_sym: Initializing...
-> Gauss law equations solved
-> e_op_free and u_op_free built
->> Gauss law applied and Hamiltonian built.  Execution time: 0.00873708724975586 seconds
-HamiltonianQED_oprt: Initializing...
-> e_op_free and u_op_free built
-> Pauli strings built
->> Hamiltonian built.  Execution time: 13.97352123260498 seconds
->> Suppression term built.  Execution time: 0.0019767284393310547 seconds
 Options(shots=4096, backend=<IBMBackend('ibmq_qasm_simulator')>)
 run 0
 fidelity 0.968548253442406
