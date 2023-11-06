@@ -1113,7 +1113,7 @@ class HamiltonianQED_oprt:
                             )
 
                 hamiltonian_mag_pauli = (
-                    np.sum(hamiltonian_mag_pauli)
+                    sum(hamiltonian_mag_pauli)
                     if self.puregauge
                     else HamiltonianQED_oprt.pauli_tns(
                         self.tensor_prod(self.I, (int(self.lattice.n_sitestot))),
