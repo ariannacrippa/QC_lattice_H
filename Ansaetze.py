@@ -155,8 +155,12 @@ class Ansatz:
         else:
             raise ValueError('Invalid entanglement.')
 
-        qgaug = QuantumRegister(self.n_qubits*self.ngauge,name='gaug')
-        qc_gauge = QuantumCircuit(qgaug)
+        #circuit with ngauge quantum registers
+        qregisters=[]
+        for i in range(self.ngauge):
+
+            qregisters.append(QuantumRegister(self.n_qubits,name=f'G{i}'))
+        qc_gauge = QuantumCircuit(*qregisters)
 
         th_gauge=0
         #first gauge field
@@ -298,7 +302,7 @@ class Ansatz:
         """Return circuit for fermionic case, i.e. no gauge fields.
            It considers iSwap gates between every two fermions in order to select only zero-charged states."""
 
-        qferm = QuantumRegister(self.nfermions,name='ferm')
+        qferm = QuantumRegister(self.nfermions,name='F')
         qc_ferm = QuantumCircuit(qferm)
 
         th_ferm=0
