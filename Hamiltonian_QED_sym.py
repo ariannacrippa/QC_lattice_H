@@ -119,6 +119,7 @@ class HamiltonianQED_sym:
         self.puregauge = config['puregauge'] if 'puregauge' in config else False
         self.static_charges_values = config['static_charges_values'] if 'static_charges_values' in config else None
         self.e_op_out_plus = config['e_op_out_plus'] if 'e_op_out_plus' in config else True
+        self.e_op_free_input = config['e_op_free_input'] if 'e_op_free_input' in config else None
 
         #external inputs
         self.display_hamiltonian = display_hamiltonian
@@ -186,7 +187,11 @@ class HamiltonianQED_sym:
             print(latex(self.list_gauss[-1]) + " &= 0", "\n")
 
         # Solution of gauss law equations
-        self.sol_gauss = solve(self.list_gauss, dict=True)[0]
+        if self.e_op_free_input is not None:
+            dep_variables=list(set([Symbol(j) for j in self.lattice.list_edges2_e_op]) - set(self.e_op_free_input))
+            self.sol_gauss = solve(self.list_gauss, dep_variables, dict=True)[0]
+        else:
+            self.sol_gauss = solve(self.list_gauss, dict=True)[0]
         print("> Gauss law equations solved")
         # e_op_free from solution of Guass equations and edges
         self.e_op_free = list(

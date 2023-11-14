@@ -93,9 +93,7 @@ class HamiltonianQED_oprt:
     hamilt_sym: class
         Instance of the class HamiltonianQED_sym.
 
-    e_op_free_input: list
-        List of free electric fields. If None, then it is computed from the solution of the Gauss law.
-        Important for quantum circuits.
+
     Additional:
 
     n_sites: list
@@ -140,13 +138,16 @@ class HamiltonianQED_oprt:
         If False, the Hamiltonian is returned in terms of SparsePauliOp, otherwise in terms
         of sparse matrices.
 
+    e_op_free_input: list
+        List of free electric fields. If None, then it is computed from the solution of the Gauss law.
+        Important for quantum circuits.
+
     """
 
     def __init__(
         self,
         config,
         hamilt_sym,
-        e_op_free_input=None,
         sparse_pauli: bool = True,
         extended_enc:bool=False#Test of extended encoding for l=1,3,7
     ) -> None:
@@ -162,10 +163,10 @@ class HamiltonianQED_oprt:
         self.puregauge = config['puregauge'] if 'puregauge' in config else False
         self.static_charges_values = config['static_charges_values'] if 'static_charges_values' in config else None
         self.e_op_out_plus = config['e_op_out_plus'] if 'e_op_out_plus' in config else True
+        self.e_op_free_input = config['e_op_free_input'] if 'e_op_free_input' in config else None
 
         #external inputs
         self.hamilt_sym = hamilt_sym
-        self.e_op_free_input = e_op_free_input
         self.sparse_pauli = sparse_pauli
 
         self.extended_enc = extended_enc
