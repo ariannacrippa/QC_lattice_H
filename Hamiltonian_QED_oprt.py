@@ -93,6 +93,11 @@ class HamiltonianQED_oprt:
     hamilt_sym: class
         Instance of the class HamiltonianQED_sym.
 
+    e_op_free_input: list
+        List of free electric fields. If None, then it is computed from the solution of the Gauss law.
+        Important for quantum circuits.
+    Additional:
+
     n_sites: list
         Number of sites in each direction.
 
@@ -141,6 +146,7 @@ class HamiltonianQED_oprt:
         self,
         config,
         hamilt_sym,
+        e_op_free_input=None,
         sparse_pauli: bool = True,
         extended_enc:bool=False#Test of extended encoding for l=1,3,7
     ) -> None:
@@ -159,6 +165,7 @@ class HamiltonianQED_oprt:
 
         #external inputs
         self.hamilt_sym = hamilt_sym
+        self.e_op_free_input = e_op_free_input
         self.sparse_pauli = sparse_pauli
 
         self.extended_enc = extended_enc
@@ -226,19 +233,22 @@ class HamiltonianQED_oprt:
 
 
         # e_op_free from solution of Guass equations and edges
-        self.e_op_free = list(
-            set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
-                set(
-                    [
-                        item
-                        for sublist in [
-                            eq.free_symbols for eq in self.hamilt_sym.sol_gauss.values()
+        if self.e_op_free_input:
+            self.e_op_free = self.e_op_free_input
+        else:
+            self.e_op_free = list(
+                set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
+                    set(
+                        [
+                            item
+                            for sublist in [
+                                eq.free_symbols for eq in self.hamilt_sym.sol_gauss.values()
+                            ]
+                            for item in sublist
                         ]
-                        for item in sublist
-                    ]
+                    )
                 )
             )
-        )
         # Build u_op_free from e_op_free and edges
         self.u_op_free = [
             k.subs(
@@ -1012,6 +1022,8 @@ class HamiltonianQED_oprt:
             #     self.I,
             #     (int(self.lattice.n_sitestot) ),
             # )
+
+        print('Hamiltonian_el_pauli done')
 
         # ************************************  H_B   ************************************
         if self.len_e_op > 0:
