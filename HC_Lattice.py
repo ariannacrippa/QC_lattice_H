@@ -196,19 +196,21 @@ class HCLattice:
             dict_label = {}
             for key,val in weight.items(): #weight is dict of type E_00x:1 with val the values of el. field
                 key = key.name
+
                 # List of directions for the edges if D<=3 or more
                 if self.dims < 4:
                     ax_direct = ["x", "y", "z"]
                 else:
                     ax_direct = list(map(chr, range(97, 123)))
-                inpoint = [int(n) for n in re.findall(r'\d+',key)[0]]
-                # inpoint2=inpoint.copy()
-                # direction = ax_direct.index(key[-1])
-                # inpoint2[direction]+=1%n_sites[direction]
-                # inpoint2[direction]=inpoint2[direction]%n_sites[direction]
-                inpoint2 = [(inpoint[i] + (1 if i == ax_direct.index(key[-1]) else 0)) % self.n_sites[i] for i in range(len(inpoint))]
+                if key[0]=='E':
+                    inpoint = [int(n) for n in re.findall(r'\d+',key)[0]]
+                    # inpoint2=inpoint.copy()
+                    # direction = ax_direct.index(key[-1])
+                    # inpoint2[direction]+=1%n_sites[direction]
+                    # inpoint2[direction]=inpoint2[direction]%n_sites[direction]
+                    inpoint2 = [(inpoint[i] + (1 if i == ax_direct.index(key[-1]) else 0)) % self.n_sites[i] for i in range(len(inpoint))]
 
-                dict_label[tuple([tuple(inpoint),tuple(inpoint2)])]=val
+                    dict_label[tuple([tuple(inpoint),tuple(inpoint2)])]=val
             self.dict_label = dict_label
 
         fig = plt.figure(figsize=(8, 6))
@@ -218,7 +220,7 @@ class HCLattice:
         #nodes
         for node in self.graph:
             if static_charges is not None:#TODO: again condition of negative static charges for even sites/positive for odd sites
-                col = 'blue' if node in static_charges.keys() and static_charges[node] <0 else 'red' if node in static_charges.keys() and static_charges[node] >0 else 'lightgray'
+                col = 'cornflowerblue' if node in static_charges.keys() and static_charges[node] <0 else 'red' if node in static_charges.keys() and static_charges[node] >0 else 'lightgray'
                 color_map.append(col)
             else:
                 if self.dims == 1:
@@ -259,15 +261,29 @@ class HCLattice:
             )  # ,alpha=1)
 
             # Nodes labels
-            for nds in np.array(self.graph.nodes):
-                if self.dims == 2:
-                    ax_plt.text(
-                        *nds - 0.02, 0, "(" + ",".join(map(str, nds)) + ")", fontsize=8
-                    )
-                else:
-                    ax_plt.text(
-                        *nds - 0.02, "(" + ",".join(map(str, nds)) + ")", fontsize=8
-                    )
+            if weight:
+
+                q_label_dict={str([int(n) for n in re.findall(r'\d+',key.name)[0]]):str(val) for key,val in weight.items() if key.name[0]=='q'}
+                for nds,val in q_label_dict.items():
+                    if self.dims == 2:
+                        ax_plt.text(
+                            *np.array(eval(nds)) - 0.03, 0, val, fontsize=12
+                        )
+                    else:
+                        ax_plt.text(
+                            *np.array(eval(nds)) - 0.03, val, fontsize=12
+                        )
+
+            else:
+                for nds in np.array(self.graph.nodes):
+                    if self.dims == 2:
+                        ax_plt.text(
+                            *nds - 0.02, 0, "(" + ",".join(map(str, nds)) + ")", fontsize=8
+                        )
+                    else:
+                        ax_plt.text(
+                            *nds - 0.02, "(" + ",".join(map(str, nds)) + ")", fontsize=8
+                        )
 
             # Plot the edges
             arrow_options = dict(
@@ -295,7 +311,7 @@ class HCLattice:
                     if int(lbl)>0:
                         clr_lbl='red'
                     elif int(lbl)<0:
-                        clr_lbl='blue'
+                        clr_lbl='cornflowerblue'
                     else:
                         clr_lbl='grey'
 
@@ -341,7 +357,7 @@ class HCLattice:
         if static_charges is not None:
             import matplotlib.lines as mlines
             #TODO: default charges ± 1
-            blue_c = mlines.Line2D([], [], color='blue', marker='o', linestyle='None',
+            blue_c = mlines.Line2D([], [], color='cornflowerblue', marker='o', linestyle='None',
                                     markersize=10, label=f'Q={self.ch_val_e}')
             red_c = mlines.Line2D([], [], color='red', marker='o', linestyle='None',
                                     markersize=10, label=f'Q={self.ch_val_o}')
