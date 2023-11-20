@@ -261,9 +261,12 @@ class HCLattice:
             )  # ,alpha=1)
 
             # Nodes labels
+            q_label_dict={}
             if weight:
 
                 q_label_dict={str([int(n) for n in re.findall(r'\d+',key.name)[0]]):str(val) for key,val in weight.items() if key.name[0]=='q'}
+
+            if len(q_label_dict)>0:
                 for nds,val in q_label_dict.items():
                     if self.dims == 2:
                         ax_plt.text(
