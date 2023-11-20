@@ -1358,55 +1358,75 @@ class HamiltonianQED_oprt:
         Input is a bitstring"""
 
         from sympy import solve
-        gray_physical = list(
-                        set(
-                            [
-                                "{:0{width}b}".format(i ^ (i >> 1), width=self._n_qubits_g())
-                                for i in range(0, 2 ** (self._n_qubits_g()))
-                            ]
-                        ).difference(
-                            [
-                                "{:0{width}b}".format(i ^ (i >> 1), width=self._n_qubits_g())
-                                for i in range(2 * self.l_par + 1, 2 ** (self._n_qubits_g()))
-                            ]
-                        )
-                    )
+        # gray_physical = list(
+        #                 set(
+        #                     [
+        #                         "{:0{width}b}".format(i ^ (i >> 1), width=self._n_qubits_g())
+        #                         for i in range(0, 2 ** (self._n_qubits_g()))
+        #                     ]
+        #                 ).difference(
+        #                     [
+        #                         "{:0{width}b}".format(i ^ (i >> 1), width=self._n_qubits_g())
+        #                         for i in range(2 * self.l_par + 1, 2 ** (self._n_qubits_g()))
+        #                     ]
+        #                 )
+        #             )
 
-        gray_physical = [
-            "".join(i) for i in product(gray_physical, repeat=self.len_u_op)
-        ]
+        # gray_physical = [
+        #     "".join(i) for i in product(gray_physical, repeat=self.len_u_op)
+        # ]
         if self.puregauge:
-            charge0_physical = []
-            phys_state_list = gray_physical
+            q_opt_sol={}
+            # charge0_physical = []
+            # phys_state_list = gray_physical
         else:
-            charge0_physical = [
-                "".join(i)
-                for i in set(
-                    permutations(
-                        "0" * (self.n_sitestot // 2) + "1" * (self.n_sitestot // 2)
-                    )
+            #     charge0_physical = [
+            #         "".join(i)
+            #         for i in set(
+            #             permutations(
+            #                 "0" * (self.lattice.n_sitestot // 2) + "1" * (self.lattice.n_sitestot // 2)
+            #             )
+            #         )
+            #     ]  # charge 0 for n_sitestot fermions
+            # phys_state_list = [
+            #     "".join([a, b]) for a in charge0_physical for b in gray_physical
+            # ]
+
+            #Rules for fermionic charges ..q2q1q0
+            #if site even: q=0 if |0> and q=1 if |1>
+            #if site odd: q=0 if |1> and q=-1 if |0>
+            ferm_sol=[]
+            for n,q in enumerate(eigenstate[:self.lattice.n_sitestot][::-1]):#select fermionic part in string
+                if n%2==0:#even site
+                    qval=0 if q=='0' else 1
+                elif n%2:#odd sites
+                    qval=0 if q=='1' else -1
+                ferm_sol.append(qval)
+
+            q_opt_sol = dict(zip(self.qop_list,ferm_sol))
+
+
+        if self.len_e_op==0:
+            e_op_sol={}
+        else:
+            gray_dict = {
+                "{0:0{1}b}".format(i ^ (i >> 1), self._n_qubits_g()): k
+                for i, k in zip(
+                    range(2 * self.l_par + 1), range(-self.l_par, self.l_par + 1)
                 )
-            ]  # charge 0 for n_sitestot fermions
-        phys_state_list = [
-            "".join([a, b]) for a in charge0_physical for b in gray_physical
-        ]
+                }
 
-        gray_dict = {
-            "{0:0{1}b}".format(i ^ (i >> 1), self._n_qubits_g()): k
-            for i, k in zip(
-                range(2 * self.l_par + 1), range(-self.l_par, self.l_par + 1)
-            )
-            }
+            e_op_sol = dict(zip(self.hamilt_sym.e_op_free,[
 
-        e_op_sol = dict(zip(self.hamilt_sym.e_op_free,[
-
-                        gray_dict[
-                            eigenstate[::-1][
-                                self._n_qubits_g() * i : self._n_qubits_g() * (1 + i)
-                            ][::-1]
-                        ]
-                    for i in range(self.hamilt_sym.len_e_op)
-                ]))# order from left to right q0q1q2..
+                            gray_dict[
+                                eigenstate[::-1][
+                                    self._n_qubits_g() * i : self._n_qubits_g() * (1 + i)
+                                ][::-1]
+                            ]
+                        for i in range(self.hamilt_sym.len_e_op)
+                    ]))# order from left to right q0q1q2..
 
 
-        return {**solve([eq.subs(e_op_sol) for eq in self.hamilt_sym.list_gauss], dict=True)[0],**e_op_sol}
+        tot_op_sol={**e_op_sol,**q_opt_sol}
+
+        return {**solve([eq.subs(tot_op_sol) for eq in self.hamilt_sym.list_gauss], dict=True)[0],**tot_op_sol}
