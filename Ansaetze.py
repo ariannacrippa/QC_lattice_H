@@ -18,6 +18,7 @@ class Ansatz:
         self.gray_code_lim()
         self.puregauge_circuit_entang()
         self.fermionic_circuit()
+        self.gauge_fermion_circuit()
 
 
     def gray_code_lim(self,theta=None,layers=1):
@@ -91,40 +92,62 @@ class Ansatz:
 
         return qc,par_list
 
-    # def puregauge_circuit(self):
-    #     """Return circuit for pure gauge case, i.e. no fermions.
-    #     It considers n gauge field and entangle every nth field with previous ones."""
 
-    #     qgaug = QuantumRegister(self.n_qubits*self.ngauge,name='gaug')
-    #     qc_gauge = QuantumCircuit(qgaug)
+    @staticmethod
+    def CiSwap(circ,c_qubit, qubits, par_i):
+        """ Controlled iSwap """
+        #circ = QuantumCircuit(qubits[1]-c_qubit+1,name='iSWAP')
+        #Rxx
+        circ.h([qubits[0],qubits[1]])
+        circ.cx(qubits[1],qubits[0])
+        circ.crz(par_i/2,c_qubit,qubits[0])
+        circ.cx(qubits[1],qubits[0])
+        circ.h([qubits[0],qubits[1]])
 
-    #     #list of thetas that will be used to start from vacuum i.e. ..010101
-    #     first_layer_par = [0,]
-    #     th_gauge=0
-    #     #first gauge field
-    #     qc_gauge.compose(self.qc,list(range(self.n_qubits)),inplace=True)
-    #     # qc_gauge.barrier()
-    #     th_gauge=int(''.join(list(filter(str.isdigit, str(self.par_list[-1])))))+1
+        #Ryy
+        circ.rx(np.pi/2,qubits[0])
+        circ.rx(np.pi/2,qubits[1])
+        circ.cx(qubits[1],qubits[0])
+        circ.crz(par_i/2,c_qubit,qubits[0])
+        circ.cx(qubits[1],qubits[0])
+        circ.rx(-np.pi/2,qubits[0])
+        circ.rx(-np.pi/2,qubits[1])
 
-    #     for i in range(1,self.ngauge):
-    #         qc_gauge.ry(Parameter(f'theta_{th_gauge}'),self.n_qubits*i)
-    #         first_layer_par+=[th_gauge,]
-    #         th_gauge+=1
-    #         for j in range(self.n_qubits*i):
-    #             qc_gauge.cry(Parameter(f'theta_{th_gauge}'),j,self.n_qubits*i)
-    #             th_gauge+=1
-    #         # qc_gauge.barrier()
-    #         qc_gauge.cry(Parameter(f'theta_{th_gauge}'),self.n_qubits*i,self.n_qubits*i+1)
-    #         th_gauge+=1
-    #         # qc_gauge.barrier()
-    #         #multi-controlled gates
-    #         for j in range(self.n_qubits*i):
-    #             qc_gauge.mcry(Parameter(f'theta_{th_gauge}'),[j,self.n_qubits*i],self.n_qubits*i+1)
-    #             th_gauge+=1
+        #Rzz (for NFT optimizer)
+        circ.cx(qubits[1],qubits[0])
+        circ.crz(par_i/2.0,c_qubit,qubits[0])
+        circ.cx(qubits[1],qubits[0])
 
-    #     self.first_layer_par=first_layer_par
-    #     self.qc_gauge=qc_gauge
-    #     self.th_gauge=th_gauge
+        return circ.to_instruction()
+
+    @staticmethod
+    def iSwap( par_i):
+        """ Controlled iSwap """
+
+        circ = QuantumCircuit(2,name='iSWAP')
+
+        #Rxx
+        circ.h([0,1])
+        circ.cx(1,0)
+        circ.rz(par_i/2,0)
+        circ.cx(1,0)
+        circ.h([0,1])
+
+        #Ryy
+        circ.rx(np.pi/2,0)
+        circ.rx(np.pi/2,1)
+        circ.cx(1,0)
+        circ.rz(par_i/2,0)
+        circ.cx(1,0)
+        circ.rx(-np.pi/2,0)
+        circ.rx(-np.pi/2,1)
+
+        #Rzz (for NFT optimizer)
+        circ.cx(1,0)
+        circ.rz(par_i/2.0,0)
+        circ.cx(1,0)
+
+        return circ.to_instruction()
 
     def puregauge_circuit_entang(self,entanglement='linear',rzlayer=False,nlayers=1):
         """Return circuit of n gauge fields with Gray encoding and no fermions.
@@ -298,40 +321,68 @@ class Ansatz:
         # self.first_layer_par=first_layer_par
         # self.th_gauge=th_gauge
 
-    def fermionic_circuit(self):
+    def fermionic_circuit(self,th_ferm=None,rzlayer=False,nlayers=1):
         """Return circuit for fermionic case, i.e. no gauge fields.
            It considers iSwap gates between every two fermions in order to select only zero-charged states."""
 
         qferm = QuantumRegister(self.nfermions,name='F')
         qc_ferm = QuantumCircuit(qferm)
 
-        th_ferm=0
-        #fermion circuit proposal
-        p = Parameter('p')
-        qc_iswap = QuantumCircuit(2,name='iSWAP')
-        qc_iswap.rxx(p, 0, 1)
-        qc_iswap.ryy(p, 0, 1)
+        if not th_ferm:
+            th_ferm=0
 
         params = lambda i: Parameter(f'theta_{i}')
 
-        for i in range(0,self.nfermions,2):
+        for i in range(1,self.nfermions,2):#range(0,self.nfermions,2):
             qc_ferm.x(qferm[i])
 
-        for j in range(self.nfermions//2):
-            for i in range(j,self.nfermions-j,2):
-                    qc_ferm.append(qc_iswap.to_instruction({p: params(th_ferm)}), qferm[i:i+2])
-                    th_ferm+=1
+        for n in range(nlayers):
+            for j in range(self.nfermions//2):
+                for i in range(j,self.nfermions-j,2):
+                        qc_ferm.append(Ansatz.iSwap(params(th_ferm)), qferm[i:i+2])
+                        th_ferm+=1
 
         #last layer of Rz gates for correct phase
-        for i in range(self.nfermions):
-            qc_ferm.rz(Parameter(f'theta_{th_ferm}'),qferm[i])
-            th_ferm+=1
+        if rzlayer:
+            for i in range(self.nfermions):
+                qc_ferm.rz(Parameter(f'theta_{th_ferm}'),qferm[i])
+                th_ferm+=1
 
-        self.qc_ferm=qc_ferm
-        self.th_ferm=th_ferm
+        return qc_ferm,th_ferm
 
 
-        #TODO add gauge+fermionic circuit
+
+
+
+    def gauge_fermion_circuit(self,entanglement='linear',rzlayer=False,nlayers=1):
+        """Circuit for gauge fields and fermions (proposal with entanglement with CiSWAP gates)"""
+
+        params = lambda i: Parameter(f'theta_{i}')
+
+        qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayers)
+
+        qreg_g=[]
+        for i in range(self.ngauge):
+            qreg_g.append(QuantumRegister(self.n_qubits,name=f'G{i}'))
+        qreg_f = QuantumRegister(self.nfermions,name='F')
+        qc_tot = QuantumCircuit(*qreg_g,qreg_f)
+
+        #gauge part
+        qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
+
+        #fermionic part
+        qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge)
+        qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
+
+
+        #iterate over gauge fields for entanglement ctrl qubits
+        for j in range(self.ngauge*self.n_qubits+self.nfermions//2):
+            for i,k in zip(range(self.ngauge*self.n_qubits+j,self.ngauge*self.n_qubits+self.nfermions-j,2),[np.arange(self.ngauge*self.n_qubits)[i % (self.ngauge*self.n_qubits)] for i in range(self.nfermions)]):
+
+                    Ansatz.CiSwap(qc_tot,k,range(i,i+2),params(th))
+                    th+=1
+
+        return qc_tot,first_layer_par
 
 
 
