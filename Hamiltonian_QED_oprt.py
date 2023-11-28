@@ -187,10 +187,15 @@ class HamiltonianQED_oprt:
             raise ValueError("Magnetic basis is only implemented for 2D lattices")
 
         # Pauli matrices
-        self.Z = SparsePauliOp(Pauli("Z"))
-        self.X = SparsePauliOp(Pauli("X"))
-        self.Y = SparsePauliOp(Pauli("Y"))
-        self.I = SparsePauliOp(Pauli("I"))
+        # self.Z = SparsePauliOp(Pauli("Z"))
+        # self.X = SparsePauliOp(Pauli("X"))
+        # self.Y = SparsePauliOp(Pauli("Y"))
+        # self.I = SparsePauliOp(Pauli("I"))
+
+        self.Z=SparsePauliOp("Z")
+        self.X=SparsePauliOp("X")
+        self.Y=SparsePauliOp("Y")
+        self.I=SparsePauliOp("I")
 
         self._symlist = ["I", "X", "Y", "Z", "Sd", "S-", "Su", "S+"]
 
