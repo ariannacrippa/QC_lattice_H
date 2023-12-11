@@ -346,12 +346,13 @@ class HCLattice:
             color="black",
         )
         if isinstance(savefig_dir, str):  # directory where to save figure
+            namefig="system_" + "x".join(map(str, self.n_sites)) + "_" + bc_title + f"_gausslaw{gauss_law_fig}"
+            if static_charges:
+                namefig+=f"_staticcharges{static_charges}"
+            namefig+=".png"
+
             fig.savefig(
-                f"{savefig_dir}/system_"
-                + "x".join(map(str, self.n_sites))
-                + "_"
-                + bc_title
-                + f"_gausslaw{gauss_law_fig}.png",
+                f"{savefig_dir}/" + namefig,
                 bbox_inches="tight",
                 dpi=600,
             )
