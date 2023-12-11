@@ -345,17 +345,6 @@ class HCLattice:
             horizontalalignment="center",
             color="black",
         )
-        if isinstance(savefig_dir, str):  # directory where to save figure
-            namefig="system_" + "x".join(map(str, self.n_sites)) + "_" + bc_title + f"_gausslaw{gauss_law_fig}"
-            if static_charges:
-                namefig+=f"_staticcharges{static_charges}"
-            namefig+=".png"
-
-            fig.savefig(
-                f"{savefig_dir}/" + namefig,
-                bbox_inches="tight",
-                dpi=600,
-            )
 
         # Add the colorbar
         if static_charges is not None:
@@ -370,6 +359,19 @@ class HCLattice:
             radius = mlines.Line2D([], [], color='black', marker='_', linestyle='None',
                                     markersize=10, label=f'r={self.distance_f(*static_charges.keys())}')
             plt.legend(handles=[blue_c, red_c, grey_c,radius], loc='upper right', bbox_to_anchor=(1.1, 1.1))
+
+
+        if isinstance(savefig_dir, str):  # directory where to save figure
+            namefig="system_" + "x".join(map(str, self.n_sites)) + "_" + bc_title + f"_gausslaw{gauss_law_fig}"
+            if static_charges:
+                namefig+=f"_staticcharges{static_charges}"
+            namefig+=".png"
+
+            fig.savefig(
+                f"{savefig_dir}/" + namefig,
+                bbox_inches="tight",
+                dpi=600,
+            )
         plt.show()
 
     # # List of edges
