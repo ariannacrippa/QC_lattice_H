@@ -95,6 +95,10 @@ class HamiltonianQED_sym:
             site have positive (True) or negative (False) sign. This definition influences
             the plaquette term and
             the kinetic term (H_k): if + sign then U^dag in H_k / if - then U in H_k.
+
+        e_op_free_input: list
+            List of free electric fields. If None, then it is computed from the solution of the Gauss law.
+            Important for quantum circuits.
         }
 
     display_hamiltonian: bool

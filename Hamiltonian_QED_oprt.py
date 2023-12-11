@@ -87,60 +87,58 @@ class HamiltonianQED_oprt:
     Parameters
     ----------
 
-    lattice: class
-        Instance of the class Lattice.
+    config: dict
+        Contains the following arguments:
+        {
+        lattice: class
+            Instance of the class Lattice.
+
+        n_sites: list
+            Number of sites in each direction.
+
+        ll: int
+            Discretisation parameter L.
+
+        encoding: str
+            Encoding used for the gauge fields. Can be "gray" or "ed" (exact diagonalisation).
+
+        magnetic_basis: bool
+            If True, then the magnetic basis is considered, False for electric basis.
+
+        pbc : bool
+                If `pbc` is True, both dimensions are periodic. If False, none
+                are periodic.
+
+        puregauge: bool
+            If False, then we have fermionic degrees of freedom in the system, if True only
+            gauge fields.
+
+        static_charges_values: dict or None
+            If dict, set of static charges with coordinates and values,
+            e.g. a charge Q=-1 in site
+            (0,0) and a Q=1 in (1,0) will be: {(0,0):-1,(1,0):1}.
+
+        e_op_out_plus:bool
+            Boolean variable that specifies if the outgoing electric fields from a certain
+            site have positive (True) or negative (False) sign. This definition influences
+            the plaquette term and
+            the kinetic term (H_k): if + sign then U^dag in H_k / if - then U in H_k.
+
+        e_op_free_input: list
+            List of free electric fields. If None, then it is computed from the solution of the Gauss law.
+            Important for quantum circuits.
+        }
 
     hamilt_sym: class
         Instance of the class HamiltonianQED_sym.
-
-
-    Additional:
-
-    n_sites: list
-        Number of sites in each direction.
-
-    l: int
-        Truncation parameter. Defines how many values the gauge fields take,
-        e.g. l=1 -> ±1,0 .
-
-    ll: int
-        Discretisation parameter L.
-
-    encoding: str
-        Encoding used for the gauge fields. Can be "gray" or "ed" (exact diagonalisation).
-
-    magnetic_basis: bool
-        If True, then the magnetic basis is considered, False for electric basis.
-
-    pbc : bool
-            If `pbc` is True, both dimensions are periodic. If False, none
-            are periodic.
-
-    puregauge: bool
-        If False, then we have fermionic degrees of freedom in the system, if True only
-        gauge fields.
-
-    static_charges_values: dict or None
-        If dict, set of static charges with coordinates and values,
-        e.g. a charge Q=-1 in site
-         (0,0) and a Q=1 in (1,0) will be: {(0,0):-1,(1,0):1}.
-
-    e_op_out_plus:bool
-        Boolean variable that specifies if the outgoing electric fields from a certain
-        site have positive (True) or negative (False) sign. This definition influences
-        the plaquette term and
-        the kinetic term (H_k): if + sign then U^dag in H_k / if - then U in H_k.
-
-    display_hamiltonian: bool
-        If True, the Hamiltonian and the Gauss law equations are displayed in the output.
 
     sparse_pauli: bool
         If False, the Hamiltonian is returned in terms of SparsePauliOp, otherwise in terms
         of sparse matrices.
 
-    e_op_free_input: list
-        List of free electric fields. If None, then it is computed from the solution of the Gauss law.
-        Important for quantum circuits.
+    extended_enc: bool
+        Test for an encoding that include also the unphysical state, e.g. for l=1 we have ±1,0 so 2 qubits are needed (00,01,11,10),
+        with Gray encoding we need only three combinations, with extended encoding we have ±1,0,2 so we also use 10. #TODO: not efficient (fidelity<85%)
 
     """
 
