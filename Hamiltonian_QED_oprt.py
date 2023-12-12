@@ -434,7 +434,7 @@ class HamiltonianQED_oprt:
     def list_to_enc_hamilt( self,list_el , subst, ferm_lst=[], gauge_lst=[], encoding="gray",massterm=False ):#list_el
         """Return a list of Pauli operators or list of matrices (depending on the encoding used) from a list of symbolic operators.
         It consider only single operator, not entire pauli string, thus operation like (I^op^I)**2 and I^op1^I*I^op2^I are
-        then simplied to I^(op**2)^I and I^(op1*op2)^I, respectively.
+        then simplified to I^(op**2)^I and I^(op1*op2)^I, respectively.
         Last part is put everything together and add identity matrices where needed.
 
         encoding: gray, ed (exact diagonalization)"""
@@ -1269,7 +1269,7 @@ class HamiltonianQED_oprt:
     def hamiltonian_suppr(
         self,
     ):
-        """Suppression Hamiltonian"""
+        """Suppression Hamiltonian both for fermions: zero charge sector and gauge fields: unphysical states."""
         # Unphysical space suppressors:
         s_down = 0.5 * (self.I + self.Z)  # project to 0
         s_up = 0.5 * (self.I - self.Z)  # project to 1
