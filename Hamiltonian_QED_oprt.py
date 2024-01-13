@@ -446,7 +446,10 @@ class HamiltonianQED_oprt:
                 if not isinstance(
                     e, (int, float, complex, Float, Integer, str, ImaginaryUnit)
                 ):
-                    if ( list(e.free_symbols)[0].name[-1] == "D" and list(e.free_symbols)[0].name[0] == "U" ):  # gauge field U adjoint
+                    if list(e.free_symbols)[0].name == "id":
+                        index_op.append('0')
+
+                    elif ( list(e.free_symbols)[0].name[-1] == "D" and list(e.free_symbols)[0].name[0] == "U" ):  # gauge field U adjoint
                         index_op.append( str( ( ferm_lst[::-1] + [Symbol(i.name + "D") for i in gauge_lst][::-1] ).index(*e.free_symbols) ) + "D" )
                     elif ( list(e.free_symbols)[0].name[-1] == "D" and list(e.free_symbols)[0].name[0:3] == "Phi" ):  # fermion adjoint (but JW index only 0, must cover all the fermionic dof)
                         index_op.append( str( ( [ Symbol(i.name + "D", commutative=False) for i in ferm_lst ][::-1] + gauge_lst[::-1] ).index(*e.free_symbols) ) + "D" )
@@ -454,15 +457,19 @@ class HamiltonianQED_oprt:
                         index_op.append( str( (ferm_lst[::-1] + gauge_lst[::-1]).index( *e.free_symbols ) ) )
 
 
-            #substitutions from symbols to dummy variables nameOP
-            symb_el = lambdify(list(zip(*subst))[0], ei)(*list(zip(*subst))[1])
+            #substitutions from symbols to dummy variables nameOP but preserve id
+            symb_el = lambdify(list(zip(*subst+[(Symbol('id'),Symbol('id')),]))[0], ei)(*list(zip(*subst+[(Symbol('id'),Symbol('id')),]))[1])
 
             #charges (JW dependent)
             q10 = -0.5 * (self.I + self.Z)
             q00 = 0.5 * (self.I - self.Z)
 
+            #id matrix subs
+
+            idsub=(Symbol('id'),sparse.eye((2 * self.l_par + 1) ,format='csr')) if encoding == "ed" else (Symbol('id'),self.I)
+
             #substitutions from symbols to matrices
-            sym_list_tomatrix = [(Symbol('q10OP'),q10),(Symbol('q00OP'),q00),(Symbol('EOP'),self.e_oper),(Symbol('UOP'),self.u_oper),(Symbol('UdagOP'),self.u_oper_dag)]
+            sym_list_tomatrix = [(Symbol('q10OP'),q10),(Symbol('q00OP'),q00),(Symbol('EOP'),self.e_oper),(Symbol('UOP'),self.u_oper),(Symbol('UdagOP'),self.u_oper_dag),idsub]
 
             if self.magnetic_basis: # U->exp(-i*alpha*E), U_dag->exp(i*alpha*E) in mag basis
                 ei_class = lambda fct: self.matx_exp(
@@ -1048,14 +1055,14 @@ class HamiltonianQED_oprt:
                     [U_mag_subs.get(item, item) for item in sublst if item != 1]
                     for sublst in self.hamilt_sym.hamiltonian_mag_subs
                 ]
-                e_op_dict_mbasis = dict(self.e_field_list)
+                e_op_dict_mbasis = dict(self.e_field_list)#left-right order q0q1q2.. for gauge fields (later little endian is considered)
                 # compute exp(i*alpha*E)
                 ei_class = lambda fct: self.matx_exp(fct * self.e_oper, 1j * self.alpha)
 
                 hamiltonian_mag_pauli = []
                 for ei in hamiltonian_mag_sym:
                     id_eop = {}
-                    for e in ei:
+                    for e in ei:#dict for sign of each E operator in the followinf cos function
                         if e in e_op_dict_mbasis.keys():
                             id_eop[list(e_op_dict_mbasis.keys()).index(e)] = 1  #'p'== +
                         else:
@@ -1078,14 +1085,15 @@ class HamiltonianQED_oprt:
 
                         n_kron  = lambda arg_list:reduce( lambda x, y: np.kron( x, y ), arg_list)
 
-                        for key,val in id_eop.items():
-                            if key==self.len_e_op-1:
+                        for key,val in id_eop.items():#build argument of cos, considering little endian ..q2q1q0
+                            if key==self.len_e_op-1:#last item (qn) with little endian will go to the leftmost position
                                 arg_cos+= val*n_kron([e_vals_eop,np.ones(right_factor(key))] )
-                            elif key==0:
+                            elif key==0:#first item (q0) with little endian will go to the rightmost position
                                 arg_cos+= val*n_kron([np.ones(left_factor(key)),e_vals_eop] )
                             else:
                                 arg_cos+= val*n_kron([np.ones(left_factor(key)),e_vals_eop,np.ones(right_factor(key))] )
 
+                        #since E diagonal op. build only array for sparse diags
                         hamiltonian_mag_pauli.append(sparse.diags(np.cos(self.alpha*arg_cos)))
 
                     else:#old method with cosE as exp(iE)+exp(-iE)/2. necessary if gray and sparse_pauli=False
