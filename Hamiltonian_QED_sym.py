@@ -378,21 +378,47 @@ class HamiltonianQED_sym:
 
 
             hamiltonian_el_sym_mbasis=(hamilt_el_expand.subs(Epow2_mag_subs)).subs(E_mag_subs).subs(Symbol("L"), Symbol("id")*float(self.ll_par * (self.ll_par + 1) / 3))
-            #hamiltonian_el_sym_mbasis = []
-            # for nu in range(1, 2 * self.ll_par + 1):  # for loop over nu
-            #     ham_subs = hamilt_el_expand.subs(Epow2_mag_subs(nu)).subs(
-            #         E_mag_subs(nu)
-            #     )
-            #     if nu > 1:  # the factor with L is independent of sum over nu
-            #         ham_subs = ham_subs.subs(Symbol("L"), 0)
-            #     hamiltonian_el_sym_mbasis.append(
-            #         ham_subs.subs(Symbol("L"), self.ll_par * (self.ll_par + 1) / 3)
-            #     )
-            # hamiltonian_el_sym_mbasis = sum(hamiltonian_el_sym_mbasis)
+
 
             self.hamiltonian_el_sym_mbasis = (
                 hamiltonian_el_sym_mbasis  # symbolic expression (useful for diplay)
             )
+
+            if self.magnetic_basis:
+                #Only for mag basis
+                u_op_free = [
+                            k.subs(
+                                [
+                                    (symbols(j), symbols(k))
+                                    for j, k in zip(
+                                        self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
+                                    )
+                                ]
+                            )
+                            for k in self.e_op_free
+                        ]
+                u_op_free_dag = [
+                    k.subs(
+                        [
+                            (symbols(j), Symbol(k + "D"))
+                            for j, k in zip(
+                                self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
+                            )
+                        ]
+                    )
+                    for k in self.e_op_free
+                ]  # U^dag
+
+                h_submagbasis=self.hamiltonian_el_sym_mbasis
+
+                for utmp,utmpD in zip(u_op_free,u_op_free_dag):
+                    power=2*self.ll_par+1 #if class_H_oprt.magnetic_basis else 2
+                    for pow in range(1,power)[::-1]:
+                        sub=[(utmp**pow, Symbol('UOP'+str(pow))), (utmpD**pow, Symbol('UdagOP'+str(pow))), ]
+                        #print(sub)
+                        h_submagbasis=h_submagbasis.subs(sub)
+
+                self.h_submagbasis=list(h_submagbasis.expand().args)
 
             self.hamiltonian_el_subs = list(
                 hamiltonian_el_sym_mbasis.expand().args

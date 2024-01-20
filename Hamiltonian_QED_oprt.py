@@ -430,24 +430,76 @@ class HamiltonianQED_oprt:
         else:
             raise ValueError("Invalid expression type")
 
+    @staticmethod
+    def list_op_powers(op,n_power):#op=class_H_oprt.u_oper o e_oper o dag
+        """Returns list of n_powers of op"""
+        op_list=[op,]
+        if isinstance(op,SparsePauliOp):
+            for ll in range(1,n_power):#this is only for sparsepauliop
+                op_list.append((op_list[-1]@op).simplify())
+        else:
+            for ll in range(1,n_power):#sparse matrix
+                op_list.append(op_list[-1]@op)
+        return op_list
+
+
+    def subst_list(self,symb_el,encoding="gray"):
+        """In case of mag basis: Return a list of subst for powers of U and E operators in the magnetic basis.Used when SparsePauliOp^n is costly.
+        [(UOP**4, SparsePauliOp(['II'],coeffs=[0.+0.j]))]"""
+
+        #charges (JW dependent)
+        q10 = -0.5 * (self.I + self.Z)
+        q00 = 0.5 * (self.I - self.Z)
+
+        sym_list_tomatrix = [(Symbol('q10OP'),q10),(Symbol('q00OP'),q00),(Symbol('EOP'),self.e_oper),]
+
+
+        if self.magnetic_basis:#power of U and Udag are automatically substituted
+            sym_list_tomatrix+=[(Symbol('UOP'+str(pow+1)),mat) for pow,mat in enumerate(HamiltonianQED_oprt.list_op_powers(self.u_oper,2*self.ll_par))]
+            sym_list_tomatrix+=[(Symbol('UdagOP'+str(pow+1)),mat) for pow,mat in enumerate(HamiltonianQED_oprt.list_op_powers(self.u_oper_dag,2*self.ll_par))]
+
+        else:
+            sym_list_tomatrix += [(Symbol('UOP'),self.u_oper),(Symbol('UdagOP'),self.u_oper_dag),]
+
+        #id matrix subs
+        gray_id = [(Symbol('id'),self.tensor_prod( self.I, (self._n_qubits_g()) ).to_matrix(sparse=True)) ,]if self.sparse_pauli else [(Symbol('id'),self.tensor_prod( self.I, (self._n_qubits_g()) )),]
+        idsub=[(Symbol('id'),sparse.eye((2 * self.l_par + 1) ,format='csr')),] if encoding == "ed" else gray_id
+        sym_list_tomatrix += idsub
+
+        #substitutions from symbols to matrices
+
+        if self.magnetic_basis: # U->exp(-i*alpha*E), U_dag->exp(i*alpha*E) in mag basis
+            ei_class = lambda fct: self.matx_exp(
+            fct * self.e_oper, 1j * self.alpha
+        )
+            sym_list_tomatrix += [(Symbol('exppiEOP'),ei_class(1)),(Symbol('expmiEOP'),ei_class(-1))]
+
+        if not self.puregauge:#add fermions subst
+            sym_list_tomatrix += self.phi_jw_list
+
+        pauli_ei = lambdify(list(zip(*sym_list_tomatrix))[0], symb_el)(*list(zip(*sym_list_tomatrix))[1])
+        #print('pauli_ei',pauli_ei)
+        return pauli_ei
+
     #@profile
-    def list_to_enc_hamilt( self,list_el , subst, ferm_lst=[], gauge_lst=[], encoding="gray",massterm=False ):#list_el
+    def list_to_enc_hamilt( self,list_el , subst, ferm_lst=[], gauge_lst=[], encoding="gray",massterm=False,elterm_mbasis=False ):#list_el
         """Return a list of Pauli operators or list of matrices (depending on the encoding used) from a list of symbolic operators.
         It consider only single operator, not entire pauli string, thus operation like (I^op^I)**2 and I^op1^I*I^op2^I are
         then simplified to I^(op**2)^I and I^(op1*op2)^I, respectively.
         Last part is put everything together and add identity matrices where needed.
 
         encoding: gray, ed (exact diagonalization)"""
+
         ham_encoded =0
         jj_mass = 0
-        for ei in list_el:
+        for eindex,ei in enumerate(list_el):
             index_op = []
             for e in ei:# build index list order ..q2q1q0 (little endian)
                 if not isinstance(
                     e, (int, float, complex, Float, Integer, str, ImaginaryUnit)
                 ):
                     if list(e.free_symbols)[0].name == "id":
-                        index_op.append('0')
+                        index_op.append(f'{len(gauge_lst)}')
 
                     elif ( list(e.free_symbols)[0].name[-1] == "D" and list(e.free_symbols)[0].name[0] == "U" ):  # gauge field U adjoint
                         index_op.append( str( ( ferm_lst[::-1] + [Symbol(i.name + "D") for i in gauge_lst][::-1] ).index(*e.free_symbols) ) + "D" )
@@ -456,32 +508,21 @@ class HamiltonianQED_oprt:
                     else:  # no adjoint
                         index_op.append( str( (ferm_lst[::-1] + gauge_lst[::-1]).index( *e.free_symbols ) ) )
 
+            if elterm_mbasis:#TODO: same ordering?
+                symb_el=[self.decompose_expression(i) for i in self.hamilt_sym.h_submagbasis][eindex]
+            else:
+                #substitutions from symbols to dummy variables nameOP but preserve id
+                symb_el = lambdify(list(zip(*subst+[(Symbol('id'),Symbol('id')),]))[0], ei)(*list(zip(*subst+[(Symbol('id'),Symbol('id')),]))[1])
+                #symb_el = lambdify(list(zip(*subst))[0], ei)(*list(zip(*subst))[1])
 
-            #substitutions from symbols to dummy variables nameOP but preserve id
-            symb_el = lambdify(list(zip(*subst+[(Symbol('id'),Symbol('id')),]))[0], ei)(*list(zip(*subst+[(Symbol('id'),Symbol('id')),]))[1])
-
-            #charges (JW dependent)
-            q10 = -0.5 * (self.I + self.Z)
-            q00 = 0.5 * (self.I - self.Z)
-
-            #id matrix subs
-
-            idsub=(Symbol('id'),sparse.eye((2 * self.l_par + 1) ,format='csr')) if encoding == "ed" else (Symbol('id'),self.I)
+            #print('symb_el',symb_el)
 
             #substitutions from symbols to matrices
-            sym_list_tomatrix = [(Symbol('q10OP'),q10),(Symbol('q00OP'),q00),(Symbol('EOP'),self.e_oper),(Symbol('UOP'),self.u_oper),(Symbol('UdagOP'),self.u_oper_dag),idsub]
+            pauli_ei=self.subst_list(symb_el,encoding=self.encoding)
+            #print('pauli_ei',pauli_ei)
+            #pauli_ei = lambdify(list(zip(*sym_list_tomatrix))[0], symb_el)(*list(zip(*sym_list_tomatrix))[1])
 
-            if self.magnetic_basis: # U->exp(-i*alpha*E), U_dag->exp(i*alpha*E) in mag basis
-                ei_class = lambda fct: self.matx_exp(
-                fct * self.e_oper, 1j * self.alpha
-            )
-                sym_list_tomatrix += [(Symbol('exppiEOP'),ei_class(1)),(Symbol('expmiEOP'),ei_class(-1))]
-
-            if not self.puregauge:#add fermions subst
-                sym_list_tomatrix += self.phi_jw_list
-
-            pauli_ei = lambdify(list(zip(*sym_list_tomatrix))[0], symb_el)(*list(zip(*sym_list_tomatrix))[1])
-
+            #print('pauli_ei',pauli_ei)
             op_dct = {}
             numbers = []
             ct = 0
@@ -1015,6 +1056,7 @@ class HamiltonianQED_oprt:
         # ************************************  H_E   ************************************
         if self.len_e_op > 0:
             if self.magnetic_basis:
+
                 # Pauli expression, since mag basis H_E is in terms of U and U^dag we use u_op_field_subs
                 hamiltonian_el_pauli = self.list_to_enc_hamilt(
                     [self.decompose_expression(i) for i in self.hamilt_sym.hamiltonian_el_subs],
@@ -1022,6 +1064,7 @@ class HamiltonianQED_oprt:
                     self.qop_list,
                     self.uop_list,
                     encoding=self.encoding,
+                    elterm_mbasis=True,#used only in this case to compute and substitute powers of U and U^dag directly
                 )
             else:
                 hamiltonian_el_pauli = self.list_to_enc_hamilt((i.as_ordered_factors() for i in self.hamilt_sym.hamiltonian_el_subs) , self.qcharge_list + self.e_field_list, self.qop_list, self.eop_list, encoding=self.encoding, )# (must be then multiplied by g^2)
