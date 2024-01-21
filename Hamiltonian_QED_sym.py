@@ -414,7 +414,8 @@ class HamiltonianQED_sym:
                 for utmp,utmpD in zip(u_op_free,u_op_free_dag):
                     power=2*self.ll_par+1 #if class_H_oprt.magnetic_basis else 2
                     for pow in range(1,power)[::-1]:
-                        sub=[(utmp**pow, Symbol('UOP'+str(pow))), (utmpD**pow, Symbol('UdagOP'+str(pow))), ]
+                        #sub=[(utmp**pow, Symbol('UOP'+str(pow))), (utmpD**pow, Symbol('UdagOP'+str(pow))), ]
+                        sub=[(utmp**pow, Symbol(str(utmp)+str(pow))), (utmpD**pow, Symbol(str(utmpD)+str(pow))), ]
                         #print(sub)
                         h_submagbasis=h_submagbasis.subs(sub)
 
