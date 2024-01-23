@@ -192,7 +192,11 @@ class HamiltonianQED_sym:
 
         # Solution of gauss law equations
         if self.e_op_free_input is not None:
-            dep_variables=list(set([Symbol(j) for j in self.lattice.list_edges2_e_op]) - set(self.e_op_free_input))
+            if self.puregauge:
+                dep_variables=list(set([Symbol(j) for j in self.lattice.list_edges2_e_op]) - set(self.e_op_free_input))
+            else:
+                dep_variables=list(set([Symbol(j) for j in self.lattice.list_edges2_e_op]+[Symbol(q) for q in self.q_charge_str_list]) - set(self.e_op_free_input))
+
             self.sol_gauss = solve(self.list_gauss, dep_variables, dict=True)[0]
         else:
             self.sol_gauss = solve(self.list_gauss, dict=True)[0]
@@ -288,6 +292,7 @@ class HamiltonianQED_sym:
                     ga_tmp -= self.static_charges_values[node]
                     if not self.puregauge:
                         gc_tmp += self.static_charges_values[node]
+
 
             e_op_i = "E_" + self.str_node_f(node)
             for j, k in zip(self.lattice.list_edges, self.lattice.list_edges2_e_op):
@@ -415,7 +420,7 @@ class HamiltonianQED_sym:
                     power=2*self.ll_par+1 #if class_H_oprt.magnetic_basis else 2
                     for pow in range(1,power)[::-1]:
                         #sub=[(utmp**pow, Symbol('UOP'+str(pow))), (utmpD**pow, Symbol('UdagOP'+str(pow))), ]
-                        sub=[(utmp**pow, Symbol(str(utmp)+str(pow))), (utmpD**pow, Symbol(str(utmpD)+str(pow))), ]
+                        sub=[(utmp**pow, Symbol(str(utmp)+'^'+str(pow))), (utmpD**pow, Symbol(str(utmpD)+'^'+str(pow))), ]
                         #print(sub)
                         h_submagbasis=h_submagbasis.subs(sub)
 

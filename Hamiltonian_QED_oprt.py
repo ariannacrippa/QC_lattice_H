@@ -238,7 +238,7 @@ class HamiltonianQED_oprt:
 
         # e_op_free from solution of Guass equations and edges
         if self.e_op_free_input:
-            self.e_op_free = self.e_op_free_input
+            self.e_op_free = [Symbol(symb.name) for symb in self.e_op_free_input if 'E' in symb.name]
         else:
             self.e_op_free = list(
                 set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
@@ -460,9 +460,9 @@ class HamiltonianQED_oprt:
             # sym_list_tomatrix+=[(Symbol('UOP'+str(pow+1)),mat) for pow,mat in enumerate(HamiltonianQED_oprt.list_op_powers(self.u_oper,2*self.ll_par))]
             # sym_list_tomatrix+=[(Symbol('UdagOP'+str(pow+1)),mat) for pow,mat in enumerate(HamiltonianQED_oprt.list_op_powers(self.u_oper_dag,2*self.ll_par))]
             for utmp in self.uop_list:
-                sym_list_tomatrix+=[(Symbol(str(utmp)+str(pow+1)),mat) for pow,mat in enumerate(list_power_uop)]
+                sym_list_tomatrix+=[(Symbol(str(utmp)+'^'+str(pow+1)),mat) for pow,mat in enumerate(list_power_uop)]
             for utmpd in self.u_op_free_dag:
-                sym_list_tomatrix+=[(Symbol(str(utmpd)+str(pow+1)),mat) for pow,mat in enumerate(list_power_udagop)]
+                sym_list_tomatrix+=[(Symbol(str(utmpd)+'^'+str(pow+1)),mat) for pow,mat in enumerate(list_power_udagop)]
 
         else:
             sym_list_tomatrix += [(Symbol('UOP'),self.u_oper),(Symbol('UdagOP'),self.u_oper_dag),]
@@ -504,18 +504,22 @@ class HamiltonianQED_oprt:
             index_op = []
 
             if elterm_mbasis:
-                ind_val=-2
-                ind_list = lambda e: [Symbol(symbol.name[:-1]) for symbol in e.free_symbols]
+                #ind_val=-2
+                ind_list = lambda e: [Symbol(symbol.name.split('^')[0]) for symbol in e.free_symbols]#[Symbol(symbol.name[:-1]) for symbol in e.free_symbols]
+
             else:
-                ind_val=-1
+                #ind_val=-1
                 ind_list = lambda e: e.free_symbols
 
             for e in ei:# build index list order ..q2q1q0 (little endian)
+                #print('ind_list',ind_list(e),'gaugelist',gauge_lst)
                 if not isinstance( e, (int, float, complex, Float, Integer, str, ImaginaryUnit) ):
                     if list(e.free_symbols)[0].name == "id":
                         index_op.append(f'{len(gauge_lst)}')
 
-                    elif ( list(e.free_symbols)[0].name[ind_val] == "D" and list(e.free_symbols)[0].name[0] == "U" ):  # gauge field U adjoint
+                    elif ( "D" in list(e.free_symbols)[0].name and list(e.free_symbols)[0].name[0] == "U" ):  # gauge field U adjoint
+                        #print('adjoint',[Symbol(i.name + "D") for i in gauge_lst][::-1])
+                        #print(( ferm_lst[::-1] + [Symbol(i.name + "D") for i in gauge_lst][::-1] ).index(*ind_list(e))  )
                         index_op.append( str( ( ferm_lst[::-1] + [Symbol(i.name + "D") for i in gauge_lst][::-1] ).index(*ind_list(e)) ) + "D" )
                     elif ( list(e.free_symbols)[0].name[-1] == "D" and list(e.free_symbols)[0].name[0:3] == "Phi" ):  # fermion adjoint (but JW index only 0, must cover all the fermionic dof)
                         index_op.append( str( ( [ Symbol(i.name + "D", commutative=False) for i in ferm_lst ][::-1] + gauge_lst[::-1] ).index(*e.free_symbols) ) + "D" )
@@ -529,6 +533,7 @@ class HamiltonianQED_oprt:
                 symb_el = lambdify(list(zip(*subst+[(Symbol('id'),Symbol('id')),]))[0], ei)(*list(zip(*subst+[(Symbol('id'),Symbol('id')),]))[1])
 
             #print('symb_el',symb_el)
+            #print('sym_list_tomatrix',sym_list_tomatrix)
 
             #substitutions from symbols to matrices
             pauli_ei = lambdify(list(zip(*sym_list_tomatrix))[0], symb_el)(*list(zip(*sym_list_tomatrix))[1])
