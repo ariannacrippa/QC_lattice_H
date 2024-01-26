@@ -151,15 +151,20 @@ class HCLattice:
     ):
         """Draw the graph of the lattice with the dynamical links.
         Parameters
-           gauss_law_fig: bool
+            gauss_law_fig: bool
                If True, the free links are highlighted in gray and the dynamical
                links in black.
 
             e_op_free: list
                 List of dynamical links after Gauss law is applied.
 
-           savefig_dir: str
-               If not None, the figure is saved in the specified directory."""
+            savefig_dir: str
+               If not None, the figure is saved in the specified directory.
+
+            weight: dict
+                Dictionary of the form {E_00x:1} with E_00x the electric field
+                variable and 1 the value of the electric field.
+            """
         #edges
         if gauss_law_fig and e_op_free is not None:
             lu_op_edges = [
@@ -181,16 +186,22 @@ class HCLattice:
                 for i in lu_op_edges
             ]  # list of edges (tuples) that are dynamical
 
-            edge_color_list = [
-                "black" if e in lu_op_free_map else "lightgray"
-                for e in self.graph_edges_system
-            ]
+            # edge_color_list = [
+            #     "black" if e in lu_op_free_map else "lightgray"
+            #     for e in self.graph_edges_system
+            # ]
+
+            edge_color_list = ["black" for e in self.graph_edges_system]
+            edges_linestyle=["solid" if e in lu_op_free_map else (0, (5, 10))
+                for e in self.graph_edges_system]
+
         elif not gauss_law_fig and e_op_free is not None:
             raise ValueError("gauss_law_fig must be True if e_op_free is not None")
         elif gauss_law_fig and e_op_free is None:
             raise ValueError("e_op_free must be not None if gauss_law_fig is True")
         else:
             edge_color_list = ["black" for e in self.graph_edges_system]
+            edges_linestyle=["solid" for e in self.graph_edges_system]
 
         if weight:
             dict_label = {}
@@ -257,7 +268,7 @@ class HCLattice:
         else:
             ax_plt = fig.add_subplot(111, projection="3d")
             ax_plt.scatter(
-                *np.array(self.graph.nodes).T, s=200, c=color_map
+                *np.array(self.graph.nodes).T, s=300, c=color_map
             )  # ,alpha=1)
 
             # Nodes labels
@@ -270,27 +281,27 @@ class HCLattice:
                 for nds,val in q_label_dict.items():
                     if self.dims == 2:
                         ax_plt.text(
-                            *np.array(eval(nds)) - 0.03, 0, val, fontsize=12
+                            *np.array(eval(nds)) - 0.03, 0, val, fontsize=14
                         )
                     else:
                         ax_plt.text(
-                            *np.array(eval(nds)) - 0.03, val, fontsize=12
+                            *np.array(eval(nds)) - 0.03, val, fontsize=14
                         )
 
             else:
                 for nds in np.array(self.graph.nodes):
                     if self.dims == 2:
                         ax_plt.text(
-                            *nds - 0.02, 0, "(" + ",".join(map(str, nds)) + ")", fontsize=8
+                            *nds - 0.02, 0, "(" + ",".join(map(str, nds)) + ")", fontsize=10
                         )
                     else:
                         ax_plt.text(
-                            *nds - 0.02, "(" + ",".join(map(str, nds)) + ")", fontsize=8
+                            *nds - 0.02, "(" + ",".join(map(str, nds)) + ")", fontsize=10
                         )
 
             # Plot the edges
-            arrow_options = dict(
-                arrowstyle="-|>", mutation_scale=15, lw=1.5, connectionstyle=connection
+            arrow_options = lambda linestyle:dict(
+                arrowstyle="-|>", mutation_scale=15, lw=1.5, connectionstyle=connection,linestyle=linestyle
             )
 
             #label the edges if weight
@@ -299,17 +310,9 @@ class HCLattice:
             else:
                 label_edges =[None for i in self.graph_edges_system]
 
-            for vizedge, col,lbl in zip(np.array(self.graph.edges), edge_color_list,label_edges):
-                if self.dims == 2:
-                    arrow = Arrow3D(
-                        *vizedge.T, [0, 0], ec=col, color=col,linewidth=5,  **arrow_options
-                    )
-                else:
-                    arrow = Arrow3D(*vizedge.T, ec=col, color=col, **arrow_options)
+            #for vizedge, col,lbl in zip(np.array(self.graph.edges), edge_color_list,label_edges):
 
-                ax_plt.add_artist(arrow)
-
-                #Add label the edges if weight
+            for vizedge, col,lbl,linestyle in zip(np.array(self.graph.edges), edge_color_list,label_edges,edges_linestyle):
                 if weight:
                     if int(lbl)>0:
                         clr_lbl='red'
@@ -317,8 +320,25 @@ class HCLattice:
                         clr_lbl='cornflowerblue'
                     else:
                         clr_lbl='grey'
+                    if self.dims == 2:
+                        arrow = Arrow3D(
+                            *vizedge.T, [0, 0], ec=clr_lbl, color=clr_lbl,linewidth=5,  **arrow_options(linestyle)
+                        )
+                    else:
+                        arrow = Arrow3D(*vizedge.T, ec=clr_lbl, color=clr_lbl, **arrow_options(linestyle))
 
-                    ax_plt.annotate(lbl, (.5, .5), xycoords=arrow, ha='center', va='bottom',color=clr_lbl )
+                    #Add label the edges if weight
+                    ax_plt.annotate(lbl, (.5, .5), xycoords=arrow, ha='center', va='bottom',color=clr_lbl,fontsize=14)
+                else:
+                    if self.dims == 2:
+                        arrow = Arrow3D(
+                            *vizedge.T, [0, 0], ec=col, color=col,linewidth=5,  **arrow_options(linestyle)
+                        )
+                    else:
+                        arrow = Arrow3D(*vizedge.T, ec=col, color=col, **arrow_options(linestyle))
+
+                ax_plt.add_artist(arrow)
+
 
 
             def _format_axes(ax_plt):
