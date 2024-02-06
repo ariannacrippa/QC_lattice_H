@@ -532,9 +532,11 @@ class HamiltonianQED_sym:
                 )
 
             elif self.lattice.dims == 2:
+
                 phase = (
-                    (-1) ** (sum(i[0]) % 2) if i[0][1] != i[1][1] else 1
-                )  # change in y direction if x is odd
+                    (-1) ** ((sum(i[0])) % 2) if i[0][1] != i[1][1] else 1
+                )  # change in y direction if n odd
+
                 xy_term = (
                     "y" if i[0][1] != i[1][1] else "x"
                 )  # if x - adjoint, if y + adjoint

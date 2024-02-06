@@ -606,7 +606,7 @@ class HamiltonianQED_oprt:
             )  # remove id_f when JW applied
 
             if massterm:# sum over all terms for mass hamiltonian
-                ham_encoded+=((-1) ** jj_mass)* np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(*res) #reduce(tensor_or_kron,res )
+                ham_encoded+=((-1) ** jj_mass)* np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(*res) #reduce(tensor_or_kron,res )#TODO: for 3+1 D  minus sign for 3rd,4th components
                 jj_mass+=1
             else:#sum over all terms
                 #TODO memory problematic part
@@ -1301,6 +1301,8 @@ class HamiltonianQED_oprt:
 
 
             # ************************************  H_M   ************************************
+            if self.lattice.dims == 3:
+                raise NotImplementedError("Mass term not implemented for 3D")
 
             hamiltonian_m_pauli =self.list_to_enc_hamilt(
                             self.hamilt_sym.hamiltonian_m_sym,
