@@ -146,7 +146,7 @@ class HCLattice:
         self.graph = graph
 
     def draw_graph_func(
-        self, gauss_law_fig: bool = False, e_op_free=None, static_charges=None,savefig_dir=None,
+        self, gauss_law_fig: bool = False, e_op_free=None, static_charges=None,savefig_dir=None,figname=None,
         weight : dict| None = None
     ):
         """Draw the graph of the lattice with the dynamical links.
@@ -160,6 +160,9 @@ class HCLattice:
 
             savefig_dir: str
                If not None, the figure is saved in the specified directory.
+
+            figname: str
+                If not None, the figure is saved with this name. Otherwise, a default name is used.
 
             weight: dict
                 Dictionary of the form {E_00x:1} with E_00x the electric field
@@ -382,10 +385,13 @@ class HCLattice:
 
 
         if isinstance(savefig_dir, str):  # directory where to save figure
-            namefig="system_" + "x".join(map(str, self.n_sites)) + "_" + bc_title + f"_gausslaw{gauss_law_fig}"
-            if static_charges:
-                namefig+=f"_staticcharges{static_charges}"
-            namefig+=".png"
+            if isinstance(figname,str):
+                namefig = figname
+            else:
+                namefig="system_" + "x".join(map(str, self.n_sites)) + "_" + bc_title + f"_gausslaw{gauss_law_fig}"
+                if static_charges:
+                    namefig+=f"_staticcharges{static_charges}"
+                namefig+=".png"
 
             fig.savefig(
                 f"{savefig_dir}/" + namefig,
