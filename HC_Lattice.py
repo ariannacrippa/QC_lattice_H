@@ -146,7 +146,7 @@ class HCLattice:
         self.graph = graph
 
     def draw_graph_func(
-        self, gauss_law_fig: bool = False, e_op_free=None, static_charges=None,savefig_dir=None,figname=None,
+        self, gauss_law_fig: bool = False, e_op_free=None, static_charges=None,savefig_dir=None,figname=None,suptitle=False,
         weight : dict| None = None
     ):
         """Draw the graph of the lattice with the dynamical links.
@@ -163,6 +163,9 @@ class HCLattice:
 
             figname: str
                 If not None, the figure is saved with this name. Otherwise, a default name is used.
+
+            suptitle: bool
+                If True, the title of the figure is displayed.
 
             weight: dict
                 Dictionary of the form {E_00x:1} with E_00x the electric field
@@ -354,34 +357,44 @@ class HCLattice:
 
             _format_axes(ax_plt)
 
-        if self.pbc:
-            bc_title = "PBC"
-        else:
-            bc_title = "OBC"
+        if suptitle:
+            if self.pbc:
+                bc_title = "PBC"
+            else:
+                bc_title = "OBC"
 
-        fig.patch.set_facecolor("xkcd:white")
+            fig.patch.set_facecolor("xkcd:white")
 
-        fig.suptitle(
-            "x".join(map(str, self.n_sites)) + f" Lattice:" + bc_title,
-            fontsize=12,
-            fontweight="bold",
-            horizontalalignment="center",
-            color="black",
-        )
+            fig.suptitle(
+                "x".join(map(str, self.n_sites)) + f" Lattice:" + bc_title,
+                fontsize=12,
+                fontweight="bold",
+                horizontalalignment="center",
+                color="black",
+            )
 
         # Add the colorbar
         if static_charges is not None:
             import matplotlib.lines as mlines
-            #TODO: default charges ± 1
-            blue_c = mlines.Line2D([], [], color='cornflowerblue', marker='o', linestyle='None',
-                                    markersize=10, label=f'Q={self.ch_val_e}')
-            red_c = mlines.Line2D([], [], color='red', marker='o', linestyle='None',
-                                    markersize=10, label=f'Q={self.ch_val_o}')
+
+            handles=[]
+            for key,val in static_charges.items():
+                if val>0:#charge pos
+                    qstat_o=val
+                    red_c = mlines.Line2D([], [], color='red', marker='o', linestyle='None',
+                                    markersize=10, label=f'Q={qstat_o}')
+                    handles.append(red_c)
+                else:#charge neg
+                    qstat_e=val
+                    blue_c = mlines.Line2D([], [], color='cornflowerblue', marker='o', linestyle='None',
+                                    markersize=10, label=f'Q={qstat_e}')
+                    handles.append(blue_c)
+
             grey_c = mlines.Line2D([], [], color='lightgray', marker='o', linestyle='None',
                                     markersize=10, label='Q=0')
             radius = mlines.Line2D([], [], color='black', marker='_', linestyle='None',
-                                    markersize=10, label=f'r={self.distance_f(*static_charges.keys())}')
-            plt.legend(handles=[blue_c, red_c, grey_c,radius], loc='upper right', bbox_to_anchor=(1.1, 1.1))
+                                    markersize=10, label=f'r={np.round(self.distance_f(*static_charges.keys()),3)}')
+            plt.legend(handles=handles+[grey_c,radius], loc='upper right', bbox_to_anchor=(1.1, 1.1))
 
 
         if isinstance(savefig_dir, str):  # directory where to save figure
@@ -666,7 +679,14 @@ class HCLattice:
             return np.sqrt(sum((x - y) ** 2 for x, y in zip(points[0], points[1])))
 
     def func_qstatic_dist(self,charge: tuple =None,ch_val: int=None):
-        """Returns two lists:
+        """
+        Input:
+        charge: tuple
+            Coordinates of the second charge.
+        ch_val: int
+            Value of the second charge.
+
+        Returns two lists:
         1. A list of dictionaries of the form {charge:1,j:-1} where j is the coordinate of the site to which charge is connected.
         The default is the origin (0,0,...,0) and the sites to which it is connected are the odd sites.
         If the charge is on an odd site, then it is connected to the even sites.
@@ -686,7 +706,7 @@ class HCLattice:
             ch_val_e, ch_val_o = -1, 1
         else:
             if sum(charge)%2 and ch_val<0 or not sum(charge)%2 and ch_val>0:
-                raise ValueError("Charge and charge value must be such that the charge on even(odd) site is negative(positive).") #TODO: check if ok. balance dynamical charge so net charge zero
+                raise ValueError("Charge and charge value must be such that the charge on even(odd) site is negative(positive), since convention used is fermions(antifermions) on even(odd) sites.") #TODO: check if ok. balance dynamical charge so net charge zero
             else:
                 ch_val_e, ch_val_o = (ch_val, -ch_val) if ch_val < 0 else (-ch_val, ch_val)
 
