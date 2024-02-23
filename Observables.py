@@ -33,8 +33,8 @@ def total_charge_op(class_latt, class_H, puregauge,encoding):
     return q_tot_op
 
 
-def particle_density(class_latt, class_H, puregauge,encoding):
-    """Operator of particle density."""
+def chiral_condensate(class_latt, class_H, puregauge,encoding):
+    """Operator of chiral condensate see https://arxiv.org/pdf/2112.00756.pdf"""
     if puregauge:
         raise ValueError("Empty sites, fermionic part needed")
     if encoding == "gray":
@@ -45,10 +45,11 @@ def particle_density(class_latt, class_H, puregauge,encoding):
         gauge = sp.eye((2 * class_H.l_par + 1) ** (class_H.len_u_op),format='csr')
 
     #n operator for even and odd sites
-    n10 = 0.5 * (class_H.I - class_H.Z)
-    n00 = 0.5 * (class_H.I + class_H.Z)
+    n00 = 0.5 * (class_H.I - class_H.Z)
+    n10 = 0.5 * (class_H.I + class_H.Z)
 
-    #add n00 if f even and n10 if odd
+
+    #add n00 if even and n10 if odd
     if class_latt.n_sitestot%2:# odd number of sites (the last site is even n00)
         n_tot_op = class_H.pauli_tns(*[n00,]+[class_H.I,]*(class_latt.n_sitestot-1)+[gauge,])
         first=0
@@ -62,4 +63,4 @@ def particle_density(class_latt, class_H, puregauge,encoding):
         else:
             n_tot_op+=class_H.pauli_tns(*[class_H.I,]*(class_latt.n_sitestot-k)+[n10, ]+[class_H.I,]*(k-1)+[gauge,])
 
-    return n_tot_op
+    return 1/np.prod(class_latt.n_sites)*n_tot_op

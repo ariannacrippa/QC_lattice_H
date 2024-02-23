@@ -271,6 +271,11 @@ class Ansatz:
                         for j in cry_gates(i):
 
                             qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),j+n,self.n_qubits*i+n)
+
+                            # qc_gauge.cx(j+n,self.n_qubits*i+n)
+                            # qc_gauge.ry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*i+n)
+
+
                             th_gauge+=1
                     #qc_gauge.barrier()
 
@@ -377,7 +382,7 @@ class Ansatz:
         qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge)
         qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
 
-
+        qc_tot.barrier()
         #iterate over gauge fields for entanglement ctrl qubits
         for j in range(self.ngauge*self.n_qubits+self.nfermions//2):
             for i,k in zip(range(self.ngauge*self.n_qubits+j,self.ngauge*self.n_qubits+self.nfermions-j,2),[np.arange(self.ngauge*self.n_qubits)[i % (self.ngauge*self.n_qubits)] for i in range(self.nfermions)]):
