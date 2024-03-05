@@ -33,7 +33,10 @@ from sympy import (
     Float,
     Integer,
     cos,
+    sin,
+    Sum,
 )
+from sympy.abc import nu
 from sympy.core.numbers import ImaginaryUnit
 from sympy.physics.quantum.dagger import Dagger
 from scipy.sparse.linalg import eigs
@@ -335,100 +338,10 @@ class HamiltonianQED_sym:
         )
 
         if self.magnetic_basis:
-            fnu_sin = lambda nu: float(
-                (-1) ** (nu + 1)
-                / (2 * np.pi)
-                * (
-                    special.polygamma(
-                        0, (2 * self.ll_par + 1 + nu) / (2 * (2 * self.ll_par + 1))
-                    )
-                    - special.polygamma(0, nu / (2 * (2 * self.ll_par + 1)))
-                )
-            )  # f_nu^s factor for E operator
 
-            fnu_cos = lambda nu: float(
-                (-1) ** (nu)
-                / (4 * np.pi**2)
-                * (
-                    special.polygamma(1, nu / (2 * (2 * self.ll_par + 1)))
-                    - special.polygamma(
-                        1, (2 * self.ll_par + 1 + nu) / (2 * (2 * self.ll_par + 1))
-                    )
-                )
-            )  # f_nu^c factor for E^e operator
+            hamiltonian_el_sym=hamiltonian_el_sym.expand().subs([(el**2,Symbol(str(el)+'^2')) for el in self.e_op_free])
 
-            # dict for substitution of E operators to expression of U and U^dag for magnetic basis
-            E_mag_subs = {
-                el_eop: sum([fnu_sin(nu)
-                * (
-                    Symbol("U_" + el_eop.name[2:]) ** nu
-                    - Symbol("U_" + el_eop.name[2:] + "D") ** nu
-                )
-                / (2j) for nu in range(1, 2 * self.ll_par + 1)])
-                for el_eop in self.e_op_free
-            }
-            # dict for substitution of E^2 operators to expression of U and U^dag for magnetic basis
-            Epow2_mag_subs = {
-                el_eop**2: sum([fnu_cos(nu)
-                * (
-                    Symbol("U_" + el_eop.name[2:]) ** nu
-                    + Symbol("U_" + el_eop.name[2:] + "D") ** nu
-                )
-                / 2 for nu in range(1, 2 * self.ll_par + 1)])
-                + Symbol("L")
-                for el_eop in self.e_op_free
-            }
-
-            hamilt_el_expand = expand(self.hamiltonian_el_sym)
-
-
-            hamiltonian_el_sym_mbasis=(hamilt_el_expand.subs(Epow2_mag_subs)).subs(E_mag_subs).subs(Symbol("L"), Symbol("id")*float(self.ll_par * (self.ll_par + 1) / 3))
-
-
-            self.hamiltonian_el_sym_mbasis = (
-                hamiltonian_el_sym_mbasis  # symbolic expression (useful for diplay)
-            )
-
-            if self.magnetic_basis:
-                #Only for mag basis
-                u_op_free = [
-                            k.subs(
-                                [
-                                    (symbols(j), symbols(k))
-                                    for j, k in zip(
-                                        self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
-                                    )
-                                ]
-                            )
-                            for k in self.e_op_free
-                        ]
-                u_op_free_dag = [
-                    k.subs(
-                        [
-                            (symbols(j), Symbol(k + "D"))
-                            for j, k in zip(
-                                self.lattice.list_edges2_e_op, self.lattice.list_edges2_u_op
-                            )
-                        ]
-                    )
-                    for k in self.e_op_free
-                ]  # U^dag
-
-                h_submagbasis=self.hamiltonian_el_sym_mbasis
-
-                for utmp,utmpD in zip(u_op_free,u_op_free_dag):
-                    power=2*self.ll_par+1 #if class_H_oprt.magnetic_basis else 2
-                    for pow in range(1,power)[::-1]:
-                        #sub=[(utmp**pow, Symbol('UOP'+str(pow))), (utmpD**pow, Symbol('UdagOP'+str(pow))), ]
-                        sub=[(utmp**pow, Symbol(str(utmp)+'^'+str(pow))), (utmpD**pow, Symbol(str(utmpD)+'^'+str(pow))), ]
-                        #print(sub)
-                        h_submagbasis=h_submagbasis.subs(sub)
-
-                self.h_submagbasis=list(h_submagbasis.expand().args)
-
-            self.hamiltonian_el_subs = list(
-                hamiltonian_el_sym_mbasis.expand().args
-            )  # list of symbolic expressions (must use expand for now. otherwise error in pauli substitution)
+            self.hamiltonian_el_subs = hamiltonian_el_sym.args
             print("Magnetic basis used for electric H")
         else:
             self.hamiltonian_el_subs = hamiltonian_el_sym.expand().args   # list of symbolic expressions
@@ -533,9 +446,7 @@ class HamiltonianQED_sym:
 
             elif self.lattice.dims == 2:
 
-                phase = (
-                    (-1) ** ((sum(i[0])) % 2) if i[0][1] != i[1][1] else 1
-                )  # change in y direction if n odd
+                phase = ( (-1) ** ((sum(i[0])) % 2) if i[0][1] != i[1][1] else 1 )  # change in y direction if n odd
 
                 xy_term = (
                     "y" if i[0][1] != i[1][1] else "x"
@@ -575,6 +486,7 @@ class HamiltonianQED_sym:
 
         self.hamiltonian_k_sym = hamiltonian_k_sym
 
+
     # display
     def display_hamiltonian_tot(self):
         """Display the total Hamiltonian of the system."""
@@ -583,42 +495,53 @@ class HamiltonianQED_sym:
 
             #H_E only for display##############
             # dict for substitution of E operators to expression of U and U^dag for magnetic basis
-            E_mag_subs_disp = {
-                el_eop: sum([Symbol("f^s_"+str(nu))
+            # E_mag_subs_disp = {
+            #     el_eop: sum([Symbol("f^s_"+str(nu))
+            #     * (
+            #         Symbol("U_" + el_eop.name[2:]) ** nu
+            #         - Symbol("U_" + el_eop.name[2:] + "D") ** nu
+            #     )
+            #     / (2j) for nu in range(1, 2 * self.ll_par + 1)])
+            #     for el_eop in self.e_op_free
+            # }
+            # # dict for substitution of E^2 operators to expression of U and U^dag for magnetic basis
+            # Epow2_mag_subs_disp = {
+            #     el_eop**2: sum([Symbol("f^c_"+str(nu))
+            #     * (
+            #         Symbol("U_" + el_eop.name[2:]) ** nu
+            #         + Symbol("U_" + el_eop.name[2:] + "D") ** nu
+            #     )
+            #     / 2 for nu in range(1, 2 * self.ll_par + 1)])
+            #     + Symbol("L")
+            #     for el_eop in self.e_op_free
+            # }
+
+            # hamilt_el_expand_disp = expand(self.hamiltonian_el_sym)
+
+            # hamiltonian_el_sym_mbasis_disp=hamilt_el_expand_disp.subs(Epow2_mag_subs_disp).subs(E_mag_subs_disp).subs(Symbol("L"), Symbol("id")*self.ll_par * (self.ll_par + 1) / 3)
+
+            E_mag_subs = {
+                el_eop: Sum(Symbol('fs_nu')
                 * (
                     Symbol("U_" + el_eop.name[2:]) ** nu
                     - Symbol("U_" + el_eop.name[2:] + "D") ** nu
-                )
-                / (2j) for nu in range(1, 2 * self.ll_par + 1)])
+                )/ (2j), (nu, 1, 2 * self.ll_par))
                 for el_eop in self.e_op_free
             }
             # dict for substitution of E^2 operators to expression of U and U^dag for magnetic basis
-            Epow2_mag_subs_disp = {
-                el_eop**2: sum([Symbol("f^c_"+str(nu))
+            Epow2_mag_subs = {
+                el_eop**2: Sum(Symbol("fc_nu")
                 * (
                     Symbol("U_" + el_eop.name[2:]) ** nu
                     + Symbol("U_" + el_eop.name[2:] + "D") ** nu
-                )
-                / 2 for nu in range(1, 2 * self.ll_par + 1)])
-                + Symbol("L")
+                )/ 2 , (nu, 1, 2 * self.ll_par))
+                #+ Symbol("L")
                 for el_eop in self.e_op_free
             }
+            hamilt_el_expand = expand(self.hamiltonian_el_sym)
 
-            hamilt_el_expand_disp = expand(self.hamiltonian_el_sym)
 
-            hamiltonian_el_sym_mbasis_disp=hamilt_el_expand_disp.subs(Epow2_mag_subs_disp).subs(E_mag_subs_disp).subs(Symbol("L"), Symbol("id")*self.ll_par * (self.ll_par + 1) / 3)
-
-            # hamiltonian_el_sym_mbasis_disp = []
-            # for nu in range(1, 2 * self.ll_par + 1):  # for loop over nu
-            #     ham_subs_disp = hamilt_el_expand_disp.subs(Epow2_mag_subs_disp(nu)).subs(
-            #         E_mag_subs_disp(nu)
-            #     )
-            #     if nu > 1:  # the factor with L is independent of sum over nu
-            #         ham_subs_disp = ham_subs_disp.subs(Symbol("L"), 0)
-            #     hamiltonian_el_sym_mbasis_disp.append(
-            #         ham_subs_disp.subs(Symbol("L"), self.ll_par * (self.ll_par + 1) / 3)
-            #     )
-            # hamiltonian_el_sym_mbasis_disp = sum(hamiltonian_el_sym_mbasis_disp)
+            hamiltonian_el_sym_mbasis_disp=(hamilt_el_expand.subs(Epow2_mag_subs)).subs(E_mag_subs).subs(Symbol("L"), Symbol("id")*float(self.ll_par * (self.ll_par + 1) / 3))
 
             #############################
 
