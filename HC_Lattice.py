@@ -80,7 +80,7 @@ class HCLattice:
         self,
         n_sites: list,
         pbc: bool | list = False,
-        puregauge: bool =True,
+        puregauge: bool = True,
     ) -> None:
         self.n_sites = n_sites
         while 1 in self.n_sites:  # avoid 1 dimension useless input
@@ -142,12 +142,17 @@ class HCLattice:
             graph_g = cartesian_product(graph_g, _graph_new)
         graph = relabel_nodes(graph_g, flatten)
 
-
         self.graph = graph
 
     def draw_graph_func(
-        self, gauss_law_fig: bool = False, e_op_free=None, static_charges=None,savefig_dir=None,figname=None,suptitle=False,
-        weight : dict| None = None
+        self,
+        gauss_law_fig: bool = False,
+        e_op_free=None,
+        static_charges=None,
+        savefig_dir=None,
+        figname=None,
+        suptitle=False,
+        weight: dict | None = None,
     ):
         """Draw the graph of the lattice with the dynamical links.
         Parameters
@@ -170,8 +175,8 @@ class HCLattice:
             weight: dict
                 Dictionary of the form {E_00x:1} with E_00x the electric field
                 variable and 1 the value of the electric field.
-            """
-        #edges
+        """
+        # edges
         if gauss_law_fig and e_op_free is not None:
             lu_op_edges = [
                 [Symbol(k) for k in self.list_edges2_e_op].index(n_tmp)
@@ -198,8 +203,10 @@ class HCLattice:
             # ]
 
             edge_color_list = ["black" for e in self.graph_edges_system]
-            edges_linestyle=["solid" if e in lu_op_free_map else (0, (5, 10))
-                for e in self.graph_edges_system]
+            edges_linestyle = [
+                "solid" if e in lu_op_free_map else (0, (5, 10))
+                for e in self.graph_edges_system
+            ]
 
         elif not gauss_law_fig and e_op_free is not None:
             raise ValueError("gauss_law_fig must be True if e_op_free is not None")
@@ -207,11 +214,16 @@ class HCLattice:
             raise ValueError("e_op_free must be not None if gauss_law_fig is True")
         else:
             edge_color_list = ["black" for e in self.graph_edges_system]
-            edges_linestyle=["solid" for e in self.graph_edges_system]
+            edges_linestyle = ["solid" for e in self.graph_edges_system]
 
         if weight:
             dict_label = {}
-            for key,val in weight.items(): #weight is dict of type E_00x:1 with val the values of el. field
+            for (
+                key,
+                val,
+            ) in (
+                weight.items()
+            ):  # weight is dict of type E_00x:1 with val the values of el. field
                 key = key.name
 
                 # List of directions for the edges if D<=3 or more
@@ -219,25 +231,37 @@ class HCLattice:
                     ax_direct = ["x", "y", "z"]
                 else:
                     ax_direct = list(map(chr, range(97, 123)))
-                if key[0]=='E':
-                    inpoint = [int(n) for n in re.findall(r'\d+',key)[0]]
+                if key[0] == "E":
+                    inpoint = [int(n) for n in re.findall(r"\d+", key)[0]]
                     # inpoint2=inpoint.copy()
                     # direction = ax_direct.index(key[-1])
                     # inpoint2[direction]+=1%n_sites[direction]
                     # inpoint2[direction]=inpoint2[direction]%n_sites[direction]
-                    inpoint2 = [(inpoint[i] + (1 if i == ax_direct.index(key[-1]) else 0)) % self.n_sites[i] for i in range(len(inpoint))]
+                    inpoint2 = [
+                        (inpoint[i] + (1 if i == ax_direct.index(key[-1]) else 0))
+                        % self.n_sites[i]
+                        for i in range(len(inpoint))
+                    ]
 
-                    dict_label[tuple([tuple(inpoint),tuple(inpoint2)])]=val
+                    dict_label[tuple([tuple(inpoint), tuple(inpoint2)])] = val
             self.dict_label = dict_label
 
         fig = plt.figure(figsize=(8, 6))
 
         color_map = []
 
-        #nodes
+        # nodes
         for node in self.graph:
-            if static_charges is not None:#TODO: again condition of negative static charges for even sites/positive for odd sites
-                col = 'cornflowerblue' if node in static_charges.keys() and static_charges[node] <0 else 'red' if node in static_charges.keys() and static_charges[node] >0 else 'lightgray'
+            if (
+                static_charges is not None
+            ):  # TODO: again condition of negative static charges for even sites/positive for odd sites
+                col = (
+                    "cornflowerblue"
+                    if node in static_charges.keys() and static_charges[node] < 0
+                    else "red"
+                    if node in static_charges.keys() and static_charges[node] > 0
+                    else "lightgray"
+                )
                 color_map.append(col)
             else:
                 if self.dims == 1:
@@ -278,74 +302,110 @@ class HCLattice:
             )  # ,alpha=1)
 
             # Nodes labels
-            q_label_dict={}
+            q_label_dict = {}
             if weight:
+                q_label_dict = {
+                    str([int(n) for n in re.findall(r"\d+", key.name)[0]]): str(val)
+                    for key, val in weight.items()
+                    if key.name[0] == "q"
+                }
 
-                q_label_dict={str([int(n) for n in re.findall(r'\d+',key.name)[0]]):str(val) for key,val in weight.items() if key.name[0]=='q'}
-
-            if len(q_label_dict)>0:
-                for nds,val in q_label_dict.items():
+            if len(q_label_dict) > 0:
+                for nds, val in q_label_dict.items():
                     if self.dims == 2:
-                        ax_plt.text(
-                            *np.array(eval(nds)) - 0.03, 0, val, fontsize=14
-                        )
+                        ax_plt.text(*np.array(eval(nds)) - 0.03, 0, val, fontsize=14)
                     else:
-                        ax_plt.text(
-                            *np.array(eval(nds)) - 0.03, val, fontsize=14
-                        )
+                        ax_plt.text(*np.array(eval(nds)) - 0.03, val, fontsize=14)
 
             else:
                 for nds in np.array(self.graph.nodes):
                     if self.dims == 2:
                         ax_plt.text(
-                            *nds - 0.02, 0, "(" + ",".join(map(str, nds)) + ")", fontsize=10
+                            *nds - 0.02,
+                            0,
+                            "(" + ",".join(map(str, nds)) + ")",
+                            fontsize=10,
                         )
                     else:
                         ax_plt.text(
-                            *nds - 0.02, "(" + ",".join(map(str, nds)) + ")", fontsize=10
+                            *nds - 0.02,
+                            "(" + ",".join(map(str, nds)) + ")",
+                            fontsize=10,
                         )
 
             # Plot the edges
-            arrow_options = lambda linestyle:dict(
-                arrowstyle="-|>", mutation_scale=15, lw=1.5, connectionstyle=connection,linestyle=linestyle
+            arrow_options = lambda linestyle: dict(
+                arrowstyle="-|>",
+                mutation_scale=15,
+                lw=1.5,
+                connectionstyle=connection,
+                linestyle=linestyle,
             )
 
-            #label the edges if weight
+            # label the edges if weight
             if weight:
                 label_edges = [str(self.dict_label[i]) for i in self.graph_edges_system]
             else:
-                label_edges =[None for i in self.graph_edges_system]
+                label_edges = [None for i in self.graph_edges_system]
 
-            #for vizedge, col,lbl in zip(np.array(self.graph.edges), edge_color_list,label_edges):
+            # for vizedge, col,lbl in zip(np.array(self.graph.edges), edge_color_list,label_edges):
 
-            for vizedge, col,lbl,linestyle in zip(np.array(self.graph.edges), edge_color_list,label_edges,edges_linestyle):
+            for vizedge, col, lbl, linestyle in zip(
+                np.array(self.graph.edges),
+                edge_color_list,
+                label_edges,
+                edges_linestyle,
+            ):
                 if weight:
-                    if int(lbl)>0:
-                        clr_lbl='red'
-                    elif int(lbl)<0:
-                        clr_lbl='cornflowerblue'
+                    if int(lbl) > 0:
+                        clr_lbl = "red"
+                    elif int(lbl) < 0:
+                        clr_lbl = "cornflowerblue"
                     else:
-                        clr_lbl='grey'
+                        clr_lbl = "grey"
                     if self.dims == 2:
                         arrow = Arrow3D(
-                            *vizedge.T, [0, 0], ec=clr_lbl, color=clr_lbl,linewidth=5,  **arrow_options(linestyle)
+                            *vizedge.T,
+                            [0, 0],
+                            ec=clr_lbl,
+                            color=clr_lbl,
+                            linewidth=5,
+                            **arrow_options(linestyle),
                         )
                     else:
-                        arrow = Arrow3D(*vizedge.T, ec=clr_lbl, color=clr_lbl, **arrow_options(linestyle))
+                        arrow = Arrow3D(
+                            *vizedge.T,
+                            ec=clr_lbl,
+                            color=clr_lbl,
+                            **arrow_options(linestyle),
+                        )
 
-                    #Add label the edges if weight
-                    ax_plt.annotate(lbl, (.5, .5), xycoords=arrow, ha='center', va='bottom',color=clr_lbl,fontsize=14)
+                    # Add label the edges if weight
+                    ax_plt.annotate(
+                        lbl,
+                        (0.5, 0.5),
+                        xycoords=arrow,
+                        ha="center",
+                        va="bottom",
+                        color=clr_lbl,
+                        fontsize=14,
+                    )
                 else:
                     if self.dims == 2:
                         arrow = Arrow3D(
-                            *vizedge.T, [0, 0], ec=col, color=col,linewidth=5,  **arrow_options(linestyle)
+                            *vizedge.T,
+                            [0, 0],
+                            ec=col,
+                            color=col,
+                            linewidth=5,
+                            **arrow_options(linestyle),
                         )
                     else:
-                        arrow = Arrow3D(*vizedge.T, ec=col, color=col, **arrow_options(linestyle))
+                        arrow = Arrow3D(
+                            *vizedge.T, ec=col, color=col, **arrow_options(linestyle)
+                        )
 
                 ax_plt.add_artist(arrow)
-
-
 
             def _format_axes(ax_plt):
                 """Visualization options for the 3D axes."""
@@ -377,34 +437,71 @@ class HCLattice:
         if static_charges is not None:
             import matplotlib.lines as mlines
 
-            handles=[]
-            for key,val in static_charges.items():
-                if val>0:#charge pos
-                    qstat_o=val
-                    red_c = mlines.Line2D([], [], color='red', marker='o', linestyle='None',
-                                    markersize=10, label=f'Q={qstat_o}')
+            handles = []
+            for key, val in static_charges.items():
+                if val > 0:  # charge pos
+                    qstat_o = val
+                    red_c = mlines.Line2D(
+                        [],
+                        [],
+                        color="red",
+                        marker="o",
+                        linestyle="None",
+                        markersize=10,
+                        label=f"Q={qstat_o}",
+                    )
                     handles.append(red_c)
-                else:#charge neg
-                    qstat_e=val
-                    blue_c = mlines.Line2D([], [], color='cornflowerblue', marker='o', linestyle='None',
-                                    markersize=10, label=f'Q={qstat_e}')
+                else:  # charge neg
+                    qstat_e = val
+                    blue_c = mlines.Line2D(
+                        [],
+                        [],
+                        color="cornflowerblue",
+                        marker="o",
+                        linestyle="None",
+                        markersize=10,
+                        label=f"Q={qstat_e}",
+                    )
                     handles.append(blue_c)
 
-            grey_c = mlines.Line2D([], [], color='lightgray', marker='o', linestyle='None',
-                                    markersize=10, label='Q=0')
-            radius = mlines.Line2D([], [], color='black', marker='_', linestyle='None',
-                                    markersize=10, label=f'r={np.round(self.distance_f(*static_charges.keys()),3)}')
-            plt.legend(handles=handles+[grey_c,radius], loc='upper right', bbox_to_anchor=(1.1, 1.1))
-
+            grey_c = mlines.Line2D(
+                [],
+                [],
+                color="lightgray",
+                marker="o",
+                linestyle="None",
+                markersize=10,
+                label="Q=0",
+            )
+            radius = mlines.Line2D(
+                [],
+                [],
+                color="black",
+                marker="_",
+                linestyle="None",
+                markersize=10,
+                label=f"r={np.round(self.distance_f(*static_charges.keys()),3)}",
+            )
+            plt.legend(
+                handles=handles + [grey_c, radius],
+                loc="upper right",
+                bbox_to_anchor=(1.1, 1.1),
+            )
 
         if isinstance(savefig_dir, str):  # directory where to save figure
-            if isinstance(figname,str):
+            if isinstance(figname, str):
                 namefig = figname
             else:
-                namefig="system_" + "x".join(map(str, self.n_sites)) + "_" + bc_title + f"_gausslaw{gauss_law_fig}"
+                namefig = (
+                    "system_"
+                    + "x".join(map(str, self.n_sites))
+                    + "_"
+                    + bc_title
+                    + f"_gausslaw{gauss_law_fig}"
+                )
                 if static_charges:
-                    namefig+=f"_staticcharges{static_charges}"
-                namefig+=".png"
+                    namefig += f"_staticcharges{static_charges}"
+                namefig += ".png"
 
             fig.savefig(
                 f"{savefig_dir}/" + namefig,
@@ -669,16 +766,17 @@ class HCLattice:
         self.jw_chain = jw_chain
         self.not_jwchain = not_jwchain
 
-
-    def distance_f(self,*points):
+    def distance_f(self, *points):
         if len(points) < 2:
-            raise ValueError("At least two points are required to calculate the distance.")
+            raise ValueError(
+                "At least two points are required to calculate the distance."
+            )
         if self.dims == 1:
             return np.abs(points[0] - points[1])
         else:
             return np.sqrt(sum((x - y) ** 2 for x, y in zip(points[0], points[1])))
 
-    def func_qstatic_dist(self,charge: tuple =None,ch_val: int=None):
+    def func_qstatic_dist(self, charge: tuple = None, ch_val: int = None):
         """
         Input:
         charge: tuple
@@ -695,7 +793,7 @@ class HCLattice:
         The choice of charges respects the Gauss law, i.e. the sum of the charges is zero and if fermions, it respect staggered formulation.
         If puregauge then opposite charges can be anywhere."""
 
-        #set initial charge position and charge value:(fermions (staggered m>0) have charge q= 1, antifermions (staggered m<0) have charge q=-1)
+        # set initial charge position and charge value:(fermions (staggered m>0) have charge q= 1, antifermions (staggered m<0) have charge q=-1)
         if charge is None and ch_val is None:
             charge = (0,) * self.dims
             ch_val_e, ch_val_o = -1, 1
@@ -705,50 +803,101 @@ class HCLattice:
         elif charge is not None and ch_val is None:
             ch_val_e, ch_val_o = -1, 1
         else:
-            if sum(charge)%2 and ch_val<0 or not sum(charge)%2 and ch_val>0:
-                raise ValueError("Charge and charge value must be such that the charge on even(odd) site is negative(positive), since convention used is fermions(antifermions) on even(odd) sites.") #TODO: check if ok. balance dynamical charge so net charge zero
+            if sum(charge) % 2 and ch_val < 0 or not sum(charge) % 2 and ch_val > 0:
+                raise ValueError(
+                    "Charge and charge value must be such that the charge on even(odd) site is negative(positive), since convention used is fermions(antifermions) on even(odd) sites."
+                )  # TODO: check if ok. balance dynamical charge so net charge zero
             else:
-                ch_val_e, ch_val_o = (ch_val, -ch_val) if ch_val < 0 else (-ch_val, ch_val)
+                ch_val_e, ch_val_o = (
+                    (ch_val, -ch_val) if ch_val < 0 else (-ch_val, ch_val)
+                )
 
         if self.dims == 1:
             if len(charge) != 1:
                 raise ValueError("Charge must be a tuple of length 1 for a 1D lattice.")
 
             if self.puregauge:
-                distances_coord = np.array([{charge[0]:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if j!=charge],dtype=object)#puregaguge connect all sites
+                distances_coord = np.array(
+                    [
+                        {charge[0]: ch_val_e, j: ch_val_o}
+                        for j in list(self.graph.nodes)
+                        if j != charge
+                    ],
+                    dtype=object,
+                )  # puregaguge connect all sites
             else:
-                if (charge[0]+1)%2:#even site
-                    distances_coord = np.array([{charge[0]:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if j%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+                if (charge[0] + 1) % 2:  # even site
+                    distances_coord = np.array(
+                        [
+                            {charge[0]: ch_val_e, j: ch_val_o}
+                            for j in list(self.graph.nodes)
+                            if j % 2 and j != charge
+                        ],
+                        dtype=object,
+                    )  # connect (0,0) to only odd sites
                 else:
-                    distances_coord = np.array([{charge[0]:ch_val_o,j:ch_val_e} for j in list(self.graph.nodes) if (j+1)%2 and j!=charge],dtype=object)#connect (odd,) to only even sites
+                    distances_coord = np.array(
+                        [
+                            {charge[0]: ch_val_o, j: ch_val_e}
+                            for j in list(self.graph.nodes)
+                            if (j + 1) % 2 and j != charge
+                        ],
+                        dtype=object,
+                    )  # connect (odd,) to only even sites
         else:
             if len(charge) != self.dims:
-                raise ValueError("Charge must be a tuple of length self.dims for a {}D lattice.".format(self.dims))
+                raise ValueError(
+                    "Charge must be a tuple of length self.dims for a {}D lattice.".format(
+                        self.dims
+                    )
+                )
 
             if self.puregauge:
-                distances_coord = np.array([{charge:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if  j!=charge],dtype=object)
+                distances_coord = np.array(
+                    [
+                        {charge: ch_val_e, j: ch_val_o}
+                        for j in list(self.graph.nodes)
+                        if j != charge
+                    ],
+                    dtype=object,
+                )
             else:
-                if (sum(charge)+1)%2:#even site
-                    distances_coord = np.array([{charge:ch_val_e,j:ch_val_o} for j in list(self.graph.nodes) if sum(j)%2 and j!=charge],dtype=object)#connect (0,0) to only odd sites
+                if (sum(charge) + 1) % 2:  # even site
+                    distances_coord = np.array(
+                        [
+                            {charge: ch_val_e, j: ch_val_o}
+                            for j in list(self.graph.nodes)
+                            if sum(j) % 2 and j != charge
+                        ],
+                        dtype=object,
+                    )  # connect (0,0) to only odd sites
                 else:
-                    distances_coord = np.array([{charge:ch_val_o,j:ch_val_e} for j in list(self.graph.nodes) if (sum(j)+1)%2 and j!=charge],dtype=object)
+                    distances_coord = np.array(
+                        [
+                            {charge: ch_val_o, j: ch_val_e}
+                            for j in list(self.graph.nodes)
+                            if (sum(j) + 1) % 2 and j != charge
+                        ],
+                        dtype=object,
+                    )
 
-        r_list = np.empty(len(distances_coord),dtype=object)
-        for i,dd in enumerate(distances_coord):
-            r_list[i] =self.distance_f(*dd.keys())
+        r_list = np.empty(len(distances_coord), dtype=object)
+        for i, dd in enumerate(distances_coord):
+            r_list[i] = self.distance_f(*dd.keys())
 
         self.ch_val_e = ch_val_e
         self.ch_val_o = ch_val_o
-        self.distances_coord=distances_coord
+        self.distances_coord = distances_coord
         self.r_list = r_list
+
 
 class Arrow3D(FancyArrowPatch):
     def __init__(self, xs, ys, zs, *args, **kwargs):
-        super().__init__((0,0), (0,0), *args, **kwargs)
+        super().__init__((0, 0), (0, 0), *args, **kwargs)
         self._verts3d = xs, ys, zs
 
     def do_3d_projection(self, renderer=None):
         xs3d, ys3d, zs3d = self._verts3d
         xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
-        self.set_positions((xs[0],ys[0]),(xs[1],ys[1]))
+        self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
         return np.min(zs)

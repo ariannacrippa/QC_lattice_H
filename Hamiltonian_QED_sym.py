@@ -45,7 +45,7 @@ import gc
 
 SPARSE_PAULI = qiskit.quantum_info.operators.symplectic.sparse_pauli_op.SparsePauliOp
 
-#from memory_profiler import profile#, memory_usage
+# from memory_profiler import profile#, memory_usage
 
 
 class HamiltonianQED_sym:
@@ -112,27 +112,36 @@ class HamiltonianQED_sym:
 
     def __init__(
         self,
-        config : dict,
+        config: dict,
         display_hamiltonian: bool = False,
     ) -> None:
+        # dict config inputs
+        self.lattice = config.get("latt")
+        self.n_sites = config["n_sites"]
+        self.ll_par = config["L"] if "L" in config else 2
+        self.encoding = config["encoding"] if "encoding" in config else "gray"
+        self.magnetic_basis = config["magnetic_basis"]
+        self.pbc = config["pbc"] if "pbc" in config else False
+        self.puregauge = config["puregauge"] if "puregauge" in config else False
+        self.static_charges_values = (
+            config["static_charges_values"]
+            if "static_charges_values" in config
+            else None
+        )
+        self.e_op_out_plus = (
+            config["e_op_out_plus"] if "e_op_out_plus" in config else True
+        )
+        self.e_op_free_input = (
+            config["e_op_free_input"] if "e_op_free_input" in config else None
+        )
 
-        #dict config inputs
-        self.lattice = config.get('latt')
-        self.n_sites = config['n_sites']
-        self.ll_par = config['L'] if 'L' in config else 2
-        self.encoding = config['encoding'] if 'encoding' in config else "gray"
-        self.magnetic_basis = config['magnetic_basis']
-        self.pbc = config['pbc'] if 'pbc' in config else False
-        self.puregauge = config['puregauge'] if 'puregauge' in config else False
-        self.static_charges_values = config['static_charges_values'] if 'static_charges_values' in config else None
-        self.e_op_out_plus = config['e_op_out_plus'] if 'e_op_out_plus' in config else True
-        self.e_op_free_input = config['e_op_free_input'] if 'e_op_free_input' in config else None
-
-        #external inputs
+        # external inputs
         self.display_hamiltonian = display_hamiltonian
 
-        if not self.puregauge and np.prod(self.n_sites)%2!=0:
-            raise Warning("Attention: total number of staggered fermionic degrees of freedom doesn't respect two-component spinors.")
+        if not self.puregauge and np.prod(self.n_sites) % 2 != 0:
+            raise Warning(
+                "Attention: total number of staggered fermionic degrees of freedom doesn't respect two-component spinors."
+            )
 
         if self.magnetic_basis and self.lattice.dims != 2:
             raise ValueError("Magnetic basis is only implemented for 2D lattices")
@@ -184,21 +193,29 @@ class HamiltonianQED_sym:
                 [
                     "Q_" + self.str_node_f(key) + f"={val}"
                     for key, val in self.static_charges_values.items()
-                ] if self.static_charges_values is not None else "None"
+                ]
+                if self.static_charges_values is not None
+                else "None",
             )
             [display(Eq(i, 0)) for i in self.list_gauss]
-            [
-                print(latex(i) + " &= 0 \\\\ \\nonumber")
-                for i in self.list_gauss[:-1]
-            ]
+            [print(latex(i) + " &= 0 \\\\ \\nonumber") for i in self.list_gauss[:-1]]
             print(latex(self.list_gauss[-1]) + " &= 0", "\n")
 
         # Solution of gauss law equations
         if self.e_op_free_input is not None:
             if self.puregauge:
-                dep_variables=list(set([Symbol(j) for j in self.lattice.list_edges2_e_op]) - set(self.e_op_free_input))
+                dep_variables = list(
+                    set([Symbol(j) for j in self.lattice.list_edges2_e_op])
+                    - set(self.e_op_free_input)
+                )
             else:
-                dep_variables=list(set([Symbol(j) for j in self.lattice.list_edges2_e_op]+[Symbol(q) for q in self.q_charge_str_list]) - set(self.e_op_free_input))
+                dep_variables = list(
+                    set(
+                        [Symbol(j) for j in self.lattice.list_edges2_e_op]
+                        + [Symbol(q) for q in self.q_charge_str_list]
+                    )
+                    - set(self.e_op_free_input)
+                )
 
             self.sol_gauss = solve(self.list_gauss, dep_variables, dict=True)[0]
         else:
@@ -247,7 +264,6 @@ class HamiltonianQED_sym:
         self.len_u_op = len(self.u_op_free)
         print("> e_op_free and u_op_free built")
 
-
         if display_hamiltonian:
             print(">> Hamiltonian (symbolic + latex):")
         self._hamiltonian_el_autom()
@@ -267,7 +283,6 @@ class HamiltonianQED_sym:
             elapsed_time,
             "seconds",
         )
-
 
     # Gauss law equations in a list
     def gauss_equations(self):
@@ -296,7 +311,6 @@ class HamiltonianQED_sym:
                     if not self.puregauge:
                         gc_tmp += self.static_charges_values[node]
 
-
             e_op_i = "E_" + self.str_node_f(node)
             for j, k in zip(self.lattice.list_edges, self.lattice.list_edges2_e_op):
                 if e_op_i in j:
@@ -315,8 +329,6 @@ class HamiltonianQED_sym:
         if gc_tmp != 0:
             list_gauss.append(gc_tmp)
         self.list_gauss = list_gauss
-
-
 
     # HAMILTONIAN
     # * symbols
@@ -338,13 +350,16 @@ class HamiltonianQED_sym:
         )
 
         if self.magnetic_basis:
-
-            hamiltonian_el_sym=hamiltonian_el_sym.expand().subs([(el**2,Symbol(str(el)+'^2')) for el in self.e_op_free])
+            hamiltonian_el_sym = hamiltonian_el_sym.expand().subs(
+                [(el**2, Symbol(str(el) + "^2")) for el in self.e_op_free]
+            )
 
             self.hamiltonian_el_subs = hamiltonian_el_sym.args
             print("Magnetic basis used for electric H")
         else:
-            self.hamiltonian_el_subs = hamiltonian_el_sym.expand().args   # list of symbolic expressions
+            self.hamiltonian_el_subs = (
+                hamiltonian_el_sym.expand().args
+            )  # list of symbolic expressions
 
     def _hamiltonian_mag_autom(self):
         """Hamiltonian for B field"""
@@ -432,7 +447,9 @@ class HamiltonianQED_sym:
                 hamilt_k_elem = (
                     u_op_free_dict[i][0]
                     if self.e_op_out_plus
-                    else u_op_free_dict[i][1]  # u_op_free_dict[i][0] if e_op_out_plus else u_op_free_dict[i][1]
+                    else u_op_free_dict[i][
+                        1
+                    ]  # u_op_free_dict[i][0] if e_op_out_plus else u_op_free_dict[i][1]
                 )  # if Gauss law with E out + -> U / else U^dag
             else:
                 hamilt_k_elem = 1
@@ -445,8 +462,9 @@ class HamiltonianQED_sym:
                 )
 
             elif self.lattice.dims == 2:
-
-                phase = ( (-1) ** ((sum(i[0])) % 2) if i[0][1] != i[1][1] else 1 )  # change in y direction if n odd
+                phase = (
+                    (-1) ** ((sum(i[0])) % 2) if i[0][1] != i[1][1] else 1
+                )  # change in y direction if n odd
 
                 xy_term = (
                     "y" if i[0][1] != i[1][1] else "x"
@@ -486,62 +504,50 @@ class HamiltonianQED_sym:
 
         self.hamiltonian_k_sym = hamiltonian_k_sym
 
-
     # display
     def display_hamiltonian_tot(self):
         """Display the total Hamiltonian of the system."""
         # ************************************  H_E   ************************************
-        if self.len_e_op > 0 and  self.display_hamiltonian:  # Hamiltonian to print
-
-            #H_E only for display##############
-            # dict for substitution of E operators to expression of U and U^dag for magnetic basis
-            # E_mag_subs_disp = {
-            #     el_eop: sum([Symbol("f^s_"+str(nu))
-            #     * (
-            #         Symbol("U_" + el_eop.name[2:]) ** nu
-            #         - Symbol("U_" + el_eop.name[2:] + "D") ** nu
-            #     )
-            #     / (2j) for nu in range(1, 2 * self.ll_par + 1)])
-            #     for el_eop in self.e_op_free
-            # }
-            # # dict for substitution of E^2 operators to expression of U and U^dag for magnetic basis
-            # Epow2_mag_subs_disp = {
-            #     el_eop**2: sum([Symbol("f^c_"+str(nu))
-            #     * (
-            #         Symbol("U_" + el_eop.name[2:]) ** nu
-            #         + Symbol("U_" + el_eop.name[2:] + "D") ** nu
-            #     )
-            #     / 2 for nu in range(1, 2 * self.ll_par + 1)])
-            #     + Symbol("L")
-            #     for el_eop in self.e_op_free
-            # }
-
-            # hamilt_el_expand_disp = expand(self.hamiltonian_el_sym)
-
-            # hamiltonian_el_sym_mbasis_disp=hamilt_el_expand_disp.subs(Epow2_mag_subs_disp).subs(E_mag_subs_disp).subs(Symbol("L"), Symbol("id")*self.ll_par * (self.ll_par + 1) / 3)
+        if self.len_e_op > 0 and self.display_hamiltonian:  # Hamiltonian to print
+            # H_E only for display##############
 
             E_mag_subs = {
-                el_eop: Sum(Symbol('fs_nu')
-                * (
-                    Symbol("U_" + el_eop.name[2:]) ** nu
-                    - Symbol("U_" + el_eop.name[2:] + "D") ** nu
-                )/ (2j), (nu, 1, 2 * self.ll_par))
+                el_eop: Sum(
+                    Symbol("fs_nu")
+                    * (
+                        Symbol("U_" + el_eop.name[2:]) ** nu
+                        - Symbol("U_" + el_eop.name[2:] + "D") ** nu
+                    )
+                    / (2j),
+                    (nu, 1, 2 * self.ll_par),
+                )
                 for el_eop in self.e_op_free
             }
             # dict for substitution of E^2 operators to expression of U and U^dag for magnetic basis
             Epow2_mag_subs = {
-                el_eop**2: Sum(Symbol("fc_nu")
-                * (
-                    Symbol("U_" + el_eop.name[2:]) ** nu
-                    + Symbol("U_" + el_eop.name[2:] + "D") ** nu
-                )/ 2 , (nu, 1, 2 * self.ll_par))
-                #+ Symbol("L")
+                el_eop
+                ** 2: Sum(
+                    Symbol("fc_nu")
+                    * (
+                        Symbol("U_" + el_eop.name[2:]) ** nu
+                        + Symbol("U_" + el_eop.name[2:] + "D") ** nu
+                    )
+                    / 2,
+                    (nu, 1, 2 * self.ll_par),
+                )
+                # + Symbol("L")
                 for el_eop in self.e_op_free
             }
             hamilt_el_expand = expand(self.hamiltonian_el_sym)
 
-
-            hamiltonian_el_sym_mbasis_disp=(hamilt_el_expand.subs(Epow2_mag_subs)).subs(E_mag_subs).subs(Symbol("L"), Symbol("id")*float(self.ll_par * (self.ll_par + 1) / 3))
+            hamiltonian_el_sym_mbasis_disp = (
+                (hamilt_el_expand.subs(Epow2_mag_subs))
+                .subs(E_mag_subs)
+                .subs(
+                    Symbol("L"),
+                    Symbol("id") * float(self.ll_par * (self.ll_par + 1) / 3),
+                )
+            )
 
             #############################
 
@@ -555,7 +561,6 @@ class HamiltonianQED_sym:
             )
             display(display_hamiltonian_el)
             print(latex(display_hamiltonian_el))
-
 
         # ************************************  H_B   ************************************
         if self.len_e_op > 0:
@@ -589,7 +594,6 @@ class HamiltonianQED_sym:
                 display(display_hamiltonian_mag)
                 print(latex(display_hamiltonian_mag))
             else:
-
                 if self.display_hamiltonian:
                     # Hamiltonian to print
                     display_hamiltonian_mag = Eq(
@@ -774,6 +778,3 @@ class HamiltonianQED_sym:
 
                 display(display_hamiltonian_m)
                 print(latex(display_hamiltonian_m))
-
-
-
