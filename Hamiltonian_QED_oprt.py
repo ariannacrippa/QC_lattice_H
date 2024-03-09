@@ -1134,7 +1134,7 @@ class HamiltonianQED_oprt:
         """Return list of substitutions for symbols in the Hamiltonian.
         Suitable for every encoding (gauge fields) defined in el_op_enc(), u_op_enc(), u_op_dag_enc()
         """
-        # list of symbols only (encoding not needed)
+        # list of symbols only (encoding not needed), order is left-right [q0,q1,q2...]
         self.eop_list = self.e_op_free
         self.uop_list = self.u_op_free
         self.qop_list = (
