@@ -4,7 +4,26 @@ from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Parameter
 
 class Ansatz:
-    """Collection of Ansaetze for the QED circuit."""
+    """Collection of Ansaetze for the QED circuit.
+
+    Input args:
+
+    l (int):
+        Value of the gauge filed truncation.
+
+    ngauge (int):
+        Number of gauge fields.
+
+    nfermions (int):
+        Number of fermions.
+
+    gauge_list (list of symypy Symbols):
+        List of gauge fields names.
+
+    ferm_list (list of symypy Symbols):
+        List of fermionic fields names.
+
+    """
 
     def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None)->None:
 
@@ -278,6 +297,9 @@ class Ansatz:
         if self.gauge_list:
             for i in [str(k) for k in self.gauge_list]:
                 qregisters.append(QuantumRegister(self.n_qubits,name=i))
+        else:
+            raise ValueError("No gauge list in input.")
+
         qc_gauge = QuantumCircuit(*qregisters)
 
         th_gauge=0
@@ -433,8 +455,13 @@ class Ansatz:
         """Return circuit for fermionic case, i.e. no gauge fields.
            It considers iSwap gates between every two fermions in order to select only zero-charged states."""
 
-        qferm = QuantumRegister(self.nfermions,name='F')
-        qc_ferm = QuantumCircuit(qferm)
+        qferm=[]
+        if self.ferm_list:
+            for f in [str(i) for i in self.ferm_list]:
+                qferm.append(QuantumRegister(1,name=f))
+        else:
+            raise ValueError("No fermionic list in input.")
+        qc_ferm = QuantumCircuit(*qferm)
 
         if not th_ferm:
             th_ferm=0
@@ -476,9 +503,13 @@ class Ansatz:
         if self.gauge_list:
             for i in [str(k) for k in self.gauge_list]:
                 qreg_g.append(QuantumRegister(self.n_qubits,name=i))
+        else:
+            raise ValueError("No gauge list in input.")
         if self.ferm_list:
             for f in [str(i) for i in self.ferm_list]:
                 qreg_f.append(QuantumRegister(1,name=f))
+        else:
+            raise ValueError("No fermionic list in input.")
 
         qc_tot = QuantumCircuit(*qreg_g,*qreg_f)
 
