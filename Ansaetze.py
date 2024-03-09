@@ -6,12 +6,13 @@ from qiskit.circuit import Parameter
 class Ansatz:
     """Collection of Ansaetze for the QED circuit."""
 
-    def __init__(self,l,ngauge,nfermions,gauge_list=None)->None:
+    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None)->None:
 
         self.l = l
         self.ngauge = ngauge
         self.nfermions = nfermions
         self.gauge_list = gauge_list
+        self.ferm_list = ferm_list
 
         self.n_qubits =int(np.ceil(np.log2(2 * self.l+ 1)))
 
@@ -471,13 +472,15 @@ class Ansatz:
         qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayers)
 
         qreg_g=[]
-
+        qreg_f=[]
         if self.gauge_list:
             for i in [str(k) for k in self.gauge_list]:
                 qreg_g.append(QuantumRegister(self.n_qubits,name=i))
+        if self.ferm_list:
+            for f in [str(i) for i in self.ferm_list]:
+                qreg_f.append(QuantumRegister(1,name=f))
 
-        qreg_f = QuantumRegister(self.nfermions,name='F')
-        qc_tot = QuantumCircuit(*qreg_g,qreg_f)
+        qc_tot = QuantumCircuit(*qreg_g,*qreg_f)
 
         #gauge part
         qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
