@@ -298,7 +298,8 @@ class Ansatz:
             for i in [str(k) for k in self.gauge_list]:
                 qregisters.append(QuantumRegister(self.n_qubits,name=i))
         else:
-            raise ValueError("No gauge list in input.")
+            for i in range(self.ngauge):
+                qregisters.append(QuantumRegister(self.n_qubits,name=f'g{i}'))
 
         qc_gauge = QuantumCircuit(*qregisters)
 
@@ -460,7 +461,8 @@ class Ansatz:
             for f in [str(i) for i in self.ferm_list]:
                 qferm.append(QuantumRegister(1,name=f))
         else:
-            raise ValueError("No fermionic list in input.")
+            for i in range(self.nfermions):
+                qferm.append(QuantumRegister(1,name=f'f{i}'))
         qc_ferm = QuantumCircuit(*qferm)
 
         if not th_ferm:
@@ -504,12 +506,14 @@ class Ansatz:
             for i in [str(k) for k in self.gauge_list]:
                 qreg_g.append(QuantumRegister(self.n_qubits,name=i))
         else:
-            raise ValueError("No gauge list in input.")
+            for i in range(self.ngauge):
+                qreg_g.append(QuantumRegister(self.n_qubits,name=f'g{i}'))
         if self.ferm_list:
             for f in [str(i) for i in self.ferm_list]:
                 qreg_f.append(QuantumRegister(1,name=f))
         else:
-            raise ValueError("No fermionic list in input.")
+            for i in range(self.nfermions):
+                qreg_f.append(QuantumRegister(1,name=f'f{i}'))
 
         qc_tot = QuantumCircuit(*qreg_g,*qreg_f)
 
