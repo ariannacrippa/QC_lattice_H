@@ -417,11 +417,12 @@ class HCLattice:
 
             _format_axes(ax_plt)
 
+
+        if self.pbc:
+            bc_title = "PBC"
+        else:
+            bc_title = "OBC"
         if suptitle:
-            if self.pbc:
-                bc_title = "PBC"
-            else:
-                bc_title = "OBC"
 
             fig.patch.set_facecolor("xkcd:white")
 
