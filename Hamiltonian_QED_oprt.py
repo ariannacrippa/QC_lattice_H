@@ -1232,7 +1232,7 @@ class HamiltonianQED_oprt:
         # ************************************  H_E   ************************************
         if self.len_e_op > 0:
             #input if single operator
-            hinput_el = [self.hamilt_sym.hamiltonian_el_subs.as_ordered_factors()] if self.len_e_op==1 else ( i.as_ordered_factors() for i in self.hamilt_sym.hamiltonian_el_subs )
+            hinput_el = [self.hamilt_sym.hamiltonian_el_subs.as_ordered_factors()] if self.len_e_op==1 and self.puregauge else ( i.as_ordered_factors() for i in self.hamilt_sym.hamiltonian_el_subs )
             if self.magnetic_basis:
                 hamiltonian_el_pauli = self.list_to_enc_hamilt(
                     hinput_el,
