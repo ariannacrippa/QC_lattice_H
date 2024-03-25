@@ -353,13 +353,20 @@ class HamiltonianQED_sym:
             hamiltonian_el_sym = hamiltonian_el_sym.expand().subs(
                 [(el**2, Symbol(str(el) + "^2")) for el in self.e_op_free]
             )
-
-            self.hamiltonian_el_subs = hamiltonian_el_sym.args
+            if isinstance(self.hamiltonian_el_sym.expand(),Mul):#single operator
+                self.hamiltonian_el_subs = hamiltonian_el_sym
+            else:
+                self.hamiltonian_el_subs = hamiltonian_el_sym.args
             print("Magnetic basis used for electric H")
         else:
-            self.hamiltonian_el_subs = (
-                hamiltonian_el_sym.expand().args
+            if isinstance(hamiltonian_el_sym.expand(),Mul):#single operator
+                self.hamiltonian_el_subs = (
+                hamiltonian_el_sym.expand()
             )  # list of symbolic expressions
+            else:
+                self.hamiltonian_el_subs = (
+                    hamiltonian_el_sym.expand().args
+                )  # list of symbolic expressions
 
     def _hamiltonian_mag_autom(self):
         """Hamiltonian for B field"""

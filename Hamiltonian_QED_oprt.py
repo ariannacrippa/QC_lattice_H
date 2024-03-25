@@ -1231,12 +1231,11 @@ class HamiltonianQED_oprt:
         """Builds the total Hamiltonian of the system."""
         # ************************************  H_E   ************************************
         if self.len_e_op > 0:
+            #input if single operator
+            hinput_el = [self.hamilt_sym.hamiltonian_el_subs.as_ordered_factors()] if self.len_e_op==1 else ( i.as_ordered_factors() for i in self.hamilt_sym.hamiltonian_el_subs )
             if self.magnetic_basis:
                 hamiltonian_el_pauli = self.list_to_enc_hamilt(
-                    (
-                        i.as_ordered_factors()
-                        for i in self.hamilt_sym.hamiltonian_el_subs
-                    ),
+                    hinput_el,
                     self.qcharge_list + self.e_field_list_mag,
                     self.qop_list,
                     self.eop_list,
@@ -1244,11 +1243,9 @@ class HamiltonianQED_oprt:
                     elterm_mbasis=True,
                 )  # (must be then multiplied by g^2)
             else:
+
                 hamiltonian_el_pauli = self.list_to_enc_hamilt(
-                    (
-                        i.as_ordered_factors()
-                        for i in self.hamilt_sym.hamiltonian_el_subs
-                    ),
+                    hinput_el,
                     self.qcharge_list + self.e_field_list,
                     self.qop_list,
                     self.eop_list,
