@@ -17,7 +17,7 @@ from networkx.utils import pairwise
 import qiskit
 from qiskit.quantum_info import SparsePauliOp, Pauli, Operator
 from IPython.display import display
-from scipy import special
+#from scipy import special
 import matplotlib.pyplot as plt
 from sympy import (
     Symbol,
