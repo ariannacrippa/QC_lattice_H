@@ -533,7 +533,6 @@ class Ansatz:
         #             qc_tot.append(Ansatz.CiSwap2(params(th)),[k,i,i+1])
         #             th+=1
 
-#TODO: check ho to generalize Ciswap2
         # ctrlgauge=[np.arange(self.ngauge*self.n_qubits)[i % (self.ngauge*self.n_qubits)] for i in range(self.nfermions)]
         # count=0
         # for j in range(self.ngauge*self.n_qubits+self.nfermions//2):
@@ -547,25 +546,26 @@ class Ansatz:
 
         #entanglement fermions and gauge fields with CiSWAP gates
         index_ciswap=[]
-
+        #TODO: ciswaps also if gauge_list=None?
         qubit_list=[]#list of strings for qubits order in curcuit
-        for el in [i.name for i in self.gauge_list]:
-            qubit_list+=[el]*self.n_qubits
-        qubit_list+=[(i.name) for i in self.ferm_list]
-        for el in [i.name for i in self.gauge_list]:
-            ferm_entang=['q_'+el[2]+el[3], 'q_'+el[2]+str(int(el[3]) + 1)] if el[-1] == 'y' else ['q_'+el[2]+el[3], 'q_'+str(int(el[2]) + 1)+el[3]] #TODO works for 2D  OBC
+        if gauge_list:
+            for el in [i.name for i in self.gauge_list]:
+                qubit_list+=[el]*self.n_qubits
+            qubit_list+=[(i.name) for i in self.ferm_list]
+            for el in [i.name for i in self.gauge_list]:
+                ferm_entang=['q_'+el[2]+el[3], 'q_'+el[2]+str(int(el[3]) + 1)] if el[-1] == 'y' else ['q_'+el[2]+el[3], 'q_'+str(int(el[2]) + 1)+el[3]] #TODO works for 2D  OBC
 
-            index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
-            index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
+                index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
+                index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
 
-        for pair in index_ciswap:#apply CiSWAP gates
-            qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
-            th+=1
+            for pair in index_ciswap:#apply CiSWAP gates
+                qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
+                th+=1
 
-        #rz layer for fermions
-        for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions):
-            qc_tot.rz(params(th),i)
-            th+=1
+            #rz layer for fermions
+            for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions):
+                qc_tot.rz(params(th),i)
+                th+=1
 
         self.qubit_list=qubit_list
         return qc_tot,first_layer_par
