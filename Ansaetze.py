@@ -548,7 +548,7 @@ class Ansatz:
         index_ciswap=[]
         #TODO: ciswaps also if gauge_list=None?
         qubit_list=[]#list of strings for qubits order in curcuit
-        if gauge_list:
+        if self.gauge_list:
             for el in [i.name for i in self.gauge_list]:
                 qubit_list+=[el]*self.n_qubits
             qubit_list+=[(i.name) for i in self.ferm_list]
