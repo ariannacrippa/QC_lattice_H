@@ -1608,7 +1608,6 @@ class HamiltonianQED_oprt:
             for i in range(2 ** int(self.lattice.n_sitestot)):
                 bincount = sum([1 for el in bin(i)[2:] if el == "1"])
                 if bincount == int(self.lattice.n_sitestot) / 2:
-                    print(i)
                     binc = format(i, "0%db" % int(self.lattice.n_sitestot))
                     suppr_f += -1.0 * reduce(
                         lambda x, y: (x) ^ (y),
