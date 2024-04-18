@@ -1602,19 +1602,22 @@ class HamiltonianQED_oprt:
 
         # ****** fermion
         if not self.puregauge:
+            print("Hamiltonian suppr fermions...")
             suppr_f = self.tensor_prod(self.I, (int(self.lattice.n_sitestot)))
             # the state is projected onto zero-charge state (fermions), same number of 1 and 0
             for i in range(2 ** int(self.lattice.n_sitestot)):
                 bincount = sum([1 for el in bin(i)[2:] if el == "1"])
                 if bincount == int(self.lattice.n_sitestot) / 2:
+                    print(i)
                     binc = format(i, "0%db" % int(self.lattice.n_sitestot))
                     suppr_f += -1.0 * reduce(
                         lambda x, y: (x) ^ (y),
                         [s_down if x == "0" else s_up for x in binc],
                     )
+            suppr_f=suppr_f.simplify()
 
             hamiltonian_nzcharge_suppr = HamiltonianQED_oprt.pauli_tns(suppr_f, gauge)
-
+            print("Hamiltonian suppr fermions done")
         if self.puregauge:
             hamiltonian_suppress = hamiltonian_gauge_suppr
         elif self.len_u_op > 0:
