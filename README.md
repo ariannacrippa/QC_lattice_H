@@ -1,6 +1,6 @@
 # Lattice QED Hamiltonian for Quantum Computing
 
-[![DOI](https://zenodo.org/badge/642751290.svg)](https://zenodo.org/doi/10.5281/zenodo.11046037)
+[![DOI](https://zenodo.org/badge/642751290.svg)](https://zenodo.org/badge/latestdoi/642751290)
 
 Ref: ![Towards determining the (2+1)-dimensional Quantum Electrodynamics running coupling with Monte Carlo and quantum computing methods](https://arxiv.org/abs/2404.17545)
 
