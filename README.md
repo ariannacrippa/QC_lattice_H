@@ -93,7 +93,7 @@ The action of the circuit is straightforward: starting from the state $`\ket{00}
 
 Circuits for larger truncations ($`l=3,7,15`$) are:
 
-![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l3.png)
+![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l3.png){: width="50%"}
 ![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l7.png)
 ![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l15.png)
 
