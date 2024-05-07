@@ -20,7 +20,7 @@ It considers two types of encoding: 'ed' returns sparse matrix, 'gray' with opti
 (For tests see: [class_H_QED_test_sym_oprt.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/class_H_QED_test_sym_oprt.ipynb))
 
 **'Ansaetze.py'**
-Ansaetze proposal of variational circuit for Gray encoding (for gauge fields) and zero-charge sector (for femrionic d.o.f.).
+Ansaetze proposal of variational circuit for Gray encoding (for gauge fields) and zero-charge sector (for fermionic d.o.f.).
 
 
 ## Example
@@ -68,28 +68,25 @@ It is also possible to put static charges on the sites and study the static pote
 
 ## Gray circuit
 
-After discretizing and truncating the $U(1)$ gauge group to the discrete group $\mathbb{Z}_{2l+1}$, the gauge fields can be represented in the electric basis as
-\begin{subequations}
-\begin{align}
-    \hat{E} &= \sum_{i=-l}^l i \ket{i}_{\text{ph}}\bra{i}_{\text{ph}}, \\
+After discretizing and truncating the $$U(1)$$ gauge group to the discrete group $$\mathbb{Z}_{2l+1}$$, the gauge fields can be represented in the electric basis as
+$$\eqalign{\hat{E} &= \sum_{i=-l}^l i \ket{i}_{\text{ph}}\bra{i}_{\text{ph}}, \\
     \hat{U} &= \sum_{i=-l}^{l-1} \ket{i+1}_{\text{ph}}\bra{i}_{\text{ph}},\\
-    \hat{U^\dagger} &= \sum_{i=-l+1}^l \ket{i-1}_{\text{ph}}\bra{i}_{\text{ph}}.
-\end{align}
-\end{subequations}
+    \hat{U^\dagger} &= \sum_{i=-l+1}^l \ket{i-1}_{\text{ph}}\bra{i}_{\text{ph}}.}$$
+
 For numerical calculations, it is advantageous to employ a suitable encoding that accurately represents the physical values of the gauge fields.
 In this work, we consider the \textit{Gray encoding} .
-For the truncation $l=1$, we can use the circuit in the following Figure to represent a gauge field.
+For the truncation $$l=1$$, we can use the circuit in the following Figure to represent a gauge field.
 
 ![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l1.png)
 
-The action of the circuit is straightforward: starting from the state $\ket{00}$, setting both parameters $\theta_1$ and $\theta_2$ to zero allows for the exploration of the physical state $\ket{-1}_{\text{ph}}$. The introduction of a non-zero value for $\theta_1$ allows the state to change to $\ket{01}$, which represents the  \textit{vacuum state} $\ket{0}_{\text{ph}}$, with a certain probability. A complete rotation occurs if $\theta_1=\pi$, resulting in the exclusive presence of the second state with a probability of 1.0. Subsequently, the second controlled gate operates only when the first qubit is $\ket{1}$, limiting the exploration to $\ket{11}$ (i.e., $\ket{1}_{\text{ph}}$) and excluding $\ket{10}$.
+The action of the circuit is straightforward: starting from the state $$\ket{00}$$, setting both parameters $$\theta_1$$ and $$\theta_2$$ to zero allows for the exploration of the physical state $$\ket{-1}_{\text{ph}}$$. The introduction of a non-zero value for $$\theta_1$$ allows the state to change to $$\ket{01}$$, which represents the  \textit{vacuum state} $$\ket{0}_{\text{ph}}$$, with a certain probability. A complete rotation occurs if $$\theta_1=\pi$$, resulting in the exclusive presence of the second state with a probability of 1.0. Subsequently, the second controlled gate operates only when the first qubit is $$\ket{1}$$, limiting the exploration to $$\ket{11}$$ (i.e., $$\ket{1}_{\text{ph}}$$) and excluding $$\ket{10}$$.
 
-Circuits for larger truncations ($l=3,7,15$) are:
+Circuits for larger truncations ($$l=3,7,15$$) are:
 
 ![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l3.png)
 ![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l7.png)
 ![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l15.png)
 
 
-Ref: ![alt text](https://arxiv.org/abs/2404.17545)
+Ref: ![Towards determining the (2+1)-dimensional Quantum Electrodynamics running coupling with Monte Carlo and quantum computing methods](https://arxiv.org/abs/2404.17545)
 
