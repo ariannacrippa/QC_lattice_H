@@ -84,10 +84,10 @@ $$\eqalign{\hat{E} &= \sum_{i=-l}^l i \ket{i}_{\text{ph}}\bra{i}_{\text{ph}}, \\
 }$$
 
 For numerical calculations, it is advantageous to employ a suitable encoding that accurately represents the physical values of the gauge fields.
-In this work, we consider the \textit{Gray encoding} .
+In this work, we consider the \textit{Gray encoding}.
 For the truncation $`l=1`$, we can use the circuit in the following Figure to represent a gauge field.
 
-![alt text](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l1.png)
+<img src="https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/gray_circuit_l1.png" width="100" height="100">
 
 The action of the circuit is straightforward: starting from the state $`\ket{00}`$, setting both parameters $`\theta_1`$ and $`\theta_2`$ to zero allows for the exploration of the physical state $`\ket{-1}_{\text{ph}}`$. The introduction of a non-zero value for $`\theta_1`$ allows the state to change to $`\ket{01}`$, which represents the  \textit{vacuum state} $`\ket{0}_{\text{ph}}`$, with a certain probability. A complete rotation occurs if $`\theta_1=\pi`$, resulting in the exclusive presence of the second state with a probability of 1.0. Subsequently, the second controlled gate operates only when the first qubit is $`\ket{1}`$, limiting the exploration to $`\ket{11}`$ (i.e., $`\ket{1}_{\text{ph}}`$) and excluding $`\ket{10}`$.
 
