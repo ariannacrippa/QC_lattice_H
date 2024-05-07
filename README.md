@@ -1,37 +1,100 @@
-# Lattice QED Hamiltonian for Quantum Computing
-
 [![DOI](https://zenodo.org/badge/642751290.svg)](https://zenodo.org/badge/latestdoi/642751290)
 
-Ref: ![Towards determining the (2+1)-dimensional Quantum Electrodynamics running coupling with Monte Carlo and quantum computing methods](https://arxiv.org/abs/2404.17545)
+# Lattice QED Hamiltonian for Quantum Computing
+
+This repository contains useful Python functions and classes for seamlessly designing and obtaining QED Hamiltonians for 1D, 2D or 3D lattices with staggered, i.e.,  Kogut and Susskind formulation. 
+
+The implementation is useful for carrying out research on QED quantum simulation assisted by quantum computing and quantum algorithms, as well as for analysis and comparison with known exact-diagonalization (ED) methods. In turn, the classes in this module are compatible wirh exact diagonalization libraries and the Qiskit library.
+
+**Related work:**: 
+- [Towards determining the (2+1)-dimensional Quantum Electrodynamics running coupling with Monte Carlo and quantum computing methods](https://arxiv.org/abs/2404.17545)
+
+## Installation
+Before using this code, make sure you have made a dedicated python virtual environment and installed all required dependencies.
+
+### Virtual Environment
+There are many disticnt ways of creating python environments which might be suitable for different applications, e.g., Anaconda, Miniconda, PyEnv, Venv, and others. Use the one that best suits your needs.
+
+For convenience purposes, we provide an example on how to create and activate a simple eviroment using Venv:
+
+Unix Systems (Zsh and Bash):
+```bash
+python3 -m venv qc_lattice_h && source qc_lattice_h/bin/activate
+```
+
+Windows:
+```bash
+TODO!!!!!!!
+```
+
+To leave this environment, simply run '`deactivate`'.
+
+### Dependencies
 
 
+- General Dependencies:
+    - `numpy`
+    - `matplotlib`
 
-In this repository one can write the QED Hamiltonian for a 1,2 or 3D lattice with staggered fermions, i.e. Kogut and Susskind formulation. The code is compatible with exact diagonalisation libraries and Qiskit library.
+- For Exact Diagonalization:
+    - `scipy`
 
-## Python scripts
-**'HC_Lattice.py'**
-A python code that builds a lattice in generic N dimensions, with periodic or open boundary conditions.
-It finds the set of links and sites, build plaquettes and chain for Jordan_Wigner definition (version up to 3D).
+- For Quantum Computation:
+    - `qiskit` (Version **??**)
+    
+It is possible to install all dependencies with the command below:
 
-**'Hamiltonian_QED_sym.py'**
-A python code that builds a symbolic expression of QED Hamiltonian N-dimensional lattice, both with open and periodic boundary conditions. The formulation considered is from Kogut and Susskind and the Gauss’ law is applied.
-By doing so, we will get a gauge invariant system, reduce the number of dynamical links needed
-for the computation, and have a more resource-efficient Hamiltonian suitable for a wide range of
-quantum hardware.
+```bash
+pip install numpy matplotlib scipy qiskit
+```
 
-**'Hamiltonian_QED_oprt.py'**
-A python code that imports the Hamiltonian from symbolic expression and build the operator form (sparse matrices or PauliOp, suitable for qiskit quantum circuits).
-It considers two types of encoding: 'ed' returns sparse matrix, 'gray' with option sparse=False it returns PauliOp expression, otherwise a sparse matrix.
+## Usage
 
-(For tests see: [class_H_QED_test_sym_oprt.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/class_H_QED_test_sym_oprt.ipynb))
+This module is consisted of three main Python classes found in three separate files, as explained below, each focused in a particular component of QED Hamiltonian creation.
+
+### File Structure
+- **'HC_Lattice.py'**
+
+Contains a python class '`HCLattice`' that builds a lattice in generic N dimensions, with periodic or open boundary conditions.
+It finds the set of links and sites, build plaquettes and chain for Jordan_Wigner definition (version up to 3D). 
+
+
+- **'Hamiltonian_QED_sym.py'**
+Has a python class '`HamiltonianQED_sym`' that builds a symbolic expression of QED Hamiltonian N-dimensional lattice, both with open and periodic boundary conditions. The formulation considered is from Kogut and Susskind and the Gauss’ law is applied.
+By doing so, it results in a gauge invariant system, reducing the number of dynamical links needed for the computation, leading to a more resource-efficient Hamiltonian suitable for a wide range of quantum hardware.
+
+- **'Hamiltonian_QED_oprt.py'**
+Contains a '`HamiltonianQED_oprt`' class. It imports the Hamiltonian from symbolic expression and builds its respective operator form (sparse matrices or PauliOp, suitable for qiskit quantum circuits).
+It considers two types of encoding: `ed` returns sparse matrix; `gray` with option sparse=False returns PauliOp expression. Otherwise, a sparse matrix is returned.
+
 
 **'Ansaetze.py'**
 Ansaetze proposal of variational circuit for Gray encoding (for gauge fields) and zero-charge sector (for fermionic d.o.f.).
 
+### Importing classes
 
-## Example
+To integrate this implementation in your project, one suggestion is to include the python files into your project folder, and import the classes as shown below:
 
-Let us consider a 2x2 OBC system as in the following figure:
+```python
+from Hamiltonian_QED_sym import HamiltonianQED_sym
+from Hamiltonian_QED_oprt import HamiltonianQED_oprt
+from HC_Lattice import HCLattice
+from Ansaetze import *
+```
+
+Alternatively, one could clone the full repository (or include it as a git submodule), in which case the files would me saved in a `QC_Lattice_H` subfolder. Make sure to update you code to reflect the different path, either by using a `sys.path.append()` call or by addinf a prefix to your imports: `HC_Lattice` -> `QC_Lattice_H.HC_Lattice`. 
+
+
+### Examples
+
+For code examples illustrating a typical workflow with this module, please refer to the `notebooks` folder and the Jupyter Notebooks examples there:
+
+- [class_H_QED_test_sym_oprt.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/class_H_QED_test_sym_oprt.ipynb)
+- [class_HC_lattice_test.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/class_HC_lattice_test.ipynb)
+- [class_ansaetze.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/class_ansaetze.ipynb)
+
+
+For an example of Hamiltonian design, let us consider a 2x2 OBC system as in the following figure:
 
 <img src="https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/system_2x2_OBC_gausslawTrue.png" width="400" height="400">
 
@@ -96,4 +159,12 @@ Circuits for larger truncations ($`l=3,7,15`$) are:
 <img src="https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/gray_circuit_l7.png" width="400" height="200">
 <img src="https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/gray_circuit_l15.png" width="400" height="200">
 
+## Feedback and Bugs
+If any bugs related to installation, usage and workflow are encontered, and in case of suggestions for improvements and new features, please open a [New Issue](https://github.com/ariannacrippa/QC_Lattice_H/issues/new)
 
+## Contributing
+To assist with potential contributions, please contact the lead developer OPTIONALEMAILHERE before sumbitting a Pull Request.
+
+## Acknowledments
+
+ACKNOWLEDGE
