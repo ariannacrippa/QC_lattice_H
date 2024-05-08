@@ -24,7 +24,7 @@ python3 -m venv qc_lattice_h && source qc_lattice_h/bin/activate
 
 Windows:
 ```bash
-TODO!!!!!!!
+python -m venv qc_lattice_h && qc_lattice_h/Scripts/activate
 ```
 
 To leave this environment, simply run '`deactivate`'.
@@ -33,19 +33,18 @@ To leave this environment, simply run '`deactivate`'.
 
 
 - General Dependencies:
-    - `numpy`
-    - `matplotlib`
+    `numpy`, `matplotlib`, `networkx`, `sympy`, `iteration_utilities`
 
 - For Exact Diagonalization:
-    - `scipy`
+    `scipy`
 
 - For Quantum Computation:
-    - `qiskit` (Version **??**)
+    `qiskit` (Version **??**)
     
 It is possible to install all dependencies with the command below:
 
 ```bash
-pip install numpy matplotlib scipy qiskit
+pip install numpy matplotlib networkx sympy scipy qiskit iteration_utilities
 ```
 
 ## Usage
@@ -54,7 +53,6 @@ This module is consisted of three main Python classes found in three separate fi
 
 ### File Structure
 - **'HC_Lattice.py'**
-
 Contains a python class '`HCLattice`' that builds a lattice in generic N dimensions, with periodic or open boundary conditions.
 It finds the set of links and sites, build plaquettes and chain for Jordan_Wigner definition (version up to 3D). 
 
@@ -68,8 +66,8 @@ Contains a '`HamiltonianQED_oprt`' class. It imports the Hamiltonian from symbol
 It considers two types of encoding: `ed` returns sparse matrix; `gray` with option sparse=False returns PauliOp expression. Otherwise, a sparse matrix is returned.
 
 
-**'Ansaetze.py'**
-Ansaetze proposal of variational circuit for Gray encoding (for gauge fields) and zero-charge sector (for fermionic d.o.f.).
+- **'Ansaetze.py'**
+Contains an '`Ansatz`' class. Consists of ansaetze proposals of variational circuits for Gray encoding (for gauge fields) and zero-charge sector (for fermionic d.o.f.).
 
 ### Importing classes
 
@@ -89,9 +87,9 @@ Alternatively, one could clone the full repository (or include it as a git submo
 
 For code examples illustrating a typical workflow with this module, please refer to the `notebooks` folder and the Jupyter Notebooks examples there:
 
-- [class_H_QED_test_sym_oprt.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/class_H_QED_test_sym_oprt.ipynb)
-- [class_HC_lattice_test.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/class_HC_lattice_test.ipynb)
-- [class_ansaetze.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/class_ansaetze.ipynb)
+- [class_H_QED_test_sym_oprt.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/class_H_QED_test_sym_oprt.ipynb)
+- [class_HC_lattice_test.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/class_HC_lattice_test.ipynb)
+- [class_ansaetze.ipynb](https://github.com/ariannacrippa/QC_lattice_H/blob/main/notebooks/class_ansaetze.ipynb)
 
 
 For an example of Hamiltonian design, let us consider a 2x2 OBC system as in the following figure:
@@ -168,3 +166,4 @@ To assist with potential contributions, please contact the lead developer OPTION
 ## Acknowledments
 
 ACKNOWLEDGE
+### License
