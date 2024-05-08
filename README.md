@@ -80,7 +80,7 @@ from HC_Lattice import HCLattice
 from Ansaetze import *
 ```
 
-Alternatively, one could clone the full repository (or include it as a git submodule), in which case the files would me saved in a `QC_Lattice_H` subfolder. Make sure to update you code to reflect the different path, either by using a `sys.path.append()` call or by addinf a prefix to your imports: `HC_Lattice` -> `QC_Lattice_H.HC_Lattice`. 
+Alternatively, one could clone the full repository (or include it as a git submodule), in which case the files would me saved in a `QC_lattice_H` subfolder. Make sure to update you code to reflect the different path, either by using a `sys.path.append()` call or by addinf a prefix to your imports: `HC_Lattice` -> `QC_lattice_H.HC_Lattice`. 
 
 
 ### Examples
