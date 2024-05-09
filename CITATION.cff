@@ -3,7 +3,7 @@ message: "If you use this software in your research, please consider citing it a
 authors:
 - family-names: "Crippa"
   given-names: "Arianna"
-  orcid: "https://orcid.org/XXXX-XXXX-XXXX-XXXX"
+  orcid: "https://orcid.org/0000-0003-2376-5682"
 title: "Lattice QED Hamiltonian for Quantum Computing"
 version: 0.0.2
 doi: 10.5281/zenodo.11046038

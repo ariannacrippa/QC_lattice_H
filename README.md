@@ -2,7 +2,7 @@
 
 # Lattice QED Hamiltonian for Quantum Computing
 
-This repository contains useful Python functions and classes for seamlessly designing and obtaining QED Hamiltonians for 1D, 2D or 3D lattices with staggered, i.e.,  Kogut and Susskind formulation. 
+This repository contains useful Python functions and classes for seamlessly designing and obtaining Quantum Electrodynamic (QED) Hamiltonians for 1D, 2D or 3D lattices with staggered fermionic degrees of freedom, i.e.,  Kogut and Susskind formulation[^1]. 
 
 The implementation is useful for carrying out research on QED quantum simulation assisted by quantum computing and quantum algorithms, as well as for analysis and comparison with known exact-diagonalization (ED) methods. In turn, the classes in this module are compatible wirh exact diagonalization libraries and the Qiskit library.
 
@@ -10,12 +10,12 @@ The implementation is useful for carrying out research on QED quantum simulation
 - [Towards determining the (2+1)-dimensional Quantum Electrodynamics running coupling with Monte Carlo and quantum computing methods](https://arxiv.org/abs/2404.17545)
 
 ## Installation
-Before using this code, make sure you have made a dedicated python virtual environment and installed all required dependencies.
+Before using this code, make sure you have made a dedicated Python virtual environment and installed all required dependencies.
 
 ### Virtual Environment
-There are many disticnt ways of creating python environments which might be suitable for different applications, e.g., Anaconda, Miniconda, PyEnv, Venv, and others. Use the one that best suits your needs.
+There are many distinct ways of creating Python environments which might be suitable for different applications, e.g., Anaconda, Miniconda, PyEnv, Venv, and others. Use the one that best suits your needs.
 
-For convenience purposes, we provide an example on how to create and activate a simple eviroment using Venv:
+For convenience purposes, we provide an example of how to create and activate a simple environment using Venv:
 
 Unix Systems (Zsh and Bash):
 ```bash
@@ -39,7 +39,7 @@ To leave this environment, simply run '`deactivate`'.
     `scipy`
 
 - For Quantum Computation:
-    `qiskit` (Version **??**)
+    `qiskit`, `qiskit.quantum_info` (Version 1.0)
     
 It is possible to install all dependencies with the command below:
 
@@ -49,17 +49,18 @@ pip install numpy matplotlib networkx sympy scipy qiskit iteration_utilities
 
 ## Usage
 
-This module is consisted of three main Python classes found in three separate files, as explained below, each focused in a particular component of QED Hamiltonian creation.
+This module consists of three main Python classes found in three separate files, as explained below, each focused on a particular component of QED Hamiltonian creation.
 
 ### File Structure
 - **'HC_Lattice.py'**
 Contains a python class '`HCLattice`' that builds a lattice in generic N dimensions, with periodic or open boundary conditions.
-It finds the set of links and sites, build plaquettes and chain for Jordan_Wigner definition (version up to 3D). 
+It finds the set of links and sites, builds plaquettes and chains for Jordan-Wigner[^2] definition (version up to 3D). 
 
 
 - **'Hamiltonian_QED_sym.py'**
 Has a python class '`HamiltonianQED_sym`' that builds a symbolic expression of QED Hamiltonian N-dimensional lattice, both with open and periodic boundary conditions. The formulation considered is from Kogut and Susskind and the Gauss’ law is applied.
-By doing so, it results in a gauge invariant system, reducing the number of dynamical links needed for the computation, leading to a more resource-efficient Hamiltonian suitable for a wide range of quantum hardware.
+By doing so, it results in a gauge invariant system, reducing the number of dynamical links needed for the computation, leading to a resource-efficient Hamiltonian.
+It is also possible to consider a formulation for magnetic basis[^3].
 
 - **'Hamiltonian_QED_oprt.py'**
 Contains a '`HamiltonianQED_oprt`' class. It imports the Hamiltonian from symbolic expression and builds its respective operator form (sparse matrices or PauliOp, suitable for qiskit quantum circuits).
@@ -67,11 +68,11 @@ It considers two types of encoding: `ed` returns sparse matrix; `gray` with opti
 
 
 - **'Ansaetze.py'**
-Contains an '`Ansatz`' class. Consists of ansaetze proposals of variational circuits for Gray encoding (for gauge fields) and zero-charge sector (for fermionic d.o.f.).
+Contains an '`Ansatz`' class. Consists of ansaetze proposals of variational circuits for Gray encoding (for gauge fields) and zero-charge sector (for fermionic degrees of freedom).
 
 ### Importing classes
 
-To integrate this implementation in your project, one suggestion is to include the python files into your project folder, and import the classes as shown below:
+To integrate this implementation into your project, one suggestion is to include the Python files in your project folder, and import the classes as shown below:
 
 ```python
 from Hamiltonian_QED_sym import HamiltonianQED_sym
@@ -80,7 +81,7 @@ from HC_Lattice import HCLattice
 from Ansaetze import *
 ```
 
-Alternatively, one could clone the full repository (or include it as a git submodule), in which case the files would me saved in a `QC_lattice_H` subfolder. Make sure to update you code to reflect the different path, either by using a `sys.path.append()` call or by addinf a prefix to your imports: `HC_Lattice` -> `QC_lattice_H.HC_Lattice`. 
+Alternatively, one could clone the full repository (or include it as a git submodule), in which case the files would be saved in a `QC_lattice_H` subfolder. Make sure to update your code to reflect the different path, either by using a `sys.path.append()` call or by adding a prefix to your imports: `HC_Lattice` -> `QC_lattice_H.HC_Lattice`. 
 
 
 ### Examples
@@ -137,14 +138,14 @@ It is also possible to put static charges on the sites and study the static pote
 
 After discretizing and truncating the U(1) gauge group to the discrete group $`\mathbb{Z}_{2l+1}`$, the gauge fields can be represented in the electric basis as
 
-\[
-\hat{E} = \sum_{i=-l}^l i \ket{i}_{\text{ph}}\bra{i}_{\text{ph}}, \\
-\hat{U} = \sum_{i=-l}^{l-1} \ket{i+1}_{\text{ph}}\bra{i}_{\text{ph}}, \\
-\hat{U^\dagger} = \sum_{i=-l+1}^l \ket{i-1}_{\text{ph}}\bra{i}_{\text{ph}}.
-\]
+$$\eqalign{
+\hat{E} &= \sum_{i=-l}^l i \ket{i}_{\text{ph}}\bra{i}_{\text{ph}}, \\
+\hat{U} &= \sum_{i=-l}^{l-1} \ket{i+1}_{\text{ph}}\bra{i}_{\text{ph}}, \\
+\hat{U^\dagger} &= \sum_{i=-l+1}^l \ket{i-1}_{\text{ph}}\bra{i}_{\text{ph}}.
+}$$
 
 For numerical calculations, it is advantageous to employ a suitable encoding that accurately represents the physical values of the gauge fields.
-In this work, we consider the \textit{Gray encoding}.
+In this work, we consider the Gray encoding.
 For the truncation $`l=1`$, we can use the circuit in the following Figure to represent a gauge field.
 
 <img src="https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/gray_circuit_l1.png" width="400" height="200">
@@ -158,12 +159,19 @@ Circuits for larger truncations ($`l=3,7,15`$) are:
 <img src="https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/gray_circuit_l15.png" width="400" height="200">
 
 ## Feedback and Bugs
-If any bugs related to installation, usage and workflow are encontered, and in case of suggestions for improvements and new features, please open a [New Issue](https://github.com/ariannacrippa/QC_Lattice_H/issues/new)
+If any bugs related to installation, usage and workflow are encountered, and in case of suggestions for improvements and new features, please open a [New Issue](https://github.com/ariannacrippa/QC_Lattice_H/issues/new)
 
 ## Contributing
-To assist with potential contributions, please contact the lead developer OPTIONALEMAILHERE before sumbitting a Pull Request.
+To assist with potential contributions, please contact the lead developer Arianna Crippa before submitting a Pull Request.
 
-## Acknowledments
+## Acknowledgements
 
 ACKNOWLEDGE
 ### License
+
+## References
+[^1]: [Lattice fermions L Susskind - Physical Review D, 1977 - APS](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.16.3031)
+[^2]: [P. Jordan and E. P. Wigner, Über das paulische äquivalenzverbot, in The Collected Works of Eugene Paul Wigner (Springer, New York, 1993), pp. 109–129](https://link.springer.com/chapter/10.1007/978-3-662-02781-3_9)
+[^3]: [JF Haase, L Dellantonio, A Celi, D Paulson, A Kan, K Jansen, CA Muschik Quantum, 2021•quantum-journal.org](https://quantum-journal.org/papers/q-2021-02-04-393/)
+
+
