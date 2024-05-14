@@ -302,6 +302,8 @@ class HamiltonianQED_oprt:
         self._get_symbol_subs()
         print("> Pauli strings built")
 
+        print("qubit order |qn...q2q1q0>:",self.qop_list[::-1]+self.uop_list[::-1])
+
         self.build_hamiltonian_tot()
 
         # get the end time
@@ -1705,7 +1707,8 @@ class HamiltonianQED_oprt:
 
             e_op_sol = dict(
                 zip(
-                    self.hamilt_sym.e_op_free,
+                    # self.hamilt_sym.e_op_free,
+                    self.eop_list,
                     [
                         gray_dict[
                             eigenstate[::-1][
