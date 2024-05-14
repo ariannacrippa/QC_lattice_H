@@ -164,11 +164,8 @@ If any bugs related to installation, usage and workflow are encountered, and in 
 ## Contributing
 To assist with potential contributions, please contact the lead developer Arianna Crippa before submitting a Pull Request.
 
-## Acknowledgements
-
-ACKNOWLEDGE
 ### License
-
+[MIT licence](https://github.com/ariannacrippa/QC_lattice_H/blob/main/LICENSE)
 ## References
 [^1]: [Lattice fermions L Susskind - Physical Review D, 1977 - APS](https://journals.aps.org/prd/abstract/10.1103/PhysRevD.16.3031)
 [^2]: [P. Jordan and E. P. Wigner, Über das paulische äquivalenzverbot, in The Collected Works of Eugene Paul Wigner (Springer, New York, 1993), pp. 109–129](https://link.springer.com/chapter/10.1007/978-3-662-02781-3_9)
