@@ -131,6 +131,17 @@ class Ansatz:
                 t+=1
 
         else:
+
+            # #TODO part added now for mag basis
+            # if self.l==3:
+            #     #******
+            #     for j in range(layers):
+            #         # qc.cry(params(t),self.n_qubits-3,self.n_qubits-1)
+            #         qc.append(Ansatz.gray_cry(params(t)),[self.n_qubits-3,self.n_qubits-2])
+            #         t+=1
+
+            #     #******
+
             #1st cry gate
             for j in range(layers):
                 # qc.cry(params(t),self.n_qubits-2,self.n_qubits-1)
@@ -149,6 +160,8 @@ class Ansatz:
 
             #2nd cry gate
             if self.l>1 and self.l!=6:
+
+
                 for j in range(layers):
                     # qc.cry(params(t),self.n_qubits-3,self.n_qubits-1)
                     qc.append(Ansatz.gray_cry(params(t)),[self.n_qubits-3,self.n_qubits-1])
@@ -267,226 +280,226 @@ class Ansatz:
         """Return circuit of n gauge fields with Gray encoding and no fermions.
         Entanglement structure between gauge fields for l=1,3,7
          with options: linear, full, none """
+        if self.ngauge:
+            #full entanglement or linear
+            if entanglement=='linear':
+                cry_gates =lambda i: range(0,self.n_qubits*i,self.n_qubits)
+                mcry_gates = lambda i: range(self.n_qubits*i-1,self.n_qubits*i,self.n_qubits)
+                mcry7_gates = lambda i: range(0,self.n_qubits*i,self.n_qubits)
+            elif entanglement=='full':
+                cry_gates =lambda i: range(self.n_qubits*i)
+                mcry_gates = lambda i: range(self.n_qubits*i)
+                mcry7_gates = lambda i: range(self.n_qubits*i)
+            elif entanglement=='triangular':
+                if self.ngauge<=2:
+                    raise ValueError('Triangular entanglement implemented for n gauge fields>2.')
+                #layer of cry triangular
+                ctr_gates_ry1 = list(range(0,self.n_qubits*((self.ngauge//2)-(self.ngauge+1)%2),self.n_qubits))
+                ctr_gates_ry2 = list(range(self.n_qubits*((self.ngauge+(self.ngauge)%2)//2),self.n_qubits*self.ngauge,self.n_qubits))[::-1]
 
-        #full entanglement or linear
-        if entanglement=='linear':
-            cry_gates =lambda i: range(0,self.n_qubits*i,self.n_qubits)
-            mcry_gates = lambda i: range(self.n_qubits*i-1,self.n_qubits*i,self.n_qubits)
-            mcry7_gates = lambda i: range(0,self.n_qubits*i,self.n_qubits)
-        elif entanglement=='full':
-            cry_gates =lambda i: range(self.n_qubits*i)
-            mcry_gates = lambda i: range(self.n_qubits*i)
-            mcry7_gates = lambda i: range(self.n_qubits*i)
-        elif entanglement=='triangular':
-            if self.ngauge<=2:
-                raise ValueError('Triangular entanglement implemented for n gauge fields>2.')
-            #layer of cry triangular
-            ctr_gates_ry1 = list(range(0,self.n_qubits*((self.ngauge//2)-(self.ngauge+1)%2),self.n_qubits))
-            ctr_gates_ry2 = list(range(self.n_qubits*((self.ngauge+(self.ngauge)%2)//2),self.n_qubits*self.ngauge,self.n_qubits))[::-1]
+                mctr_gates_ry1 = list(range(self.n_qubits-1,self.n_qubits*((self.ngauge//2)-(self.ngauge+1)%2),self.n_qubits))
+                mctr_gates_ry2 = list(range(self.n_qubits*self.ngauge-1,self.n_qubits*((self.ngauge+(self.ngauge)%2)//2),-self.n_qubits))
 
-            mctr_gates_ry1 = list(range(self.n_qubits-1,self.n_qubits*((self.ngauge//2)-(self.ngauge+1)%2),self.n_qubits))
-            mctr_gates_ry2 = list(range(self.n_qubits*self.ngauge-1,self.n_qubits*((self.ngauge+(self.ngauge)%2)//2),-self.n_qubits))
+            elif 'none':
+                cry_gates =lambda i: range(0)
+            else:
+                raise ValueError('Invalid entanglement.')
 
-        elif 'none':
-            cry_gates =lambda i: range(0)
-        else:
-            raise ValueError('Invalid entanglement.')
+            #circuit with ngauge quantum registers
+            qregisters=[]
+            if self.gauge_list:
+                for i in [str(k) for k in self.gauge_list]:
+                    qregisters.append(QuantumRegister(self.n_qubits,name=i))
+            else:
+                for i in range(self.ngauge):
+                    qregisters.append(QuantumRegister(self.n_qubits,name=f'g{i}'))
 
-        #circuit with ngauge quantum registers
-        qregisters=[]
-        if self.gauge_list:
-            for i in [str(k) for k in self.gauge_list]:
-                qregisters.append(QuantumRegister(self.n_qubits,name=i))
-        else:
-            for i in range(self.ngauge):
-                qregisters.append(QuantumRegister(self.n_qubits,name=f'g{i}'))
+            qc_gauge = QuantumCircuit(*qregisters)
 
-        qc_gauge = QuantumCircuit(*qregisters)
-
-        th_gauge=0
-        #first gauge field
-        qc_gauge.compose(self.gray_code_lim(theta=th_gauge,layers=nlayers)[0],list(range(self.n_qubits)),inplace=True)
-        #qc_gauge.barrier()
-        th_gauge=int(''.join(list(filter(str.isdigit, str(self.gray_code_lim(theta=th_gauge,layers=nlayers)[1][-1])))))+1
-        first_layer_par = [self.n_qubits-2,]
-
-        if entanglement=='triangular':
-            qc_gauge.compose(self.gray_code_lim(theta=th_gauge,layers=nlayers)[0],list(range(self.n_qubits*(self.ngauge-1),self.n_qubits*self.ngauge)),inplace=True)
-
-            first_layer_par+=[th_gauge,]
-
+            th_gauge=0
+            #first gauge field
+            qc_gauge.compose(self.gray_code_lim(theta=th_gauge,layers=nlayers)[0],list(range(self.n_qubits)),inplace=True)
+            #qc_gauge.barrier()
             th_gauge=int(''.join(list(filter(str.isdigit, str(self.gray_code_lim(theta=th_gauge,layers=nlayers)[1][-1])))))+1
+            first_layer_par = [self.n_qubits-2,]
+
+            if entanglement=='triangular':
+                qc_gauge.compose(self.gray_code_lim(theta=th_gauge,layers=nlayers)[0],list(range(self.n_qubits*(self.ngauge-1),self.n_qubits*self.ngauge)),inplace=True)
+
+                first_layer_par+=[th_gauge,]
+
+                th_gauge=int(''.join(list(filter(str.isdigit, str(self.gray_code_lim(theta=th_gauge,layers=nlayers)[1][-1])))))+1
 
 
 
-            for i in range(1,self.ngauge-1):
-                for k in range(nlayers):#first gate of gray structure
-                    for n in range(self.n_qubits*i,self.n_qubits*(i+1)-1):
-                        # qc_gauge.ry(Parameter(f"θ[{th_gauge}]"),n)
-                        qc_gauge.append(Ansatz.gray_ry(Parameter(f"θ[{th_gauge}]")),[n])
-                        if n==self.n_qubits*(i+1)-2:
-                            first_layer_par+=[th_gauge,]
-                        th_gauge+=1
+                for i in range(1,self.ngauge-1):
+                    for k in range(nlayers):#first gate of gray structure
+                        for n in range(self.n_qubits*i,self.n_qubits*(i+1)-1):
+                            # qc_gauge.ry(Parameter(f"θ[{th_gauge}]"),n)
+                            qc_gauge.append(Ansatz.gray_ry(Parameter(f"θ[{th_gauge}]")),[n])
+                            if n==self.n_qubits*(i+1)-2:
+                                first_layer_par+=[th_gauge,]
+                            th_gauge+=1
 
 
-            for k in range(nlayers):
-                for n in range(self.n_qubits-1):
-                    for ctrl in ctr_gates_ry1:
-                        qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),ctrl+n,ctrl+n+self.n_qubits)
-                        th_gauge+=1
-                    for ctrl in ctr_gates_ry2:
-                        qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),ctrl+n,ctrl+n-self.n_qubits)
-                        th_gauge+=1
-
-
-
-            for i in range(1,self.ngauge-1):
-                for k in range(nlayers):#second gate of gray structure for every l=1,3,7
-                    # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1)
-                    qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1])
-                    th_gauge+=1
-
-
-
-            #multi-controlled gates
-            for k in range(nlayers):
-                for j in mctr_gates_ry1:
-                    # qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,j+self.n_qubits-1],j+self.n_qubits)
-                    qc_gauge.append(Ansatz.entang_mcry(Parameter(f"θ[{th_gauge}]")),[j,j+self.n_qubits-1,j+self.n_qubits])
-                    th_gauge+=1
-
-            for k in range(nlayers):
-                for j in mctr_gates_ry2:
-                    # qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,j-self.n_qubits-1],j-self.n_qubits)
-                    qc_gauge.append(Ansatz.entang_mcry(Parameter(f"θ[{th_gauge}]")),[j,j-self.n_qubits-1,j-self.n_qubits])
-                    th_gauge+=1
-                    #qc_gauge.barrier()
-
-            for i in range(1,self.ngauge-1):
-
-                if self.l==3 or self.l==7:
-                    for k in range(nlayers):#third gate of gray structure
-                        # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1)
-                        qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1])
-                        th_gauge+=1
-
-                if self.l==7:
-                    for k in range(nlayers):#third gate of gray structure
-                        # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*i,self.n_qubits*i+1)
-                        qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*i,self.n_qubits*i+1])
-                        th_gauge+=1
-
-
-
-        else:
-            for i in range(1,self.ngauge):
-                for k in range(nlayers):#first gate of gray structure
-                    for n in range(self.n_qubits*i,self.n_qubits*(i+1)-1):
-                        # qc_gauge.ry(Parameter(f"θ[{th_gauge}]"),n)
-                        qc_gauge.append(Ansatz.gray_ry(Parameter(f"θ[{th_gauge}]")),[n,])
-                        if n==self.n_qubits*(i+1)-2:
-                            first_layer_par+=[th_gauge,]
-                        th_gauge+=1
                 for k in range(nlayers):
                     for n in range(self.n_qubits-1):
-                        for j in cry_gates(i):
-
-                            qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),j+n,self.n_qubits*i+n)
-
-                            # qc_gauge.cx(j+n,self.n_qubits*i+n)
-                            # qc_gauge.ry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*i+n)
-
-
+                        for ctrl in ctr_gates_ry1:
+                            qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),ctrl+n,ctrl+n+self.n_qubits)
                             th_gauge+=1
-                    #qc_gauge.barrier()
+                        for ctrl in ctr_gates_ry2:
+                            qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),ctrl+n,ctrl+n-self.n_qubits)
+                            th_gauge+=1
 
-                for k in range(nlayers):#second gate of gray structure for every l=1,3,7
-                    # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1)
-                    qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1,])
-                    th_gauge+=1
+
+
+                for i in range(1,self.ngauge-1):
+                    for k in range(nlayers):#second gate of gray structure for every l=1,3,7
+                        # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1)
+                        qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1])
+                        th_gauge+=1
+
+
 
                 #multi-controlled gates
                 for k in range(nlayers):
-                    for j in mcry_gates(i):
-                        # qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,self.n_qubits*(i+1)-2],self.n_qubits*(i+1)-1)
-                        qc_gauge.append(Ansatz.entang_mcry(Parameter(f"θ[{th_gauge}]")),[j,self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1])
+                    for j in mctr_gates_ry1:
+                        # qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,j+self.n_qubits-1],j+self.n_qubits)
+                        qc_gauge.append(Ansatz.entang_mcry(Parameter(f"θ[{th_gauge}]")),[j,j+self.n_qubits-1,j+self.n_qubits])
+                        th_gauge+=1
+
+                for k in range(nlayers):
+                    for j in mctr_gates_ry2:
+                        # qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,j-self.n_qubits-1],j-self.n_qubits)
+                        qc_gauge.append(Ansatz.entang_mcry(Parameter(f"θ[{th_gauge}]")),[j,j-self.n_qubits-1,j-self.n_qubits])
                         th_gauge+=1
                         #qc_gauge.barrier()
 
+                for i in range(1,self.ngauge-1):
 
-                if self.l==3 or self.l==7:
-                    for k in range(nlayers):#third gate of gray structure
-                        # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1)
-                        qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1])
-                        th_gauge+=1
+                    if self.l==3 or self.l==7:
+                        for k in range(nlayers):#third gate of gray structure
+                            # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1)
+                            qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1])
+                            th_gauge+=1
+
+                    if self.l==7:
+                        for k in range(nlayers):#third gate of gray structure
+                            # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*i,self.n_qubits*i+1)
+                            qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*i,self.n_qubits*i+1])
+                            th_gauge+=1
+
+
+
+            else:
+                for i in range(1,self.ngauge):
+                    for k in range(nlayers):#first gate of gray structure
+                        for n in range(self.n_qubits*i,self.n_qubits*(i+1)-1):
+                            # qc_gauge.ry(Parameter(f"θ[{th_gauge}]"),n)
+                            qc_gauge.append(Ansatz.gray_ry(Parameter(f"θ[{th_gauge}]")),[n,])
+                            if n==self.n_qubits*(i+1)-2:
+                                first_layer_par+=[th_gauge,]
+                            th_gauge+=1
+
+                    for k in range(nlayers):
+                        for n in range(self.n_qubits-1):
+                            for j in cry_gates(i):
+                                qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),j+n,self.n_qubits*i+n)
+                                th_gauge+=1
                         #qc_gauge.barrier()
 
-                    # #multi-controlled gates
-                    # for k in range(nlayers):
-                    #     for j in mcry_gates(i):
-                    #         qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,self.n_qubits*(i+1)-3],self.n_qubits*(i+1)-1)
-                    #         th_gauge+=1
-                    #         #qc_gauge.barrier()
-
-                if self.l==7:
-                    for k in range(nlayers):#third gate of gray structure
-                        # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*i,self.n_qubits*i+1)
-                        qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*i,self.n_qubits*i+1])
+                    for k in range(nlayers):#second gate of gray structure for every l=1,3,7
+                        # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1)
+                        qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1,])
                         th_gauge+=1
-                        #qc_gauge.barrier()
 
-                    # #multi-controlled gates
-                    # for k in range(nlayers):
-                    #     for j in mcry7_gates(i):
-                    #         qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,self.n_qubits*i],self.n_qubits*i+1)
-                    #         th_gauge+=1
-                    #         #qc_gauge.barrier()
+                    #multi-controlled gates
+                    for k in range(nlayers):
+                        for j in mcry_gates(i):
+                            # qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,self.n_qubits*(i+1)-2],self.n_qubits*(i+1)-1)
+                            qc_gauge.append(Ansatz.entang_mcry(Parameter(f"θ[{th_gauge}]")),[j,self.n_qubits*(i+1)-2,self.n_qubits*(i+1)-1])
+                            th_gauge+=1
+                            #qc_gauge.barrier()
 
-        if rzlayer:
-            for k in range(self.n_qubits*self.ngauge):
-                qc_gauge.rz(Parameter(f"θ[{th_gauge}]"), k)
-                th_gauge+=1
 
-        return qc_gauge,first_layer_par,th_gauge
-        # self.qc_gauge=qc_gauge
-        # self.first_layer_par=first_layer_par
-        # self.th_gauge=th_gauge
+                    if self.l==3 or self.l==7:
+                        for k in range(nlayers):#third gate of gray structure
+                            # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1)
+                            qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1])
+                            th_gauge+=1
+                            #qc_gauge.barrier()
+                            # for j in mcry_gates(i):
+                            #     qc_gauge.append(Ansatz.entang_mcry(Parameter(f"θ[{th_gauge}]")),[j,self.n_qubits*(i+1)-3,self.n_qubits*(i+1)-1])
+                            #     th_gauge+=1
+
+
+                        # #multi-controlled gates
+                        # for k in range(nlayers):
+                        #     for j in mcry_gates(i):
+                        #         qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,self.n_qubits*(i+1)-3],self.n_qubits*(i+1)-1)
+                        #         th_gauge+=1
+                        #         #qc_gauge.barrier()
+
+                    if self.l==7:
+                        for k in range(nlayers):#third gate of gray structure
+                            # qc_gauge.cry(Parameter(f"θ[{th_gauge}]"),self.n_qubits*i,self.n_qubits*i+1)
+                            qc_gauge.append(Ansatz.gray_cry(Parameter(f"θ[{th_gauge}]")),[self.n_qubits*i,self.n_qubits*i+1])
+                            th_gauge+=1
+                            #qc_gauge.barrier()
+
+                        # #multi-controlled gates
+                        # for k in range(nlayers):
+                        #     for j in mcry7_gates(i):
+                        #         qc_gauge.mcry(Parameter(f"θ[{th_gauge}]"),[j,self.n_qubits*i],self.n_qubits*i+1)
+                        #         th_gauge+=1
+                        #         #qc_gauge.barrier()
+
+            if rzlayer:
+                for k in range(self.n_qubits*self.ngauge):
+                    qc_gauge.rz(Parameter(f"θ[{th_gauge}]"), k)
+                    th_gauge+=1
+
+            return qc_gauge,first_layer_par,th_gauge
+            # self.qc_gauge=qc_gauge
+            # self.first_layer_par=first_layer_par
+            # self.th_gauge=th_gauge
 
     def fermionic_circuit(self,th_ferm=None,rzlayer=False,nlayers=1):
         """Return circuit for fermionic case, i.e. no gauge fields.
            It considers iSwap gates between every two fermions in order to select only zero-charged states."""
 
-        qferm=[]
-        if self.ferm_list:
-            for f in [str(i) for i in self.ferm_list]:
-                qferm.append(QuantumRegister(1,name=f))
-        else:
-            for i in range(self.nfermions):
-                qferm.append(QuantumRegister(1,name=f'f{i}'))
-        qc_ferm = QuantumCircuit(*qferm)
+        if self.nfermions:
+            qferm=[]
+            if self.ferm_list:
+                for f in [str(i) for i in self.ferm_list]:
+                    qferm.append(QuantumRegister(1,name=f))
+            else:
+                for i in range(self.nfermions):
+                    qferm.append(QuantumRegister(1,name=f'f{i}'))
+            qc_ferm = QuantumCircuit(*qferm)
 
-        if not th_ferm:
-            th_ferm=0
+            if not th_ferm:
+                th_ferm=0
 
-        #params = lambda i: Parameter(f'theta_{i}')
-        params = lambda i: Parameter(f"θ[{i}]")
+            #params = lambda i: Parameter(f'theta_{i}')
+            params = lambda i: Parameter(f"θ[{i}]")
 
-        for i in range(1,self.nfermions,2):#range(0,self.nfermions,2):
-            qc_ferm.x(qferm[i])
+            for i in range(1,self.nfermions,2):#range(0,self.nfermions,2):
+                qc_ferm.x(qferm[i])
 
-        for n in range(nlayers):
-            for j in range(self.nfermions//2):
-                for i in range(j,self.nfermions-j,2):
-                        qc_ferm.append(Ansatz.iSwap(params(th_ferm)), qferm[i:i+2])
-                        th_ferm+=1
+            for n in range(nlayers):
+                for j in range(self.nfermions//2):
+                    for i in range(j,self.nfermions-j,2):
+                            qc_ferm.append(Ansatz.iSwap(params(th_ferm)), qferm[i:i+2])
+                            th_ferm+=1
 
-        #last layer of Rz gates for correct phase
-        if rzlayer:
-            for i in range(self.nfermions):
-                qc_ferm.rz(Parameter(f'theta_{th_ferm}'),qferm[i])
-                th_ferm+=1
+            #last layer of Rz gates for correct phase
+            if rzlayer:
+                for i in range(self.nfermions):
+                    qc_ferm.rz(Parameter(f'theta_{th_ferm}'),qferm[i])
+                    th_ferm+=1
 
-        return qc_ferm,th_ferm
+            return qc_ferm,th_ferm
 
 
 
@@ -494,81 +507,81 @@ class Ansatz:
 
     def gauge_fermion_circuit(self,entanglement='linear',rzlayer=False,nlayersgauge=1,nlayersferm=1):
         """Circuit for gauge fields and fermions (proposal with entanglement with CiSWAP gates)"""
+        if self.nfermions:
+            #params = lambda i: Parameter(f'theta_{i}')
+            params = lambda i: Parameter(f"θ[{i}]")
 
-        #params = lambda i: Parameter(f'theta_{i}')
-        params = lambda i: Parameter(f"θ[{i}]")
+            qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayersgauge)
 
-        qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayersgauge)
+            qreg_g=[]
+            qreg_f=[]
+            if self.gauge_list:
+                for i in [str(k) for k in self.gauge_list]:
+                    qreg_g.append(QuantumRegister(self.n_qubits,name=i))
+            else:
+                for i in range(self.ngauge):
+                    qreg_g.append(QuantumRegister(self.n_qubits,name=f'g{i}'))
+            if self.ferm_list:
+                for f in [str(i) for i in self.ferm_list]:
+                    qreg_f.append(QuantumRegister(1,name=f))
+            else:
+                for i in range(self.nfermions):
+                    qreg_f.append(QuantumRegister(1,name=f'f{i}'))
 
-        qreg_g=[]
-        qreg_f=[]
-        if self.gauge_list:
-            for i in [str(k) for k in self.gauge_list]:
-                qreg_g.append(QuantumRegister(self.n_qubits,name=i))
-        else:
-            for i in range(self.ngauge):
-                qreg_g.append(QuantumRegister(self.n_qubits,name=f'g{i}'))
-        if self.ferm_list:
-            for f in [str(i) for i in self.ferm_list]:
-                qreg_f.append(QuantumRegister(1,name=f))
-        else:
-            for i in range(self.nfermions):
-                qreg_f.append(QuantumRegister(1,name=f'f{i}'))
+            qc_tot = QuantumCircuit(*qreg_g,*qreg_f)
 
-        qc_tot = QuantumCircuit(*qreg_g,*qreg_f)
+            #gauge part
+            qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
 
-        #gauge part
-        qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
+            #fermionic part
+            qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
+            qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
 
-        #fermionic part
-        qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
-        qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
+            qc_tot.barrier()
+            # #iterate over gauge fields for entanglement ctrl qubits
+            # for j in range(self.ngauge*self.n_qubits+self.nfermions//2):
+            #     for i,k in zip(range(self.ngauge*self.n_qubits+j,self.ngauge*self.n_qubits+self.nfermions-j,2),[np.arange(self.ngauge*self.n_qubits)[i % (self.ngauge*self.n_qubits)] for i in range(self.nfermions)]):
 
-        qc_tot.barrier()
-        # #iterate over gauge fields for entanglement ctrl qubits
-        # for j in range(self.ngauge*self.n_qubits+self.nfermions//2):
-        #     for i,k in zip(range(self.ngauge*self.n_qubits+j,self.ngauge*self.n_qubits+self.nfermions-j,2),[np.arange(self.ngauge*self.n_qubits)[i % (self.ngauge*self.n_qubits)] for i in range(self.nfermions)]):
+            #             #Ansatz.CiSwap(qc_tot,k,range(i,i+2),params(th))
+            #             qc_tot.append(Ansatz.CiSwap2(params(th)),[k,i,i+1])
+            #             th+=1
 
-        #             #Ansatz.CiSwap(qc_tot,k,range(i,i+2),params(th))
-        #             qc_tot.append(Ansatz.CiSwap2(params(th)),[k,i,i+1])
-        #             th+=1
+            # ctrlgauge=[np.arange(self.ngauge*self.n_qubits)[i % (self.ngauge*self.n_qubits)] for i in range(self.nfermions)]
+            # count=0
+            # for j in range(self.ngauge*self.n_qubits+self.nfermions//2):
+            #     for i in range(self.ngauge*self.n_qubits+j,self.ngauge*self.n_qubits+self.nfermions-j,2):
 
-        # ctrlgauge=[np.arange(self.ngauge*self.n_qubits)[i % (self.ngauge*self.n_qubits)] for i in range(self.nfermions)]
-        # count=0
-        # for j in range(self.ngauge*self.n_qubits+self.nfermions//2):
-        #     for i in range(self.ngauge*self.n_qubits+j,self.ngauge*self.n_qubits+self.nfermions-j,2):
+            #         #print(ctrlgauge,count,i,i+1)
+            #         #Ansatz.CiSwap(qc_tot,k,range(i,i+2),params(th))
+            #         #qc_tot.append(Ansatz.CiSwap2(params(th)),[ctrlgauge[count],i,i+1])
+            #         th+=1
+            #         count+=1
 
-        #         #print(ctrlgauge,count,i,i+1)
-        #         #Ansatz.CiSwap(qc_tot,k,range(i,i+2),params(th))
-        #         #qc_tot.append(Ansatz.CiSwap2(params(th)),[ctrlgauge[count],i,i+1])
-        #         th+=1
-        #         count+=1
+            #entanglement fermions and gauge fields with CiSWAP gates
+            index_ciswap=[]
+            #TODO: ciswaps also if gauge_list=None?
+            qubit_list=[]#list of strings for qubits order in curcuit
+            if self.gauge_list:
+                for el in [i.name for i in self.gauge_list]:
+                    qubit_list+=[el]*self.n_qubits
+                qubit_list+=[(i.name) for i in self.ferm_list]
+                for el in [i.name for i in self.gauge_list]:
+                    ferm_entang=['q_'+el[2]+el[3], 'q_'+el[2]+str(int(el[3]) + 1)] if el[-1] == 'y' else ['q_'+el[2]+el[3], 'q_'+str(int(el[2]) + 1)+el[3]] #TODO works for 2D  OBC
 
-        #entanglement fermions and gauge fields with CiSWAP gates
-        index_ciswap=[]
-        #TODO: ciswaps also if gauge_list=None?
-        qubit_list=[]#list of strings for qubits order in curcuit
-        if self.gauge_list:
-            for el in [i.name for i in self.gauge_list]:
-                qubit_list+=[el]*self.n_qubits
-            qubit_list+=[(i.name) for i in self.ferm_list]
-            for el in [i.name for i in self.gauge_list]:
-                ferm_entang=['q_'+el[2]+el[3], 'q_'+el[2]+str(int(el[3]) + 1)] if el[-1] == 'y' else ['q_'+el[2]+el[3], 'q_'+str(int(el[2]) + 1)+el[3]] #TODO works for 2D  OBC
+                    index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
+                    index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
 
-                index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
-                index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
+                for pair in index_ciswap:#apply CiSWAP gates
+                    qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
+                    th+=1
 
-            for pair in index_ciswap:#apply CiSWAP gates
-                qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
-                th+=1
+                #rz layer for fermions
+                for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions):
+                    qc_tot.rz(params(th),i)
+                    th+=1
 
-            #rz layer for fermions
-            for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions):
-                qc_tot.rz(params(th),i)
-                th+=1
-
-        self.qubit_list=qubit_list
-        return qc_tot,first_layer_par
+            self.qubit_list=qubit_list
+            return qc_tot,first_layer_par
 
 
 
