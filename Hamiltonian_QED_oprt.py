@@ -732,7 +732,6 @@ class HamiltonianQED_oprt:
                 )  # reduce(tensor_or_kron,res )#TODO: for 3+1 D  minus sign for 3rd,4th components
                 jj_mass += 1
             else:  # sum over all terms
-                # TODO memory problematic part
                 ham_encoded += np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(
                     *res
                 )  # reduce(tensor_or_kron,res )
@@ -1639,7 +1638,7 @@ class HamiltonianQED_oprt:
         else:
             self.hamiltonian_suppress = hamiltonian_suppress.to_matrix(sparse=True)
 
-    def eop_config_from_string(self, eigenstate: str):  # TODO check with fermions
+    def eop_config_from_string(self, eigenstate: str):
         """From bitstring with electric field values, it finds the values of the other el. fields
         and return all the links with their values as a dictionary
         Input is a bitstring"""
