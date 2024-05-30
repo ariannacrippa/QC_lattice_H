@@ -102,6 +102,10 @@ class HamiltonianQED_sym:
         e_op_free_input: list
             List of free electric fields. If None, then it is computed from the solution of the Gauss law.
             Important for quantum circuits.
+
+        gauss_law: bool
+            If True, the Gauss law equations are applied to the Hamiltonian. If False, the Gauss law
+            is not applied.
         }
 
     display_hamiltonian: bool
