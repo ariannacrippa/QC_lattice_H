@@ -169,6 +169,7 @@ class HamiltonianQED_oprt:
         self.e_op_free_input = (
             config["e_op_free_input"] if "e_op_free_input" in config else None
         )
+        self.gauss_law = (config["gauss_law"] if "gauss_law" in config else True)
 
         # external inputs
         self.hamilt_sym = hamilt_sym
@@ -244,25 +245,29 @@ class HamiltonianQED_oprt:
         self.rotor_list = []
 
         # e_op_free from solution of Guass equations and edges
-        if self.e_op_free_input:
-            self.e_op_free = [
-                Symbol(symb.name) for symb in self.e_op_free_input if "E" in symb.name
-            ]
-        else:
-            self.e_op_free = list(
-                set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
-                    set(
-                        [
-                            item
-                            for sublist in [
-                                eq.free_symbols
-                                for eq in self.hamilt_sym.sol_gauss.values()
+        if self.gauss_law:
+            if self.e_op_free_input:
+                self.e_op_free = [
+                    Symbol(symb.name) for symb in self.e_op_free_input if "E" in symb.name
+                ]
+            else:
+                self.e_op_free = list(
+                    set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
+                        set(
+                            [
+                                item
+                                for sublist in [
+                                    eq.free_symbols
+                                    for eq in self.hamilt_sym.sol_gauss.values()
+                                ]
+                                for item in sublist
                             ]
-                            for item in sublist
-                        ]
+                        )
                     )
                 )
-            )
+        else:
+            self.e_op_free = list( set([symbols(j) for j in self.lattice.list_edges2_e_op]))
+
         # Build u_op_free from e_op_free and edges
         self.u_op_free = [
             k.subs(

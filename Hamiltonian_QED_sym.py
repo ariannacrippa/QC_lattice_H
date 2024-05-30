@@ -134,9 +134,11 @@ class HamiltonianQED_sym:
         self.e_op_free_input = (
             config["e_op_free_input"] if "e_op_free_input" in config else None
         )
+        self.gauss_law = (config["gauss_law"] if "gauss_law" in config else True)
 
         # external inputs
         self.display_hamiltonian = display_hamiltonian
+
 
         if not self.puregauge and np.prod(self.n_sites) % 2 != 0:
             raise Warning(
@@ -184,57 +186,66 @@ class HamiltonianQED_sym:
         }
         self.rotor_list = []
 
-        # #Gauss law equations in a list and display them if links
-        self.gauss_equations()
-        if self.display_hamiltonian:
-            print(">> Gauss law system of equations (symbolic + latex):")
-            print(
-                "static charges:",
-                [
-                    "Q_" + self.str_node_f(key) + f"={val}"
-                    for key, val in self.static_charges_values.items()
-                ]
-                if self.static_charges_values is not None
-                else "None",
-            )
-            [display(Eq(i, 0)) for i in self.list_gauss]
-            [print(latex(i) + " &= 0 \\\\ \\nonumber") for i in self.list_gauss[:-1]]
-            print(latex(self.list_gauss[-1]) + " &= 0", "\n")
-
-        # Solution of gauss law equations
-        if self.e_op_free_input is not None:
-            if self.puregauge:
-                dep_variables = list(
-                    set([Symbol(j) for j in self.lattice.list_edges2_e_op])
-                    - set(self.e_op_free_input)
-                )
-            else:
-                dep_variables = list(
-                    set(
-                        [Symbol(j) for j in self.lattice.list_edges2_e_op]
-                        + [Symbol(q) for q in self.q_charge_str_list]
-                    )
-                    - set(self.e_op_free_input)
-                )
-
-            self.sol_gauss = solve(self.list_gauss, dep_variables, dict=True)[0]
-        else:
-            self.sol_gauss = solve(self.list_gauss, dict=True)[0]
-        print("> Gauss law equations solved")
-        # e_op_free from solution of Guass equations and edges
-        self.e_op_free = list(
-            set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
-                set(
+        if self.gauss_law:
+            # #Gauss law equations in a list and display them if links
+            self.gauss_equations()
+            if self.display_hamiltonian:
+                print(">> Gauss law system of equations (symbolic + latex):")
+                print(
+                    "static charges:",
                     [
-                        item
-                        for sublist in [
-                            eq.free_symbols for eq in self.sol_gauss.values()
-                        ]
-                        for item in sublist
+                        "Q_" + self.str_node_f(key) + f"={val}"
+                        for key, val in self.static_charges_values.items()
                     ]
+                    if self.static_charges_values is not None
+                    else "None",
+                )
+                [display(Eq(i, 0)) for i in self.list_gauss]
+                [print(latex(i) + " &= 0 \\\\ \\nonumber") for i in self.list_gauss[:-1]]
+                print(latex(self.list_gauss[-1]) + " &= 0", "\n")
+
+            # Solution of gauss law equations
+            if self.e_op_free_input is not None:
+                if self.puregauge:
+                    dep_variables = list(
+                        set([Symbol(j) for j in self.lattice.list_edges2_e_op])
+                        - set(self.e_op_free_input)
+                    )
+                else:
+                    dep_variables = list(
+                        set(
+                            [Symbol(j) for j in self.lattice.list_edges2_e_op]
+                            + [Symbol(q) for q in self.q_charge_str_list]
+                        )
+                        - set(self.e_op_free_input)
+                    )
+
+                self.sol_gauss = solve(self.list_gauss, dep_variables, dict=True)[0]
+            else:
+                self.sol_gauss = solve(self.list_gauss, dict=True)[0]
+            print("> Gauss law equations solved")
+
+        else:
+            print(">> Gauss law not applied")
+
+        if self.gauss_law:
+            # e_op_free from solution of Guass equations and edges
+            self.e_op_free = list(
+                set([symbols(j) for j in self.lattice.list_edges2_e_op]).intersection(
+                    set(
+                        [
+                            item
+                            for sublist in [
+                                eq.free_symbols for eq in self.sol_gauss.values()
+                            ]
+                            for item in sublist
+                        ]
+                    )
                 )
             )
-        )
+        else:
+            self.e_op_free = list( set([symbols(j) for j in self.lattice.list_edges2_e_op]))
+
         # Build u_op_free from e_op_free and edges
         self.u_op_free = [
             k.subs(
@@ -338,12 +349,15 @@ class HamiltonianQED_sym:
         """Hamiltonian for E field"""
         hamiltonian_el_sym = (Symbol(str(s)) for s in self.lattice.list_edges2_e_op)
 
-        hamiltonian_el_sym = sum(
-            (
-                x**2 if x not in self.sol_gauss else (self.sol_gauss[x]) ** 2
-                for x in hamiltonian_el_sym
-            )
-        )  # Gauss law applied
+        if self.gauss_law:
+            hamiltonian_el_sym = sum(
+                (
+                    x**2 if x not in self.sol_gauss else (self.sol_gauss[x]) ** 2
+                    for x in hamiltonian_el_sym
+                )
+            )  # Gauss law applied
+        else:
+            hamiltonian_el_sym = sum((x**2 for x in hamiltonian_el_sym))
 
         self.hamiltonian_el_sym = (
             hamiltonian_el_sym  # symbolic expression (useful for diplay)
