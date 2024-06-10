@@ -534,7 +534,8 @@ class Ansatz:
             if nlayersgauge:
                 qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayersgauge)
                 qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
-
+            else:
+                th_gauge=0
             #fermionic part
             if nlayersferm:
                 qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
