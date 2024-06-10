@@ -541,6 +541,8 @@ class Ansatz:
             if nlayersferm:
                 qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
                 qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
+            else:
+                th=th_gauge
 
             qc_tot.barrier()
             # #iterate over gauge fields for entanglement ctrl qubits
