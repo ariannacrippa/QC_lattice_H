@@ -566,7 +566,7 @@ class Ansatz:
 
             #entanglement fermions and gauge fields with CiSWAP gates
 
-
+            qubit_list=[]#list of strings for qubits order in curcuit
             if self.gauge_list:
                 for el in [i.name for i in self.gauge_list]:
                     qubit_list+=[el]*self.n_qubits
@@ -575,7 +575,6 @@ class Ansatz:
                 if not index_ciswap:
                     index_ciswap=[]
                     #TODO: ciswaps also if gauge_list=None?
-                    qubit_list=[]#list of strings for qubits order in curcuit
                     for el in [i.name for i in self.gauge_list]:
                         ferm_entang=['q_'+el[2]+el[3], 'q_'+el[2]+str(int(el[3]) + 1)] if el[-1] == 'y' else ['q_'+el[2]+el[3], 'q_'+str(int(el[2]) + 1)+el[3]] #TODO works for 2D  OBC
 
