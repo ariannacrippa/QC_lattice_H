@@ -58,9 +58,9 @@ It finds the set of links and sites, builds plaquettes and chains for Jordan-Wig
 
 
 - **'Hamiltonian_QED_sym.py'**
-Has a python class '`HamiltonianQED_sym`' that builds a symbolic expression of QED Hamiltonian N-dimensional lattice, both with open and periodic boundary conditions. The formulation considered is from Kogut and Susskind and the Gauss’ law is applied.
+Has a python class '`HamiltonianQED_sym`' that builds a symbolic expression of QED Hamiltonian N-dimensional lattice, both with open and periodic boundary conditions. The formulation considered is from Kogut and Susskind and the Gauss’ law can be applied.
 By doing so, it results in a gauge invariant system, reducing the number of dynamical links needed for the computation, leading to a resource-efficient Hamiltonian.
-It is also possible to consider a formulation for magnetic basis[^3].
+It is also possible to consider a formulation for a magnetic basis[^3].
 
 - **'Hamiltonian_QED_oprt.py'**
 Contains a '`HamiltonianQED_oprt`' class. It imports the Hamiltonian from symbolic expression and builds its respective operator form (sparse matrices or PauliOp, suitable for qiskit quantum circuits).
@@ -133,6 +133,20 @@ $$
 One can visualize the Hamiltonian and then decide which encoding to use and if the final expression must be written in terms of Qiskit's Pauli operators.
 
 It is also possible to put static charges on the sites and study the static potential.
+
+To encode the fermions for a quantum circuit implementation we consider the Jordan-Wigner formulation with:
+
+
+$$
+\begin{aligned}\Phi_j &= \Big[\prod\limits_{k<j}(-i\sigma^z_k)\Big] \sigma^{+}_j,\\
+\Phi_j^{\dagger}&= \Big[\prod\limits_{k<j}(i\sigma^z_k)\Big] \sigma^{-}_j.
+\end{aligned}
+$$
+
+The dynamical charges can be written as
+$$q_{\vec{n}} =  \Phi^{\dagger} \Phi-\frac{1}{2}(1+(-1)^{n_{x} +n_{y} + 1}) \ \mapsto \ \ \begin{cases}			\frac{I-\sigma_{z}}{2}, & \text{if $\vec{n}$ even}\\
+            -\frac{I+\sigma_{z}}{2}, & \text{if $\vec{n}$ odd}
+		 \end{cases}$$
 
 ## Gray circuit
 
