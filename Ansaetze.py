@@ -533,11 +533,13 @@ class Ansatz:
             qc_tot = QuantumCircuit(*qreg_g,*qreg_f)
 
             #gauge part
-            qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
+            if nlayersgauge:
+                qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
 
             #fermionic part
-            qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
-            qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
+            if nlayersferm:
+                qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
+                qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
 
             qc_tot.barrier()
             # #iterate over gauge fields for entanglement ctrl qubits
