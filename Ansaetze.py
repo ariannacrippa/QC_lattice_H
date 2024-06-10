@@ -513,8 +513,6 @@ class Ansatz:
             #params = lambda i: Parameter(f'theta_{i}')
             params = lambda i: Parameter(f"θ[{i}]")
 
-            qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayersgauge)
-
             qreg_g=[]
             qreg_f=[]
             if self.gauge_list:
@@ -534,6 +532,7 @@ class Ansatz:
 
             #gauge part
             if nlayersgauge:
+                qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayersgauge)
                 qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
 
             #fermionic part
