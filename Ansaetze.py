@@ -276,7 +276,7 @@ class Ansatz:
 
         return circ.to_instruction()
 
-    def puregauge_circuit_entang(self,entanglement='linear',rzlayer=False,nlayers=1):
+    def puregauge_circuit_entang(self,entanglement='linear',rzlayer=False,nlayers=1,th_gauge=None):
         """Return circuit of n gauge fields with Gray encoding and no fermions.
         Entanglement structure between gauge fields for l=1,3,7
          with options: linear, full, none """
@@ -316,7 +316,9 @@ class Ansatz:
 
             qc_gauge = QuantumCircuit(*qregisters)
 
-            th_gauge=0
+            if not th_gauge:
+                th_gauge=0
+
             #first gauge field
             qc_gauge.compose(self.gray_code_lim(theta=th_gauge,layers=nlayers)[0],list(range(self.n_qubits)),inplace=True)
             #qc_gauge.barrier()
