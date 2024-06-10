@@ -507,7 +507,7 @@ class Ansatz:
 
 
 
-    def gauge_fermion_circuit(self,entanglement='linear',rzlayer=False,nlayersgauge=1,nlayersferm=1,index_ciswap=None):
+    def gauge_fermion_circuit(self,entanglement='linear',rzlayer=False,nlayersgauge=1,nlayersferm=1,index_ciswap=None,theta_tot=None):
         """Circuit for gauge fields and fermions (proposal with entanglement with CiSWAP gates)"""
         if self.nfermions:
             #params = lambda i: Parameter(f'theta_{i}')
@@ -532,7 +532,7 @@ class Ansatz:
 
             #gauge part
             if nlayersgauge:
-                qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayersgauge)
+                qc_gauge,first_layer_par,th_gauge= self.puregauge_circuit_entang(entanglement=entanglement,rzlayer=rzlayer,nlayers=nlayersgauge,th_gauge=theta_tot)
                 qc_tot.compose(qc_gauge,range(self.ngauge*self.n_qubits),inplace=True)
             else:
                 th_gauge=0
@@ -542,7 +542,7 @@ class Ansatz:
                 qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
                 qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
             else:
-                th=th_gauge
+                th=th_gauge if not theta_tot else theta_tot
 
             qc_tot.barrier()
             # #iterate over gauge fields for entanglement ctrl qubits
