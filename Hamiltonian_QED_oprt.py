@@ -342,6 +342,7 @@ class HamiltonianQED_oprt:
         fact_b_op=1.0,
         fact_e_op=1.0,
         lambd=1000.0,
+        cutting=False,
     ):
         """Returns the Hamiltonian of the system"""
 
@@ -375,8 +376,24 @@ class HamiltonianQED_oprt:
         # Hamiltonian for suppression term
         if lambd != 0:
             hamiltonian_tot += lambd * self.hamiltonian_suppress
-
+            if cutting:
+                hamiltonian_tot = self.cutting_operator(hamiltonian_tot)
+        else:
+            if cutting:
+                raise Warning("No suppression term to cut")
+        if cutting and not self.sparse_pauli:
+            raise ValueError("Cutting only for sparse matrices")
         return hamiltonian_tot
+    
+    def cutting_operator(self, operator):
+        # Cut the operator according to the non-zero suppresion term elements
+        # Only unphysical states are non-zero and thus the eigenvalue of the operatgor is not changed
+        non_zero_diagonal_indices = np.where(self.hamiltonian_suppress.diagonal() != 0)[0]
+        mask = np.ones(self.hamiltonian_suppress.shape[0], dtype=bool)
+        mask[non_zero_diagonal_indices] = False
+        operator_cut = operator[mask][:, mask]
+        return operator_cut
+
 
     def _n_qubits_g(self) -> int:
         """Returns the minimum number of qubits required with Gray encoding"""
