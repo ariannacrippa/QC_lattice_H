@@ -1,0 +1,71 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "qclatticeh"
+dynamic = ["version"]
+description = 'Lattice QED Hamiltonian for Quantum Computing'
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+keywords = []
+authors = [
+  { name = "Arianna Crippa", email = "arianna.crippa@desy.de" },
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = ['numpy', 'matplotlib', 'networkx', 'sympy', 'iteration-utilities']
+
+[project.urls]
+Documentation = "https://github.com/ariannacrippa/QC_lattice_H#readme"
+Issues = "https://github.com/ariannacrippa/QC_lattice_H/issues"
+Source = "https://github.com/ariannacrippa/QC_lattice_H/"
+
+[project.optional-dependencies]
+all = ['scipy', 'qiskit==0.46.0']
+ed = ['scipy']
+qc = ['qiskit>=0.46.0']
+
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:qclatticeh tests}"
+
+[tool.hatch.version]
+path = "qclatticeh/__init__.py"
+
+[tool.coverage.run]
+source_pkgs = ["qclatticeh", "tests"]
+branch = true
+parallel = true
+
+[tool.coverage.paths]
+qclatticeh = ["qclatticeh", "*/qclatticeh"]
+tests = ["tests", "*/qclatticeh/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    ".github",
+    "Images",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["qclatticeh", "qclatticeh.*"]
+
+
+
