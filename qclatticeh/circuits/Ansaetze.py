@@ -2,6 +2,7 @@ import qiskit
 import numpy as np
 from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Parameter
+import librosa
 
 class Ansatz:
     """Collection of Ansaetze for the QED circuit.
