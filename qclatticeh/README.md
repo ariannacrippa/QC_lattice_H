@@ -24,6 +24,13 @@ Finally, test the installation (again from the root directory, where `pyproject.
 pip install .
 ```
 
+To also include optional dependencies (`scipy`, `qiskit`), use the command below (**Warning:** if you are using qiskit 1.x, do **NOT!** run the command below, and use your own manually installed version of qiskit:
+
+```console
+pip install .[all]
+```
+
+
 ### Using the package
 
 To use the package, you can now import the package:
@@ -52,3 +59,7 @@ from qclatticeh.lattice import HCLattice
 from qclatticeh.hamiltonian import HamiltonianQED_sym, HamiltonianQED_oprt
 from qclatticeh.circuits import Ansatz
 ```
+
+
+### Optional dependencies
+
