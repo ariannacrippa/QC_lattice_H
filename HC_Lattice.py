@@ -81,6 +81,7 @@ class HCLattice:
         n_sites: list,
         pbc: bool | list = False,
         puregauge: bool = True,
+        n_flavors: int = 1,
     ) -> None:
         self.n_sites = n_sites
         while 1 in self.n_sites:  # avoid 1 dimension useless input
@@ -89,6 +90,7 @@ class HCLattice:
         self.dims = len(self.n_sites)  # how many dimensions
         self.pbc = pbc
         self.puregauge = puregauge
+        self.n_flavors = n_flavors  # number of flavors, default 1 
 
         # define graph and edges
         self.graph_lattice()
@@ -703,7 +705,7 @@ class HCLattice:
         jw_chain = []
 
         if self.dims == 1:
-            for x_step in range(self.n_sites[0]):
+            for x_step in range(self.n_flavors*self.n_sites[0]):
                 jw_chain.append(x_step)
 
         elif self.dims > 1:
@@ -723,15 +725,15 @@ class HCLattice:
                 for y_step in range_y:
                     if z_step % 2 != 0:  # if z odd opposite x,y
                         range_x = (
-                            range(self.n_sites[0])
+                            range(self.n_flavors*self.n_sites[0])
                             if y_step % 2 != 0
-                            else range(self.n_sites[0])[::-1]
+                            else range(self.n_flavors*self.n_sites[0])[::-1]
                         )  # if y odd, x vs right, else x vs left
                     else:  # if z even regular x,y as 2D
                         range_x = (
-                            range(self.n_sites[0])
+                            range(self.n_flavors*self.n_sites[0])
                             if y_step % 2 == 0
-                            else range(self.n_sites[0])[::-1]
+                            else range(self.n_flavors*self.n_sites[0])[::-1]
                         )  # if y even, x vs right, else x vs left
 
                     for x_ch in range_x:
@@ -758,7 +760,7 @@ class HCLattice:
         ]
         not_jwchain = list({tuple(sorted(t)) for t in not_jwchain})
 
-        if (self.n_sitestot) - (len([k[0] for k in jw_chain]) + 1) != 0:
+        if (self.n_flavors*self.n_sitestot) - (len([k[0] for k in jw_chain]) + 1) != 0:
             warnings.warn(
                 "Warning: Jordan-Wigner chain has missing sites. not long enough to reach every site."
             )
