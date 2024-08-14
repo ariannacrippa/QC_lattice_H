@@ -28,9 +28,9 @@ Issues = "https://github.com/ariannacrippa/QC_lattice_H/issues"
 Source = "https://github.com/ariannacrippa/QC_lattice_H/"
 
 [project.optional-dependencies]
-all = ['scipy', 'qiskit==0.46.0']
+all = ['scipy', 'qiskit>=1.0']
 ed = ['scipy']
-qc = ['qiskit>=0.46.0']
+qc = ['qiskit>=1.0']
 
 [tool.hatch.envs.types]
 extra-dependencies = [
