@@ -1256,10 +1256,10 @@ class HamiltonianQED_oprt:
                 (
                     s_tmp,
                     (
-                        Symbol("exppiEOP")
+                        Symbol("expmiEOP")
                         if s_tmp.name[-1] == "D"
-                        else Symbol("expmiEOP")
-                    ),
+                        else Symbol("exppiEOP")
+                    ),#U^dag is lowering, U raising operator so U-> e^iE, U^dag->e^-iE
                 )
                 for s_tmp in self.uop_list + self.u_op_free_dag
             ]
