@@ -106,6 +106,9 @@ class HamiltonianQED_sym:
         gauss_law: bool
             If True, the Gauss law equations are applied to the Hamiltonian. If False, the Gauss law
             is not applied.
+        
+        n_flavors: int
+            Number of fermionic flavors in the system.
         }
 
     display_hamiltonian: bool
@@ -140,6 +143,8 @@ class HamiltonianQED_sym:
         )
         self.gauss_law = (config["gauss_law"] if "gauss_law" in config else True)
 
+        self.n_flavors = config["n_flavors"] if "n_flavors" in config else 1
+
         # external inputs
         self.display_hamiltonian = display_hamiltonian
 
@@ -169,7 +174,7 @@ class HamiltonianQED_sym:
 
         self.q_charge_str_list = [
             "q_" + self.str_node_f(node)
-            for node in self.lattice.graph.nodes
+            for node in self.lattice.jw_sites
             if self.puregauge is False
         ]
         self.static_charges_str_list = [
@@ -317,8 +322,12 @@ class HamiltonianQED_sym:
             if self.puregauge:
                 ga_tmp = 0
             else:
-                ga_tmp = -1 * self.e_op_dict["q_" + self.str_node_f(node)]
-                gc_tmp += self.e_op_dict["q_" + self.str_node_f(node)]
+                # In case of more flavors the all contribute to the gauss law at one site
+                ga_tmp = 0
+                for n in range(self.n_flavors):
+                    jw_node = (node[0]*self.n_flavors+n,) + node[1:]
+                    ga_tmp += -1 * self.e_op_dict["q_" + self.str_node_f(jw_node)]
+                    gc_tmp += self.e_op_dict["q_" + self.str_node_f(jw_node)]
 
             if self.static_charges_values is not None:
                 if node in self.static_charges_values.keys():
@@ -421,20 +430,30 @@ class HamiltonianQED_sym:
         List of tuples like [(Phi_1D, Phi_1), (Phi_2D, Phi_2),..]
 
         """
-        hamiltonian_m_sym = []
         # dictionary for fermionic sistes to symbols
+        if self.n_flavors>1:
+            jw_dict = [{
+                k: (
+                    Symbol(f"Phi_{i+1}D", commutative=False),
+                    Symbol(f"Phi_{i+1}", commutative=False),
+                )
+                for i, k in enumerate(self.lattice.jw_sites) if i%self.n_flavors == n
+            } for n in range(self.n_flavors)]
 
-        jw_dict = {
-            k: (
-                Symbol(f"Phi_{i+1}D", commutative=False),
-                Symbol(f"Phi_{i+1}", commutative=False),
-            )
-            for i, k in enumerate(self.lattice.jw_sites)
-        }
+            hamiltonian_m_sym = [[(jw_dict_flavor[i][0], jw_dict_flavor[i][1]) for i in jw_dict_flavor] for jw_dict_flavor in jw_dict]
+        else:
+            hamiltonian_m_sym = []
+            # dictionary for fermionic sistes to symbols
 
-        for i in jw_dict:
-            hamiltonian_m_sym.append((jw_dict[i][0], jw_dict[i][1]))
-
+            jw_dict = {
+                k: (
+                    Symbol(f"Phi_{i+1}D", commutative=False),
+                    Symbol(f"Phi_{i+1}", commutative=False),
+                )
+                for i, k in enumerate(self.lattice.jw_sites)
+            }
+            for i in jw_dict:
+                hamiltonian_m_sym.append((jw_dict[i][0], jw_dict[i][1]))
         self.hamiltonian_m_sym = hamiltonian_m_sym
 
     def _hamiltonian_k_autom(self):
@@ -480,52 +499,55 @@ class HamiltonianQED_sym:
                 hamilt_k_elem = 1
             # phase in H_k in y-direction as Kogut Susskind H #TODO:assume 2 components spinor >check with 4 components
 
-            if self.lattice.dims == 1:
-                phase = 1
-                hamiltonian_k_sym.append(
-                    (phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])
-                )
-
-            elif self.lattice.dims == 2:
-                phase = (
-                    (-1) ** ((sum(i[0])) % 2) if i[0][1] != i[1][1] else 1
-                )  # change in y direction if n odd
-
-                xy_term = (
-                    "y" if i[0][1] != i[1][1] else "x"
-                )  # if x - adjoint, if y + adjoint
-
-                hamiltonian_k_sym.append(
-                    (xy_term, phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])
-                )
-
-            elif self.lattice.dims == 3:
-                # x-direction
-                if i[0][0] != i[1][0]:
+            for n in range(self.n_flavors):
+                jw_link = ((i[0][0]*self.n_flavors+n,) + i[0][1:], (i[1][0]*self.n_flavors+n,) + i[1][1:])
+                
+                if self.lattice.dims == 1:
                     phase = 1
-                # y-direction
-                elif i[0][1] != i[1][1]:
-                    phase = (-1) ** ((sum(i[0][:2]) + 1) % 2)
-                # z-direction
-                elif i[0][2] != i[1][2]:
-                    phase = (-1) ** (sum(i[0][:2]) % 2)
+                    hamiltonian_k_sym.append(
+                        (phase, jw_dict[jw_link[0]][0], hamilt_k_elem, jw_dict[jw_link[1]][1])
+                    )
 
-                i_term = (
-                    "x"
-                    if i[0][0] != i[1][0]
-                    else "y"
-                    if i[0][1] != i[1][1]
-                    else "z"
-                    if i[0][2] != i[1][2]
-                    else None
-                )
+                elif self.lattice.dims == 2:
+                    phase = (
+                        (-1) ** ((sum(i[0])) % 2) if i[0][1] != i[1][1] else 1
+                    )  # change in y direction if n odd
 
-                hamiltonian_k_sym.append(
-                    (i_term, phase, jw_dict[i[0]][0], hamilt_k_elem, jw_dict[i[1]][1])
-                )  # phi^dag U phi
+                    xy_term = (
+                        "y" if i[0][1] != i[1][1] else "x"
+                    )  # if x - adjoint, if y + adjoint
 
-            else:
-                raise ValueError("Only 1, 2 and 3 dimensions are supported.")
+                    hamiltonian_k_sym.append(
+                        (xy_term, phase, jw_dict[jw_link[0]][0], hamilt_k_elem, jw_dict[jw_link[1]][1])
+                    )
+
+                elif self.lattice.dims == 3:
+                    # x-direction
+                    if i[0][0] != i[1][0]:
+                        phase = 1
+                    # y-direction
+                    elif i[0][1] != i[1][1]:
+                        phase = (-1) ** ((sum(i[0][:2]) + 1) % 2)
+                    # z-direction
+                    elif i[0][2] != i[1][2]:
+                        phase = (-1) ** (sum(i[0][:2]) % 2)
+
+                    i_term = (
+                        "x"
+                        if i[0][0] != i[1][0]
+                        else "y"
+                        if i[0][1] != i[1][1]
+                        else "z"
+                        if i[0][2] != i[1][2]
+                        else None
+                    )
+
+                    hamiltonian_k_sym.append(
+                        (i_term, phase, jw_dict[jw_link[0]][0], hamilt_k_elem, jw_dict[jw_link[1]][1])
+                    )  # phi^dag U phi
+
+                else:
+                    raise ValueError("Only 1, 2 and 3 dimensions are supported.")
 
         self.hamiltonian_k_sym = hamiltonian_k_sym
 
@@ -785,7 +807,7 @@ class HamiltonianQED_sym:
 
             # ************************************  H_M   ************************************
             if self.display_hamiltonian:  # to print
-                display_hamiltonian_m = Eq(
+                display_hamiltonian_m = [Eq(
                     Symbol("H_m"),
                     Symbol("m")
                     * sum(
@@ -794,12 +816,12 @@ class HamiltonianQED_sym:
                             for j, k in enumerate(
                                 [
                                     (k[0].subs(k[0], Dagger(k[1])), k[1])
-                                    for k in self.hamiltonian_m_sym
-                                ]
+                                    for k in ham_m
+                                ] #TODO: This is wrong for n_flavors>1 but it is not important for the physics
                             )
-                        ]
+                        ] 
                     ),
-                )
-
-                display(display_hamiltonian_m)
-                print(latex(display_hamiltonian_m))
+                )for ham_m in self.hamiltonian_m_sym] 
+                for display_hamiltonian_m_part in display_hamiltonian_m:
+                    display(display_hamiltonian_m_part)
+                    print(latex(display_hamiltonian_m_part))
