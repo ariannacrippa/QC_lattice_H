@@ -431,6 +431,7 @@ class HamiltonianQED_sym:
 
         """
         # dictionary for fermionic sistes to symbols
+        x_length = self.n_sites[0]
         if self.n_flavors>1:
             jw_dict = [{
                 k: (
@@ -500,7 +501,15 @@ class HamiltonianQED_sym:
             # phase in H_k in y-direction as Kogut Susskind H #TODO:assume 2 components spinor >check with 4 components
 
             for n in range(self.n_flavors):
-                jw_link = ((i[0][0]*self.n_flavors+n,) + i[0][1:], (i[1][0]*self.n_flavors+n,) + i[1][1:])
+                if i[0][1]%2 == 0:
+                    start_tuple = (i[0][0]*self.n_flavors+n,) + i[0][1:]
+                else:
+                    start_tuple = ((i[0][0]+1)*self.n_flavors-n-1,) + i[0][1:]
+                if i[1][1]%2 == 0:
+                    end_tuple = (i[1][0]*self.n_flavors+n,) + i[1][1:] 
+                else: 
+                    end_tuple = ((i[1][0]+1)*self.n_flavors-n-1,) + i[1][1:] 
+                jw_link = (start_tuple, end_tuple)
                 
                 if self.lattice.dims == 1:
                     phase = 1
