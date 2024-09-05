@@ -593,22 +593,41 @@ class Ansatz:
                 for el in [i.name for i in self.gauge_list]:
                     qubit_list+=[el]*self.n_qubits
                 qubit_list+=[(i.name) for i in self.ferm_list]
+                sorted_ferm_list = self.identify_flavoured_fermions(self.ferm_list, self.n_flavors)
+
+                print("Qubit list: ", qubit_list)
 
                 if not index_ciswap:
                     index_ciswap=[]
                     #TODO: ciswaps also if gauge_list=None?
                     for el in [i.name for i in self.gauge_list]:
-                        ferm_entang=['q_'+el[2]+el[3], 'q_'+el[2]+str(int(el[3]) + 1)] if el[-1] == 'y' else ['q_'+el[2]+el[3], 'q_'+str(int(el[2]) + 1)+el[3]] #TODO works for 2D  OBC
+                        print("El: ", el)
+                        # Get the physical lattice indices of the links
+                        start = [int(el[2]), int(el[3])]
+                        direction = el[-1]
+                        for n in range(self.n_flavors):
+                            start_index = [self.n_flavors*start[0] + n, start[1]] if start[1]%2 == 0 else [self.n_flavors*(start[0]+1) - n-1, start[1]]
+                            if direction == 'x':
+                                end_index = [self.n_flavors*(start[0]+1) + n, start[1]] if start[1]%2 == 0 else [self.n_flavors*(start[0]+2) - n-1, start[1]]
+                            elif direction == 'y':
+                                end_index = [self.n_flavors*(start[0]+1) - n-1, start[1]+1] if start[1]%2 == 0 else [self.n_flavors*start[0] + n, start[1]+1]
+                            else:
+                                raise ValueError(f"Invalid direction {direction}")
+                            
+                            ferm_entang=['q_'+str(start_index[0])+str(start_index[1]), 'q_'+str(end_index[0])+str(end_index[1])] #TODO works for 2D  OBC
+                            print("Ferm entang: ", ferm_entang)
 
-                        index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
-                        index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
+                            index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
+                            index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
+
+                print("CiSWAP indices: ", index_ciswap)
 
                 for pair in index_ciswap:#apply CiSWAP gates
-                    qc_tot.append(Ansatz.CiSwap2(params(th)),pair) #Emil
+                    qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
                     th+=1
 
                 #rz layer for fermions
-                for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions):
+                for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions*self.n_flavors):
                     qc_tot.rz(params(th),i)
                     th+=1
 
