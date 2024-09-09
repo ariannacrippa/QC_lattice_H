@@ -25,7 +25,7 @@ class Ansatz:
 
     """
 
-    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None, n_flavors=1)->None:
+    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None, n_flavors=1, n_sites=None)->None:
 
         self.l = l
         self.ngauge = ngauge
@@ -39,7 +39,7 @@ class Ansatz:
         
         self.n_qubits =int(np.ceil(np.log2(2 * self.l+ 1)))
         
-
+        self.n_sites = n_sites if n_sites is not None else [int(np.sqrt(nfermions)),int(np.sqrt(nfermions))]
 
         self.gray_code_lim()
         self.puregauge_circuit_entang()
@@ -593,15 +593,11 @@ class Ansatz:
                 for el in [i.name for i in self.gauge_list]:
                     qubit_list+=[el]*self.n_qubits
                 qubit_list+=[(i.name) for i in self.ferm_list]
-                sorted_ferm_list = self.identify_flavoured_fermions(self.ferm_list, self.n_flavors)
-
-                print("Qubit list: ", qubit_list)
 
                 if not index_ciswap:
                     index_ciswap=[]
                     #TODO: ciswaps also if gauge_list=None?
                     for el in [i.name for i in self.gauge_list]:
-                        print("El: ", el)
                         # Get the physical lattice indices of the links
                         start = [int(el[2]), int(el[3])]
                         direction = el[-1]
@@ -613,14 +609,17 @@ class Ansatz:
                                 end_index = [self.n_flavors*(start[0]+1) - n-1, start[1]+1] if start[1]%2 == 0 else [self.n_flavors*start[0] + n, start[1]+1]
                             else:
                                 raise ValueError(f"Invalid direction {direction}")
-                            
+                             
+                            if self.n_sites is not None:
+                                if end_index[0] >= self.n_sites[0]*self.n_flavors:
+                                    end_index[0] = end_index[0] - self.n_sites[0]*self.n_flavors
+                                if end_index[1] >= self.n_sites[1]:
+                                    end_index[1] = end_index[1] - self.n_sites[1]
+                        
                             ferm_entang=['q_'+str(start_index[0])+str(start_index[1]), 'q_'+str(end_index[0])+str(end_index[1])] #TODO works for 2D  OBC
-                            print("Ferm entang: ", ferm_entang)
 
                             index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
                             index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
-
-                print("CiSWAP indices: ", index_ciswap)
 
                 for pair in index_ciswap:#apply CiSWAP gates
                     qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
