@@ -485,21 +485,36 @@ class Ansatz:
 
             #params = lambda i: Parameter(f'theta_{i}')
             params = lambda i: Parameter(f"θ[{i}]")
-
-            for i in range(1,self.nfermions,2):#range(0,self.nfermions,2):
-                qc_ferm.x(qferm[i])
+            for f in range(self.n_flavors):
+                for i in range(1,self.nfermions,2):#range(0,self.nfermions,2):
+                    qc_ferm.x(qferm[f+i*self.n_flavors])
 
             for n in range(nlayers):
-                for j in range(self.nfermions//2):
-                    for i in range(j,self.nfermions-j,2):
-                            qc_ferm.append(Ansatz.iSwap(params(th_ferm)), qferm[i:i+2])
-                            th_ferm+=1
+                for f in range(self.n_flavors):
+                    for j in range(self.nfermions//2):
+                        for i in range(j,self.nfermions-j,2):
+                                qc_ferm.append(Ansatz.iSwap(params(th_ferm)), [qferm[f+i*self.n_flavors], qferm[f+(i+1)*self.n_flavors]])
+                                th_ferm+=1
 
-            #last layer of Rz gates for correct phase
-            if rzlayer:
-                for i in range(self.nfermions):
-                    qc_ferm.rz(Parameter(f'theta_{th_ferm}'),qferm[i])
-                    th_ferm+=1
+                if self.n_flavors>1:
+                    #Add barrier
+                    qc_ferm.barrier()
+
+                    for f in range(self.n_flavors):
+                        for l in range(f+1,self.n_flavors):
+                            for i in range(self.nfermions):
+                                start = i*self.n_flavors+f
+                                end = i*self.n_flavors+l
+                                qc_ferm.append(Ansatz.iSwap(params(th_ferm)), [qferm[start], qferm[end]])
+                                th_ferm+=1
+                       
+                            
+            for f in range(self.n_flavors):
+                #last layer of Rz gates for correct phase
+                if rzlayer:
+                    for i in range(self.nfermions):
+                        qc_ferm.rz(Parameter(f'theta_{th_ferm}'),qferm[f+i*self.n_flavors])
+                        th_ferm+=1
 
             return qc_ferm,th_ferm
 
@@ -576,17 +591,35 @@ class Ansatz:
                     index_ciswap=[]
                     #TODO: ciswaps also if gauge_list=None?
                     for el in [i.name for i in self.gauge_list]:
-                        ferm_entang=['q_'+el[2]+el[3], 'q_'+el[2]+str(int(el[3]) + 1)] if el[-1] == 'y' else ['q_'+el[2]+el[3], 'q_'+str(int(el[2]) + 1)+el[3]] #TODO works for 2D  OBC
+                        # Get the physical lattice indices of the links
+                        start = [int(el[2]), int(el[3])]
+                        direction = el[-1]
+                        for n in range(self.n_flavors):
+                            start_index = [self.n_flavors*start[0] + n, start[1]] if start[1]%2 == 0 else [self.n_flavors*(start[0]+1) - n-1, start[1]]
+                            if direction == 'x':
+                                end_index = [self.n_flavors*(start[0]+1) + n, start[1]] if start[1]%2 == 0 else [self.n_flavors*(start[0]+2) - n-1, start[1]]
+                            elif direction == 'y':
+                                end_index = [self.n_flavors*(start[0]+1) - n-1, start[1]+1] if start[1]%2 == 0 else [self.n_flavors*start[0] + n, start[1]+1]
+                            else:
+                                raise ValueError(f"Invalid direction {direction}")
+                             
+                            if self.n_sites is not None:
+                                if end_index[0] >= self.n_sites[0]*self.n_flavors:
+                                    end_index[0] = end_index[0] - self.n_sites[0]*self.n_flavors
+                                if end_index[1] >= self.n_sites[1]:
+                                    end_index[1] = end_index[1] - self.n_sites[1]
+                        
+                            ferm_entang=['q_'+str(start_index[0])+str(start_index[1]), 'q_'+str(end_index[0])+str(end_index[1])] #TODO works for 2D  OBC
 
-                        index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
-                        index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
+                            index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
+                            index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
 
                 for pair in index_ciswap:#apply CiSWAP gates
                     qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
                     th+=1
 
                 #rz layer for fermions
-                for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions):
+                for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions*self.n_flavors):
                     qc_tot.rz(params(th),i)
                     th+=1
 
