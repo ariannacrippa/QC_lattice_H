@@ -560,7 +560,7 @@ class HamiltonianQED_sym:
                     / 2,
                     (nu, 1, 2 * self.ll_par),
                 )
-                # + Symbol("L")
+                + Symbol("L")
                 for el_eop in self.e_op_free
             }
             hamilt_el_expand = expand(self.hamiltonian_el_sym)
