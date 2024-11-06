@@ -25,16 +25,21 @@ class Ansatz:
 
     """
 
-    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None)->None:
+    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None, n_flavors=1, n_sites=None)->None:
 
         self.l = l
         self.ngauge = ngauge
         self.nfermions = nfermions
         self.gauge_list = gauge_list
+        
+        self.n_flavors = n_flavors
+
+       
         self.ferm_list = ferm_list
-
+        
         self.n_qubits =int(np.ceil(np.log2(2 * self.l+ 1)))
-
+        
+        self.n_sites = n_sites if n_sites is not None else [int(np.sqrt(nfermions)),int(np.sqrt(nfermions))]
 
         self.gray_code_lim()
         self.puregauge_circuit_entang()
@@ -61,6 +66,21 @@ class Ansatz:
                     }
 
 
+    @staticmethod
+    def identify_flavoured_fermions(ferm_list, n_flavors):
+        """     [q_00, q_10, q_20, q_30, q_31, q_21, q_11, q_01]
+        goes to [[q_00, q_20, q_31, q_11], [q_10, q_30, q_21, q_01]]
+        """
+        if n_flavors == 1:
+            return [ferm_list]
+        elif n_flavors > 1:    
+            new_list = []
+            for f in range(n_flavors):
+                new_list.append(ferm_list[f::n_flavors])
+            return new_list
+        else:
+            raise ValueError(f'Something is wrong with the n_flavors parameter: {n_flavors}')
+    
     @staticmethod
     def gray_ry(theta,gate_label='Ry*'):
         """Ry gate for gray encoding basic structure.
@@ -470,13 +490,14 @@ class Ansatz:
         """Return circuit for fermionic case, i.e. no gauge fields.
            It considers iSwap gates between every two fermions in order to select only zero-charged states."""
 
+        
         if self.nfermions:
             qferm=[]
             if self.ferm_list:
                 for f in [str(i) for i in self.ferm_list]:
                     qferm.append(QuantumRegister(1,name=f))
             else:
-                for i in range(self.nfermions):
+                for i in range(self.nfermions*self.n_flavors):
                     qferm.append(QuantumRegister(1,name=f'f{i}'))
             qc_ferm = QuantumCircuit(*qferm)
 
@@ -555,7 +576,7 @@ class Ansatz:
             #fermionic part
             if nlayersferm:
                 qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
-                qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
+                qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+(self.nfermions*self.n_flavors)),inplace=True)
             else:
                 th=th_gauge if not theta_tot else theta_tot
 
