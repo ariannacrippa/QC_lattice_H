@@ -7,7 +7,9 @@ This repository contains useful Python functions and classes for seamlessly desi
 The implementation is useful for carrying out research on QED quantum simulation assisted by quantum computing and quantum algorithms, as well as for analysis and comparison with known exact-diagonalization (ED) methods. In turn, the classes in this module are compatible wirh exact diagonalization libraries and the Qiskit library.
 
 **Related work:**: 
+- [Analysis of the confinement string in (2 + 1)-dimensional Quantum Electrodynamics with a trapped-ion quantum computer](https://arxiv.org/abs/2411.05628)
 - [Towards determining the (2+1)-dimensional Quantum Electrodynamics running coupling with Monte Carlo and quantum computing methods](https://arxiv.org/abs/2404.17545)
+
 
 ## Installation
 Before using this code, make sure you have made a dedicated Python virtual environment and installed all required dependencies.
