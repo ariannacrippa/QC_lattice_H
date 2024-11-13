@@ -23,9 +23,12 @@ class Ansatz:
     ferm_list (list of symypy Symbols):
         List of fermionic fields names.
 
+    use_for_nft (bool):
+        If True, the (C)iSWAP gate is used for the NFT optimizer.
+
     """
 
-    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None, n_flavors=1, n_sites=None)->None:
+    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None, n_flavors=1, n_sites=None, use_for_nft=True)->None:
 
         self.l = l
         self.ngauge = ngauge
@@ -40,6 +43,8 @@ class Ansatz:
         self.n_qubits =int(np.ceil(np.log2(2 * self.l+ 1)))
         
         self.n_sites = n_sites if n_sites is not None else [int(np.sqrt(nfermions)),int(np.sqrt(nfermions))]
+
+        self.use_for_nft = use_for_nft
 
         self.gray_code_lim()
         self.puregauge_circuit_entang()
@@ -214,7 +219,7 @@ class Ansatz:
 
 
     @staticmethod
-    def CiSwap(circ,c_qubit, qubits, par_i):
+    def CiSwap(circ,c_qubit, qubits, par_i, use_for_nft=True):
         """ Controlled iSwap """
         #circ = QuantumCircuit(qubits[1]-c_qubit+1,name='iSWAP')
         #Rxx
@@ -233,15 +238,16 @@ class Ansatz:
         circ.rx(-np.pi/2,qubits[0])
         circ.rx(-np.pi/2,qubits[1])
 
-        #Rzz (for NFT optimizer)
-        circ.cx(qubits[1],qubits[0])
-        circ.crz(par_i/2.0,c_qubit,qubits[0])
-        circ.cx(qubits[1],qubits[0])
+        if use_for_nft:
+            #Rzz (for NFT optimizer)
+            circ.cx(qubits[1],qubits[0])
+            circ.crz(par_i/2.0,c_qubit,qubits[0])
+            circ.cx(qubits[1],qubits[0])
 
         return circ.to_instruction()
 
     @staticmethod
-    def CiSwap2(par_i):
+    def CiSwap2(par_i, use_for_nft=True):
         """ Controlled iSwap """
         circ = QuantumCircuit(3,name='CiSWAP')
         #Rxx
@@ -260,15 +266,16 @@ class Ansatz:
         circ.rx(-np.pi/2,1)
         circ.rx(-np.pi/2,2)
 
-        #Rzz (for NFT optimizer)
-        circ.cx(2,1)
-        circ.crz(par_i/2.0,0,1)
-        circ.cx(2,1)
+        if use_for_nft:
+            #Rzz (for NFT optimizer)
+            circ.cx(2,1)
+            circ.crz(par_i/2.0,0,1)
+            circ.cx(2,1)
 
         return circ.to_instruction()
 
     @staticmethod
-    def iSwap( par_i):
+    def iSwap( par_i, use_for_nft=True):
         """ Controlled iSwap """
 
         circ = QuantumCircuit(2,name='iSWAP')
@@ -289,10 +296,11 @@ class Ansatz:
         circ.rx(-np.pi/2,0)
         circ.rx(-np.pi/2,1)
 
-        #Rzz (for NFT optimizer)
-        circ.cx(1,0)
-        circ.rz(par_i/2.0,0)
-        circ.cx(1,0)
+        if use_for_nft:
+            #Rzz (for NFT optimizer)
+            circ.cx(1,0)
+            circ.rz(par_i/2.0,0)
+            circ.cx(1,0)
 
         return circ.to_instruction()
 
@@ -514,7 +522,7 @@ class Ansatz:
                 for f in range(self.n_flavors):
                     for j in range(self.nfermions//2):
                         for i in range(j,self.nfermions-j,2):
-                                qc_ferm.append(Ansatz.iSwap(params(th_ferm)), [qferm[f+i*self.n_flavors], qferm[f+(i+1)*self.n_flavors]])
+                                qc_ferm.append(Ansatz.iSwap(params(th_ferm), self.use_for_nft), [qferm[f+i*self.n_flavors], qferm[f+(i+1)*self.n_flavors]])
                                 th_ferm+=1
 
                 if self.n_flavors>1:
@@ -526,7 +534,7 @@ class Ansatz:
                             for i in range(self.nfermions):
                                 start = i*self.n_flavors+f
                                 end = i*self.n_flavors+l
-                                qc_ferm.append(Ansatz.iSwap(params(th_ferm)), [qferm[start], qferm[end]])
+                                qc_ferm.append(Ansatz.iSwap(params(th_ferm), self.use_for_nft), [qferm[start], qferm[end]])
                                 th_ferm+=1
                        
                             
@@ -636,7 +644,7 @@ class Ansatz:
                             index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
 
                 for pair in index_ciswap:#apply CiSWAP gates
-                    qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
+                    qc_tot.append(Ansatz.CiSwap2(params(th), self.use_for_nft),pair)
                     th+=1
 
                 #rz layer for fermions
