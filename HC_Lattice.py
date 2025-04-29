@@ -681,7 +681,7 @@ class HCLattice:
         self.list_plaq_u_op = list_plaq_u_op
 
 
-    def total_links(n_sites,pbc=False):
+    def total_links(n_sites):
         """Compute number of dynamical links before/after Gauss's law
         Input:
         n_sites: list of number of sites in each dimension
@@ -692,7 +692,7 @@ class HCLattice:
         """
         #number of sites
         n = np.array(n_sites).prod()
-        if pbc:
+        if self.pbc:
             n_links = int(n*len(n_sites))
         else:
             n_links = int(n * sum((ni - 1) / ni for ni in n_sites))
