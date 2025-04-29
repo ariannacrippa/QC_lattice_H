@@ -680,6 +680,28 @@ class HCLattice:
         self.plaq_list = plaq_list
         self.list_plaq_u_op = list_plaq_u_op
 
+
+    def total_links(n_sites,pbc=False):
+        """Compute number of dynamical links before/after Gauss's law
+        Input:
+        n_sites: list of number of sites in each dimension
+        pbc: boolean, if True periodic boundary conditions are applied
+        Output:
+        n_links: number of links
+        n_gauss: number of dynamical links after Gauss's law constraints
+        """
+        #number of sites
+        n = np.array(n_sites).prod()
+        if pbc:
+            n_links = int(n*len(n_sites))
+        else:
+            n_links = int(n * sum((ni - 1) / ni for ni in n_sites))
+
+        #Gauss law
+        n_gauss= int(round(n_links - (n - 1)))
+
+        return n_links,n_gauss
+
     # # build the jw chain until 3D #TODO how to do this for D>3?
     # JW chain doesn't matter if pbc or not
     def jw_chain_func(self):
