@@ -224,9 +224,20 @@ class HamiltonianQED_sym:
                         - set(self.e_op_free_input)
                     )
 
-                self.sol_gauss = solve(self.list_gauss, dep_variables, dict=True)[0]
+                sol_system=solve(self.list_gauss, dep_variables, dict=True)
+
+
             else:
-                self.sol_gauss = solve(self.list_gauss, dict=True)[0]
+                sol_system=solve(self.list_gauss, dict=True)
+
+
+            if len(sol_system) == 0:
+                raise ValueError(
+                    "The system of equations has no solution. Please check the input."
+                )
+            if len(sol_system) > 0:
+                self.sol_gauss = sol_system[0]
+
             print("> Gauss law equations solved")
 
         else:
