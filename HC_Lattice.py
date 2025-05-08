@@ -779,11 +779,16 @@ class HCLattice:
                     count+=1
             plaq_tot_count[str(plaq)]=count
 
+        if any(value == 0 for value in plaq_tot_count):
+            raise ValueError("Some plaquettes have no selected links.")
+
         if print_res:
             print('Link before gauss =',self.links_before_g,
             '\nLink after gauss =',self.links_after_g,
             '\nLink selection =',len(selected_links),
             '\nN.er of selected links for each plaquette:\n',plaq_tot_count.values())
+
+
 
 
         self.selected_links=[Symbol('E'+link[1:]) for link in selected_links]
