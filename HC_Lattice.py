@@ -772,15 +772,38 @@ class HCLattice:
 
 
         plaq_tot_count={}
-        for plaq in self.list_plaq_u_op:#count how many selected links are in every plaq
+        for plaq in self.list_plaq_u_op:
+            #count how many selected links are in every plaq
             count=0
             for link in selected_links:
                 if link in plaq:
                     count+=1
             plaq_tot_count[str(plaq)]=count
 
-        if any(value == 0 for value in plaq_tot_count):
-            raise ValueError("Some plaquettes have no selected links.")
+        if any(value == 0 for value in plaq_tot_count.values()):
+            # Find the key with the highest value in plaq_tot_count
+            max_key = max(plaq_tot_count, key=plaq_tot_count.get)
+            max_value = plaq_tot_count[max_key]
+
+            # Reduce the value of the highest key by 1
+            plaq_tot_count[max_key] -= 1
+
+            # Remove one of the U operators from the selected_links
+            for link in eval(max_key):
+                if Symbol('E' + link[1:]) in self.selected_links:
+                    self.selected_links.remove(Symbol('E' + link[1:]))
+                    break
+
+            # Find a key with value 0 and add one of its U operators to selected_links
+            for key, value in plaq_tot_count.items():
+                if value == 0:
+                    plaq_tot_count[key] += 1
+                    for link in eval(key):
+                        if Symbol('E' + link[1:]) not in self.selected_links:
+                            self.selected_links.append(Symbol('E' + link[1:]))
+                            break
+                    break
+
 
         if print_res:
             print('Link before gauss =',self.links_before_g,
