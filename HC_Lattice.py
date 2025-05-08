@@ -808,14 +808,14 @@ class HCLattice:
                             break
                     break
 
-        plaq_tot_count={}
-        for plaq in self.list_plaq_u_op:
-            #count how many selected links are in every plaq
-            count=0
-            for link in selected_links:
-                if link in plaq:
-                    count+=1
-            plaq_tot_count[str(plaq)]=count
+            plaq_tot_count={}
+            for plaq in self.list_plaq_u_op:
+                #count how many selected links are in every plaq
+                count=0
+                for link in selected_links:
+                    if link in plaq:
+                        count+=1
+                plaq_tot_count[str(plaq)]=count
 
 
         if print_res:
