@@ -100,6 +100,7 @@ class HCLattice:
         # Build Jordan-Wigner chain
         self.jw_chain_func()
         self.func_qstatic_dist()
+        self.find_gausslaw_links()
 
     # ADDED: create_using=nx.DiGraph and periodic inverted
     def graph_lattice(self):
@@ -701,6 +702,93 @@ class HCLattice:
 
         self.links_before_g = links_before_g
         self.links_after_g = links_after_g
+
+    def find_gausslaw_links(self,print_res=False):
+
+        """
+        Find the links that are used in the Gauss law operator.
+        This function identifies the links that are adjacent to two plaquettes
+        and are not already selected.
+        It returns a list of selected links.
+
+        Input:
+        print_res: bool
+            If True, the function prints the number of selected links for each plaquette.
+
+        """
+
+        #TODO extend to 3d
+
+        if len(self.n_sites) !=2:
+            raise ValueError("This function is only implemented for 2D lattices.")
+
+
+        def build_link_to_plaquettes(plaquettes):
+            link_to_plaquettes = {}
+            for i, plaq in enumerate(plaquettes):
+                for link in plaq:
+                    link_to_plaquettes.setdefault(link, set()).add(i)
+            return link_to_plaquettes
+
+
+        def build_selected_links(link_to_plaquettes,selected_links,used_plaq,len_plaq):
+            for link, plaquettes in link_to_plaquettes.items():
+                if link not in selected_links:
+                    plaquette = next(iter(plaquettes), None)
+
+                    #start with positioning link in plaq set {} with minimal length
+                    # print(link,len(plaquettes) == len_plaq , plaquette not in used_plaq)
+                    if len(plaquettes) == len_plaq and plaquette not in used_plaq:
+                        selected_links.append(link)
+                        used_plaq.add(plaquette)
+
+                        if len(selected_links) == self.links_after_g:
+                            print('selected links:', selected_links)
+                            break
+
+            return selected_links
+
+
+
+        link_to_plaquettes = build_link_to_plaquettes(self.list_plaq_u_op)
+
+        #1st iteration with range len_plaq
+        used_plaq = set()  # Keep track of already used plaquettes
+        selected_links = []
+        for len_plaq in range(1,3):#link is adjacent of only two plaquettes
+            selected_links=build_selected_links(link_to_plaquettes,selected_links,used_plaq,len_plaq)
+            if len(selected_links) == self.links_after_g:
+                break
+
+        itr_counts=0
+        while len(selected_links) != self.links_after_g:#if used_plaq == number of plaq i need to add something else
+            used_plaq = set() #consider now only
+            len_plaq=2
+
+            selected_links=build_selected_links(link_to_plaquettes,selected_links,used_plaq,len_plaq)
+            itr_counts+=1
+            if itr_counts==10:#try for 10 times
+                break
+
+
+        plaq_tot_count={}
+        for plaq in self.list_plaq_u_op:#count how many selected links are in every plaq
+            count=0
+            for link in selected_links:
+                if link in plaq:
+                    count+=1
+            plaq_tot_count[str(plaq)]=count
+
+        if print_res:
+            print('Link before gauss =',self.links_before_g,
+            '\nLink after gauss =',self.links_after_g,
+            '\nLink selection =',len(selected_links),
+            '\nN.er of selected links for each plaquette:\n',plaq_tot_count.values())
+
+
+        return [Symbol('E'+link[1:]) for link in selected_links],plaq_tot_count
+
+
 
     # # build the jw chain until 3D #TODO how to do this for D>3?
     # JW chain doesn't matter if pbc or not
