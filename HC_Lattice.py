@@ -743,7 +743,7 @@ class HCLattice:
                         used_plaq.add(plaquette)
 
                         if len(selected_links) == self.links_after_g:
-                            print('selected links:', selected_links)
+                            # print('selected links:', selected_links)
                             break
 
             return selected_links
@@ -786,7 +786,8 @@ class HCLattice:
             '\nN.er of selected links for each plaquette:\n',plaq_tot_count.values())
 
 
-        return [Symbol('E'+link[1:]) for link in selected_links],plaq_tot_count
+        self.selected_links=[Symbol('E'+link[1:]) for link in selected_links]
+        self.plaq_tot_count=plaq_tot_count
 
 
 
