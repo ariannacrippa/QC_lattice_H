@@ -782,7 +782,6 @@ class HCLattice:
 
 
         # Check if any value in plaq_tot_count is 0
-        selected_links=[Symbol('E'+link[1:]) for link in selected_links]
 
         if any(value == 0 for value in plaq_tot_count.values()):
             # Find the key with the highest value in plaq_tot_count
@@ -794,8 +793,8 @@ class HCLattice:
 
             # Remove one of the U operators from the selected_links
             for link in eval(max_key):
-                if Symbol('E' + link[1:]) in selected_links:
-                    selected_links.remove(Symbol('E' + link[1:]))
+                if link in selected_links:
+                    selected_links.remove(link)
                     break
 
             # Find a key with value 0 and add one of its U operators to selected_links
@@ -803,8 +802,8 @@ class HCLattice:
                 if value == 0:
                     # plaq_tot_count[key] += 1
                     for link in eval(key):
-                        if Symbol('E' + link[1:]) not in selected_links:
-                            selected_links.append(Symbol('E' + link[1:]))
+                        if link not in selected_links:
+                            selected_links.append(link)
                             break
                     break
 
@@ -824,7 +823,7 @@ class HCLattice:
             '\nLink selection =',len(selected_links),
             '\nN.er of selected links for each plaquette:\n',plaq_tot_count.values())
 
-
+        selected_links=[Symbol('E'+link[1:]) for link in selected_links]
 
 
         self.selected_links=selected_links
