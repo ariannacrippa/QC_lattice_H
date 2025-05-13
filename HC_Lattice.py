@@ -724,104 +724,183 @@ class HCLattice:
 
 
         def build_link_to_plaquettes(plaquettes):
+            """ Function to build a dictionary with the links and the plaquettes they are adjacent to.
+            Input:
+            - plaquettes: list of plaquettes
+            Output:
+            - link_to_plaquettes: dictionary with the links and the plaquettes they are adjacent to
+            - plaq_to_index: dictionary with the plaquettes as keys and their indices as values
+            """
             link_to_plaquettes = {}
+            plaq_to_index = {}
             for i, plaq in enumerate(plaquettes):
+                plaq_to_index[str(plaq)] = i
                 for link in plaq:
                     link_to_plaquettes.setdefault(link, set()).add(i)
-            return link_to_plaquettes
+            return link_to_plaquettes, plaq_to_index
+
+        def plaq_count(list_plaq_u_op,selected_links):
+            """ Function to count how many selected links are in every plaquette."""
+            plaq_tot_count={}
+            for plaq in list_plaq_u_op:#count how many selected links are in every plaq
+                count=0
+                if len(selected_links)==0:
+                    count=0
+                else:
+                    for link in selected_links:
+                        if link in plaq:
+                            count+=1
+                plaq_tot_count[str(plaq)]=count
+            return plaq_tot_count
 
 
-        def build_selected_links(link_to_plaquettes,selected_links,used_plaq,len_plaq):
-            for link, plaquettes in link_to_plaquettes.items():
-                if link not in selected_links:
-                    plaquette = next(iter(plaquettes), None)
+        def build_selected_links(link_to_plaquettes):
+            """Function to select the links that are used in the Gauss law operator.
+            This function identifies the links that are adjacent to two plaquettes
+            and are not already selected.
+            It returns a list of selected links.
+            Input:
+            - link_to_plaquettes: dictionary with the links and the plaquettes they are adjacent to
+            - selected_links: list of selected links
+            - used_plaq: list of used plaquettes
+            Output:
+            - selected_links: list of selected links
+            """
+            if n_sites[0] > 10 or n_sites[1] > 10:#TODO: valid for lattice <11x11!U_nxny must be converted to Unx_ny if nx,ny has more that 1 digit
+                raise ValueError("Lattice size too large. Please use a smaller lattice size.")
 
-                    #start with positioning link in plaq set {} with minimal length
-                    # print(link,len(plaquettes) == len_plaq , plaquette not in used_plaq)
-                    if len(plaquettes) == len_plaq and plaquette not in used_plaq:
-                        selected_links.append(link)
-                        used_plaq.add(plaquette)
+            used_plaq = []
+            used_plaq2 = []
+            selected_links = []
 
-                        if len(selected_links) == self.links_after_g:
-                            # print('selected links:', selected_links)
+            min_flag = 0
+            for link, plaquettes in link_to_plaquettes.items():#first iteration for links only one plaquette if any
+                if link not in selected_links and len(plaquettes) == 1 and next(iter(plaquettes)) not in used_plaq:  # if only one plaquette is used
+                    selected_links.append(link)
+                    used_plaq.extend(plaquettes)
+                    if len(selected_links) == self.links_after_g:
+                        return selected_links
+
+
+            itr=0
+            while len(selected_links) < self.links_after_g:
+                itr += 1
+                if itr > 1000:
+                    raise ValueError("Too many iterations.")
+                    break
+
+                recompute = False  # Flag to indicate restart of the while loop
+
+                plaq_tot_count = plaq_count(self.list_plaq_u_op, selected_links)
+
+                min_count = min(plaq_tot_count.values())  # Find the minimum value
+                min_plaq_indices = [plaq_idx for plaq_idx, count in plaq_tot_count.items() if count == min_count]
+
+                if min_count != min_flag:#Function to count minimum value, if changes, reset used_plaq2
+                    min_flag = min_count
+                    used_plaq2 = []
+
+                for plaq_idx in min_plaq_indices:
+                    plaq = eval(plaq_idx)  # Convert string back to list
+                    for link in plaq:
+                        if link not in selected_links:
+                            if all(plaquette not in used_plaq for plaquette in link_to_plaquettes[link]):
+
+                                plaquettes = link_to_plaquettes[link]
+                                selected_links.append(link)
+                                if len(selected_links) == self.links_after_g:
+                                    return selected_links
+                                used_plaq.extend(plaquettes)
+                                recompute = True  # Set flag to recompute from start of while
+                                break  # Break out of inner for loop
+
+                    if recompute:
+                        break  # Break out of outer for loop
+                    else:
+                        if min_count == 0:  # Check for plaquettes with zero selected links
+                            for link in plaq:
+                                if link not in selected_links:
+
+                                    plaquettes = link_to_plaquettes[link]
+                                    selected_links.append(link)
+                                    if len(selected_links) == self.links_after_g:
+                                        return selected_links
+                                    used_plaq.extend(plaquettes)
+                                    recompute = True
+                                    break  # Break out of inner for loop
+                        for link in plaq:
+                            if link not in selected_links and len(link_to_plaquettes[link]) == 1: # If only one plaquette is used
+
+                                plaquettes = link_to_plaquettes[link]
+                                selected_links.append(link)
+                                if len(selected_links) == self.links_after_g:
+                                    return selected_links
+                                used_plaq2.extend(plaquettes)
+
+                                recompute = True
+                                break  # Break out of inner for loop
+                        if recompute:
                             break
+                        for link in plaq:
+                            if all(plaquette not in used_plaq2 for plaquette in link_to_plaquettes[link]):
+
+
+                                plaquettes = link_to_plaquettes[link]
+                                selected_links.append(link)
+                                if len(selected_links) == self.links_after_g:
+                                    return selected_links
+                                used_plaq2.extend(plaquettes)
+
+
+                                recompute = True
+                                break
+
+                        if recompute:
+                            break
+                    if recompute:
+                        break # Break out of outer for loop
+
+                if recompute:
+                    continue  # Start from beginning of while loop
+                elif self.pbc:
+                    for plaq_idx in min_plaq_indices:
+                        plaq = eval(plaq_idx)
+
+                        for link in plaq:
+                            plaquettes = link_to_plaquettes[link]
+                            selected_links.append(link)
+                            if len(selected_links) == self.links_after_g:
+                                return selected_links
+                            used_plaq2.extend(plaquettes)
+
+                            recompute = True
+                            break
+                    if recompute:
+                        continue
 
             return selected_links
 
 
 
-        link_to_plaquettes = build_link_to_plaquettes(self.list_plaq_u_op)
+        link_to_plaquettes, plaq_to_index = build_link_to_plaquettes(self.list_plaq_u_op)
 
-        #1st iteration with range len_plaq
-        used_plaq = set()  # Keep track of already used plaquettes
-        selected_links = []
-        for len_plaq in range(1,3):#link is adjacent of only two plaquettes
-            selected_links=build_selected_links(link_to_plaquettes,selected_links,used_plaq,len_plaq)
-            if len(selected_links) == self.links_after_g:
-                break
-
-        itr_counts=0
-        while len(selected_links) != self.links_after_g:#if used_plaq == number of plaq i need to add something else
-            used_plaq = set() #consider now only
-            len_plaq=2
-
-            selected_links=build_selected_links(link_to_plaquettes,selected_links,used_plaq,len_plaq)
-            itr_counts+=1
-            if itr_counts==10:#try for 10 times
-                break
+        # Keep track of already used plaquettes
+        selected_links=build_selected_links(link_to_plaquettes)
 
 
-        plaq_tot_count={}
-        for plaq in self.list_plaq_u_op:
-            #count how many selected links are in every plaq
-            count=0
-            for link in selected_links:
-                if link in plaq:
-                    count+=1
-            plaq_tot_count[str(plaq)]=count
-
-
-        # Check if any value in plaq_tot_count is 0
-
-        if any(value == 0 for value in plaq_tot_count.values()):
-            # Find the key with the highest value in plaq_tot_count
-            max_key = max(plaq_tot_count, key=plaq_tot_count.get)
-            max_value = plaq_tot_count[max_key]
-
-            # # Reduce the value of the highest key by 1
-            # plaq_tot_count[max_key] -= 1
-
-            # Remove one of the U operators from the selected_links
-            for link in eval(max_key):
-                if link in selected_links:
-                    selected_links.remove(link)
-                    break
-
-            # Find a key with value 0 and add one of its U operators to selected_links
-            for key, value in plaq_tot_count.items():
-                if value == 0:
-                    # plaq_tot_count[key] += 1
-                    for link in eval(key):
-                        if link not in selected_links:
-                            selected_links.append(link)
-                            break
-                    break
-
-            plaq_tot_count={}
-            for plaq in self.list_plaq_u_op:
-                #count how many selected links are in every plaq
-                count=0
-                for link in selected_links:
-                    if link in plaq:
-                        count+=1
-                plaq_tot_count[str(plaq)]=count
-
+        plaq_tot_count=plaq_count(self.list_plaq_u_op,selected_links)
 
         if print_res:
+            if len(selected_links)< self.links_after_g:
+                print('selected links:',len(selected_links),'lower than expected:',self.links_after_g)
+            else:
+                print('OK! selected links:',len(selected_links),'expected:',self.links_after_g)
+
             print('Link before gauss =',self.links_before_g,
             '\nLink after gauss =',self.links_after_g,
             '\nLink selection =',len(selected_links),
             '\nN.er of selected links for each plaquette:\n',plaq_tot_count.values())
+
 
         selected_links=[Symbol('E'+link[1:]) for link in selected_links]
 
