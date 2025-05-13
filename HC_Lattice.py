@@ -766,7 +766,7 @@ class HCLattice:
             Output:
             - selected_links: list of selected links
             """
-            if n_sites[0] > 10 or n_sites[1] > 10:#TODO: valid for lattice <11x11!U_nxny must be converted to Unx_ny if nx,ny has more that 1 digit
+            if self.n_sites[0] > 10 or self.n_sites[1] > 10:#TODO: valid for lattice <11x11!U_nxny must be converted to Unx_ny if nx,ny has more that 1 digit
                 raise ValueError("Lattice size too large. Please use a smaller lattice size.")
 
             used_plaq = []
