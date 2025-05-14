@@ -816,21 +816,43 @@ class HamiltonianQED_sym:
 
             # ************************************  H_M   ************************************
             if self.display_hamiltonian:  # to print
-                display_hamiltonian_m = [Eq(
-                    Symbol("H_m"),
-                    Symbol("m")
-                    * sum(
-                        [
-                            (-1) ** j * np.prod(k)
-                            for j, k in enumerate(
-                                [
-                                    (k[0].subs(k[0], Dagger(k[1])), k[1])
-                                    for k in ham_m
-                                ] #TODO: This is wrong for n_flavors>1 but it is not important for the physics
+                if self.n_flavors>1:
+                    display_hamiltonian_m = [
+                            Eq(
+                                Symbol(f"H_{{m,{f+1}}}"),
+                                sum(
+                                    [
+                                        (-1) ** j * np.prod(k)
+                                        for j, k in enumerate(
+                                            [
+                                                (k[0].subs(k[0], Dagger(k[1])), k[1])
+                                                for k in ham_m
+                                            ]
+                                        )
+                                    ]
+                                ) * Symbol(f"m_{f+1}")
                             )
-                        ] 
-                    ),
-                )for ham_m in self.hamiltonian_m_sym] 
-                for display_hamiltonian_m_part in display_hamiltonian_m:
-                    display(display_hamiltonian_m_part)
-                    print(latex(display_hamiltonian_m_part))
+                            for f, ham_m in enumerate(self.hamiltonian_m_sym)
+                        ]
+
+                    for display_hamiltonian_m_part in display_hamiltonian_m:
+                        display(display_hamiltonian_m_part)
+                        print(latex(display_hamiltonian_m_part))
+                else:
+                    display_hamiltonian_m = Eq(
+                        Symbol("H_m"),
+                        sum(
+                            [
+                                (-1) ** j * np.prod(k)
+                                for j, k in enumerate(
+                                    [
+                                        (k[0].subs(k[0], Dagger(k[1])), k[1])
+                                        for k in self.hamiltonian_m_sym
+                                    ]
+                                )
+                            ]
+                        )
+                        * Symbol("m"),
+                    )
+                    display(display_hamiltonian_m)
+                    print(latex(display_hamiltonian_m))
