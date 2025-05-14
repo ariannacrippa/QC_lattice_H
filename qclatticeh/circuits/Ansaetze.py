@@ -23,18 +23,28 @@ class Ansatz:
     ferm_list (list of symypy Symbols):
         List of fermionic fields names.
 
+    use_for_nft (bool):
+        If True, the (C)iSWAP gate is used for the NFT optimizer.
+
     """
 
-    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None)->None:
+    def __init__(self,l,ngauge,nfermions,gauge_list=None,ferm_list=None, n_flavors=1, n_sites=None, use_for_nft=True)->None:
 
         self.l = l
         self.ngauge = ngauge
         self.nfermions = nfermions
         self.gauge_list = gauge_list
+        
+        self.n_flavors = n_flavors
+
+       
         self.ferm_list = ferm_list
-
+        
         self.n_qubits =int(np.ceil(np.log2(2 * self.l+ 1)))
+        
+        self.n_sites = n_sites if n_sites is not None else [int(np.sqrt(nfermions)),int(np.sqrt(nfermions))]
 
+        self.use_for_nft = use_for_nft
 
         self.gray_code_lim()
         self.puregauge_circuit_entang()
@@ -61,6 +71,21 @@ class Ansatz:
                     }
 
 
+    @staticmethod
+    def identify_flavoured_fermions(ferm_list, n_flavors):
+        """     [q_00, q_10, q_20, q_30, q_31, q_21, q_11, q_01]
+        goes to [[q_00, q_20, q_31, q_11], [q_10, q_30, q_21, q_01]]
+        """
+        if n_flavors == 1:
+            return [ferm_list]
+        elif n_flavors > 1:    
+            new_list = []
+            for f in range(n_flavors):
+                new_list.append(ferm_list[f::n_flavors])
+            return new_list
+        else:
+            raise ValueError(f'Something is wrong with the n_flavors parameter: {n_flavors}')
+    
     @staticmethod
     def gray_ry(theta,gate_label='Ry*'):
         """Ry gate for gray encoding basic structure.
@@ -194,7 +219,7 @@ class Ansatz:
 
 
     @staticmethod
-    def CiSwap(circ,c_qubit, qubits, par_i):
+    def CiSwap(circ,c_qubit, qubits, par_i, use_for_nft=True):
         """ Controlled iSwap """
         #circ = QuantumCircuit(qubits[1]-c_qubit+1,name='iSWAP')
         #Rxx
@@ -213,15 +238,16 @@ class Ansatz:
         circ.rx(-np.pi/2,qubits[0])
         circ.rx(-np.pi/2,qubits[1])
 
-        #Rzz (for NFT optimizer)
-        circ.cx(qubits[1],qubits[0])
-        circ.crz(par_i/2.0,c_qubit,qubits[0])
-        circ.cx(qubits[1],qubits[0])
+        if use_for_nft:
+            #Rzz (for NFT optimizer)
+            circ.cx(qubits[1],qubits[0])
+            circ.crz(par_i/2.0,c_qubit,qubits[0])
+            circ.cx(qubits[1],qubits[0])
 
         return circ.to_instruction()
 
     @staticmethod
-    def CiSwap2(par_i):
+    def CiSwap2(par_i, use_for_nft=True):
         """ Controlled iSwap """
         circ = QuantumCircuit(3,name='CiSWAP')
         #Rxx
@@ -240,15 +266,16 @@ class Ansatz:
         circ.rx(-np.pi/2,1)
         circ.rx(-np.pi/2,2)
 
-        #Rzz (for NFT optimizer)
-        circ.cx(2,1)
-        circ.crz(par_i/2.0,0,1)
-        circ.cx(2,1)
+        if use_for_nft:
+            #Rzz (for NFT optimizer)
+            circ.cx(2,1)
+            circ.crz(par_i/2.0,0,1)
+            circ.cx(2,1)
 
         return circ.to_instruction()
 
     @staticmethod
-    def iSwap( par_i):
+    def iSwap( par_i, use_for_nft=True):
         """ Controlled iSwap """
 
         circ = QuantumCircuit(2,name='iSWAP')
@@ -269,10 +296,11 @@ class Ansatz:
         circ.rx(-np.pi/2,0)
         circ.rx(-np.pi/2,1)
 
-        #Rzz (for NFT optimizer)
-        circ.cx(1,0)
-        circ.rz(par_i/2.0,0)
-        circ.cx(1,0)
+        if use_for_nft:
+            #Rzz (for NFT optimizer)
+            circ.cx(1,0)
+            circ.rz(par_i/2.0,0)
+            circ.cx(1,0)
 
         return circ.to_instruction()
 
@@ -470,13 +498,14 @@ class Ansatz:
         """Return circuit for fermionic case, i.e. no gauge fields.
            It considers iSwap gates between every two fermions in order to select only zero-charged states."""
 
+        
         if self.nfermions:
             qferm=[]
             if self.ferm_list:
                 for f in [str(i) for i in self.ferm_list]:
                     qferm.append(QuantumRegister(1,name=f))
             else:
-                for i in range(self.nfermions):
+                for i in range(self.nfermions*self.n_flavors):
                     qferm.append(QuantumRegister(1,name=f'f{i}'))
             qc_ferm = QuantumCircuit(*qferm)
 
@@ -485,21 +514,36 @@ class Ansatz:
 
             #params = lambda i: Parameter(f'theta_{i}')
             params = lambda i: Parameter(f"θ[{i}]")
-
-            for i in range(1,self.nfermions,2):#range(0,self.nfermions,2):
-                qc_ferm.x(qferm[i])
+            for f in range(self.n_flavors):
+                for i in range(1,self.nfermions,2):#range(0,self.nfermions,2):
+                    qc_ferm.x(qferm[f+i*self.n_flavors])
 
             for n in range(nlayers):
-                for j in range(self.nfermions//2):
-                    for i in range(j,self.nfermions-j,2):
-                            qc_ferm.append(Ansatz.iSwap(params(th_ferm)), qferm[i:i+2])
-                            th_ferm+=1
+                for f in range(self.n_flavors):
+                    for j in range(self.nfermions//2):
+                        for i in range(j,self.nfermions-j,2):
+                                qc_ferm.append(Ansatz.iSwap(params(th_ferm), self.use_for_nft), [qferm[f+i*self.n_flavors], qferm[f+(i+1)*self.n_flavors]])
+                                th_ferm+=1
 
-            #last layer of Rz gates for correct phase
-            if rzlayer:
-                for i in range(self.nfermions):
-                    qc_ferm.rz(Parameter(f'theta_{th_ferm}'),qferm[i])
-                    th_ferm+=1
+                if self.n_flavors>1:
+                    #Add barrier
+                    qc_ferm.barrier()
+
+                    for f in range(self.n_flavors):
+                        for l in range(f+1,self.n_flavors):
+                            for i in range(self.nfermions):
+                                start = i*self.n_flavors+f
+                                end = i*self.n_flavors+l
+                                qc_ferm.append(Ansatz.iSwap(params(th_ferm), self.use_for_nft), [qferm[start], qferm[end]])
+                                th_ferm+=1
+                       
+                            
+            for f in range(self.n_flavors):
+                #last layer of Rz gates for correct phase
+                if rzlayer:
+                    for i in range(self.nfermions):
+                        qc_ferm.rz(Parameter(f'theta_{th_ferm}'),qferm[f+i*self.n_flavors])
+                        th_ferm+=1
 
             return qc_ferm,th_ferm
 
@@ -540,7 +584,7 @@ class Ansatz:
             #fermionic part
             if nlayersferm:
                 qc_ferm,th = self.fermionic_circuit(th_ferm=th_gauge,rzlayer=rzlayer,nlayers=nlayersferm)
-                qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions),inplace=True)
+                qc_tot.compose(qc_ferm,range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+(self.nfermions*self.n_flavors)),inplace=True)
             else:
                 th=th_gauge if not theta_tot else theta_tot
 
@@ -576,17 +620,35 @@ class Ansatz:
                     index_ciswap=[]
                     #TODO: ciswaps also if gauge_list=None?
                     for el in [i.name for i in self.gauge_list]:
-                        ferm_entang=['q_'+el[2]+el[3], 'q_'+el[2]+str(int(el[3]) + 1)] if el[-1] == 'y' else ['q_'+el[2]+el[3], 'q_'+str(int(el[2]) + 1)+el[3]] #TODO works for 2D  OBC
+                        # Get the physical lattice indices of the links
+                        start = [int(el[2]), int(el[3])]
+                        direction = el[-1]
+                        for n in range(self.n_flavors):
+                            start_index = [self.n_flavors*start[0] + n, start[1]] if start[1]%2 == 0 else [self.n_flavors*(start[0]+1) - n-1, start[1]]
+                            if direction == 'x':
+                                end_index = [self.n_flavors*(start[0]+1) + n, start[1]] if start[1]%2 == 0 else [self.n_flavors*(start[0]+2) - n-1, start[1]]
+                            elif direction == 'y':
+                                end_index = [self.n_flavors*(start[0]+1) - n-1, start[1]+1] if start[1]%2 == 0 else [self.n_flavors*start[0] + n, start[1]+1]
+                            else:
+                                raise ValueError(f"Invalid direction {direction}")
+                             
+                            if self.n_sites is not None:
+                                if end_index[0] >= self.n_sites[0]*self.n_flavors:
+                                    end_index[0] = end_index[0] - self.n_sites[0]*self.n_flavors
+                                if end_index[1] >= self.n_sites[1]:
+                                    end_index[1] = end_index[1] - self.n_sites[1]
+                        
+                            ferm_entang=['q_'+str(start_index[0])+str(start_index[1]), 'q_'+str(end_index[0])+str(end_index[1])] #TODO works for 2D  OBC
 
-                        index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
-                        index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
+                            index_ciswap+=[[qubit_list.index(el),]+[qubit_list.index(f) for f in ferm_entang]]
+                            index_ciswap+=[[qubit_list.index(el)+1,]+[qubit_list.index(f) for f in ferm_entang]]#return the indices for CiSWAP : 1st index gauge field and 2nd/3rd fermions at the edges of the gauge field
 
                 for pair in index_ciswap:#apply CiSWAP gates
-                    qc_tot.append(Ansatz.CiSwap2(params(th)),pair)
+                    qc_tot.append(Ansatz.CiSwap2(params(th), self.use_for_nft),pair)
                     th+=1
 
                 #rz layer for fermions
-                for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions):
+                for i in range(self.ngauge*self.n_qubits,self.ngauge*self.n_qubits+self.nfermions*self.n_flavors):
                     qc_tot.rz(params(th),i)
                     th+=1
 

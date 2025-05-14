@@ -131,6 +131,9 @@ class HamiltonianQED_oprt:
         gauss_law: bool
             If True, the Gauss law equations are applied to the Hamiltonian. If False, the Gauss law
             is not applied.
+
+        n_flavors: int
+            Number of fermionic flavors.
         }
 
     hamilt_sym: class
@@ -174,6 +177,8 @@ class HamiltonianQED_oprt:
             config["e_op_free_input"] if "e_op_free_input" in config else None
         )
         self.gauss_law = (config["gauss_law"] if "gauss_law" in config else True)
+
+        self.n_flavors = config["n_flavors"] if "n_flavors" in config else 1
 
         # external inputs
         self.hamilt_sym = hamilt_sym
@@ -226,7 +231,7 @@ class HamiltonianQED_oprt:
 
         self.q_charge_str_list = [
             "q_" + self.str_node_f(node)
-            for node in self.lattice.graph.nodes
+            for node in self.lattice.jw_sites
             if self.puregauge is False
         ]
         self.static_charges_str_list = [
@@ -332,33 +337,72 @@ class HamiltonianQED_oprt:
         elapsed_time = end_time - start_time
         print(">> Suppression term built. ", "Execution time:", elapsed_time, "seconds")
 
-        self.get_hamiltonian()
+        self.get_hamiltonian(1.0,0.0)
 
     def get_hamiltonian(
         self,
+        m_var,
+        chem_pot,
         g_var=1.0,
-        m_var=1.0,
         omega=1.0,
         fact_b_op=1.0,
         fact_e_op=1.0,
         lambd=1000.0,
+        cutting=False,
     ):
         """Returns the Hamiltonian of the system"""
 
+        # First check that m_var and chem_pot will work
+        if self.puregauge:
+            #Do nothing, no fermions
+            pass
+        else:
+            if m_var is None:
+                m_var = 1.0 if self.n_flavors == 1 else [1.0] * self.n_flavors
+                raise Warning("Mass term is None. Has been set to 1")
+            if chem_pot is None:
+                chem_pot = 0.0 if self.n_flavors == 1 else [0.0] * self.n_flavors
+                raise Warning("Chemical potential is None. Has been set to 0")
+            # Now check that m_var is a float if n_flavors == 1 and else is a list of length n_flavors
+            if self.n_flavors == 1:
+                if not isinstance(m_var, (float, int)) or not isinstance(chem_pot, (float, int)):
+                    raise ValueError("Mass term and chemical potential must be a float")
+            else:
+                if not isinstance(m_var, list) or not isinstance(chem_pot, list):
+                    m_var = [m_var] * self.n_flavors
+                    chem_pot = [chem_pot] * self.n_flavors
+                    print("Mass term and chemical potential must be a list. Has been set to a list of length n_flavors")
+                if len(m_var) != self.n_flavors or len(chem_pot) != self.n_flavors:
+                    raise ValueError("Mass term and chemical potential must have length n_flavors")
+            
         hamiltonian_tot = 0
         # Hamiltonian for fermions
         if self.puregauge:
             hamiltonian_tot += 0
         elif self.lattice.dims == 1 and self.sparse_pauli:
-            hamiltonian_tot += (
-                float(omega) * self.hamiltonian_k_pauli
-                + float(m_var) * self.hamiltonian_m_pauli
-            ).to_matrix(sparse=True)
+            if self.n_flavors==1:
+                hamiltonian_tot += (
+                    float(omega) * self.hamiltonian_k_pauli
+                    + float(m_var) * self.hamiltonian_m_pauli
+                ).to_matrix(sparse=True)
+            else:
+                hamiltonian_add = float(omega) * self.hamiltonian_k_pauli
+                for i in range(self.n_flavors):
+                    hamiltonian_add += float(m_var[i]) * self.hamiltonian_m_pauli[i]
+                    hamiltonian_add += float(chem_pot[i]) * self.hamiltonian_mu_pauli[i]
+                hamiltonian_tot += hamiltonian_add.to_matrix(sparse=True)
         else:
-            hamiltonian_tot += (
-                float(omega) * self.hamiltonian_k_pauli
-                + float(m_var) * self.hamiltonian_m_pauli
-            )
+            if self.n_flavors==1:
+                hamiltonian_tot += (
+                    float(omega) * self.hamiltonian_k_pauli
+                    + float(m_var) * self.hamiltonian_m_pauli
+                )
+            else:
+                hamiltonian_add = float(omega) * self.hamiltonian_k_pauli
+                for i in range(self.n_flavors):
+                    hamiltonian_add += float(m_var[i]) * self.hamiltonian_m_pauli[i]
+                    hamiltonian_add += float(chem_pot[i]) * self.hamiltonian_mu_pauli[i]
+                hamiltonian_tot += hamiltonian_add
 
         # Hamiltonian for gauge fields
         if self.len_e_op == 0 and self.puregauge:
@@ -375,8 +419,24 @@ class HamiltonianQED_oprt:
         # Hamiltonian for suppression term
         if lambd != 0:
             hamiltonian_tot += lambd * self.hamiltonian_suppress
-
+            if cutting:
+                hamiltonian_tot = self.cutting_operator(hamiltonian_tot)
+        else:
+            if cutting:
+                raise Warning("No suppression term to cut")
+        if cutting and not self.sparse_pauli:
+            raise ValueError("Cutting only for sparse matrices")
         return hamiltonian_tot
+    
+    def cutting_operator(self, operator):
+        # Cut the operator according to the non-zero suppresion term elements
+        # Only unphysical states are non-zero and thus the eigenvalue of the operatgor is not changed
+        non_zero_diagonal_indices = np.where(self.hamiltonian_suppress.diagonal() != 0)[0]
+        mask = np.ones(self.hamiltonian_suppress.shape[0], dtype=bool)
+        mask[non_zero_diagonal_indices] = False
+        operator_cut = operator[mask][:, mask]
+        return operator_cut
+
 
     def _n_qubits_g(self) -> int:
         """Returns the minimum number of qubits required with Gray encoding"""
@@ -607,7 +667,7 @@ class HamiltonianQED_oprt:
                 ind_list = lambda e: e.free_symbols
 
             for e in ei:  # build index list order ..q2q1q0 (little endian)
-                # print('ind_list',ind_list(e),'gaugelist',gauge_lst)
+                #print('ind_list',e,'gaugelist',gauge_lst)
                 if not isinstance(
                     e, (int, float, complex, Float, Integer, str, ImaginaryUnit)
                 ):
@@ -682,7 +742,7 @@ class HamiltonianQED_oprt:
                     numbers.append(el)
 
             # build final list of operators: res. It is built as list of strings and then filled with matrices
-            if subst[0][0] == Symbol("Phi_1D", commutative=False):  # ferm
+            if subst[0][0].name[:3] == "Phi":  # ferm
                 res = ["id_f"] * len(ferm_lst) + ["id_g"] * self.len_e_op
                 f_index_op = [
                     i for i in index_op if int(re.findall("\d+", i)[0]) < len(ferm_lst)
@@ -741,6 +801,7 @@ class HamiltonianQED_oprt:
                 )  # reduce(tensor_or_kron,res )#TODO: for 3+1 D  minus sign for 3rd,4th components
                 jj_mass += 1
             else:  # sum over all terms
+                # TODO memory problematic part
                 ham_encoded += np.prod(numbers) * HamiltonianQED_oprt.pauli_tns(
                     *res
                 )  # reduce(tensor_or_kron,res )
@@ -1166,7 +1227,7 @@ class HamiltonianQED_oprt:
         self.qcharge_list = [
             (
                 symbols("q_" + self.str_node_f(k)),
-                (Symbol("q10OP") if sum_k(k) % 2 else Symbol("q00OP")),
+                (Symbol("q10OP") if sum_k((k[0]//self.n_flavors,*k[1:])) % 2 else Symbol("q00OP")),
             )
             for k in self.lattice.jw_sites
         ]
@@ -1204,36 +1265,68 @@ class HamiltonianQED_oprt:
             ]
 
         # dummy ferm list:
-        self.phi_jw_list_sym = [
-            (
-                Symbol(f"Phi_{i+1}D", commutative=False),
-                Symbol(f"Phi_{i+1}D", commutative=False),
-            )
-            for i, k in enumerate(self.lattice.jw_sites)
-        ] + [
-            (
-                Symbol(f"Phi_{i+1}", commutative=False),
-                Symbol(f"Phi_{i+1}", commutative=False),
-            )
-            for i, k in enumerate(self.lattice.jw_sites)
-        ]
+        if self.n_flavors == 1:
+            self.phi_jw_list_sym = [
+                (
+                    Symbol(f"Phi_{i+1}D", commutative=False),
+                    Symbol(f"Phi_{i+1}D", commutative=False),
+                )
+                for i, k in enumerate(self.lattice.jw_sites)
+            ] + [
+                (
+                    Symbol(f"Phi_{i+1}", commutative=False),
+                    Symbol(f"Phi_{i+1}", commutative=False),
+                )
+                for i, k in enumerate(self.lattice.jw_sites)
+            ]
+        else:
+            self.phi_jw_list_sym_parts = [([
+                (
+                    Symbol(f"Phi_{i+1}D", commutative=False),
+                    Symbol(f"Phi_{i+1}D", commutative=False),
+                )
+                for i, k in enumerate(self.lattice.jw_sites) if i%self.n_flavors==n
+            ] + [
+                (
+                    Symbol(f"Phi_{i+1}", commutative=False),
+                    Symbol(f"Phi_{i+1}", commutative=False),
+                )
+                for i, k in enumerate(self.lattice.jw_sites) if i%self.n_flavors==n
+            ]) for n in range(self.n_flavors)]
+            self.phi_jw_list_sym = [item for sublist in self.phi_jw_list_sym_parts for item in sublist]
 
         phi_el = lambda i, j: HamiltonianQED_oprt.pauli_tns(
-            (self.jw_funct(i + 1, int(self.lattice.n_sitestot))[j]),
+            (self.jw_funct(i + 1, int(self.lattice.n_sitestot)*self.n_flavors)[j]),
         )
-        self.phi_jw_list = [
-            (
-                Symbol(f"Phi_{i+1}D", commutative=False),
-                phi_el(i, 0),
-            )
-            for i, k in enumerate(self.lattice.jw_sites)
-        ] + [
-            (
-                Symbol(f"Phi_{i+1}", commutative=False),
-                phi_el(i, 1),
-            )
-            for i, k in enumerate(self.lattice.jw_sites)
-        ]
+        if self.n_flavors == 1:
+            self.phi_jw_list = [
+                (
+                    Symbol(f"Phi_{i+1}D", commutative=False),
+                    phi_el(i, 0),
+                )
+                for i, k in enumerate(self.lattice.jw_sites)
+            ] + [
+                (
+                    Symbol(f"Phi_{i+1}", commutative=False),
+                    phi_el(i, 1),
+                )
+                for i, k in enumerate(self.lattice.jw_sites)
+            ]
+        else:
+            self.phi_jw_list_flavors = [([
+                (
+                    Symbol(f"Phi_{i+1}D", commutative=False),
+                    phi_el(i, 0),
+                )
+                for i, k in enumerate(self.lattice.jw_sites) if i%self.n_flavors==n
+            ] + [
+                (
+                    Symbol(f"Phi_{i+1}", commutative=False),
+                    phi_el(i, 1),
+                )
+                for i, k in enumerate(self.lattice.jw_sites) if i%self.n_flavors==n
+            ]) for n in range(self.n_flavors)]
+            self.phi_jw_list = [item for sublist in self.phi_jw_list_flavors for item in sublist]
 
     # HAMILTONIAN
     # @profile
@@ -1253,7 +1346,6 @@ class HamiltonianQED_oprt:
                     elterm_mbasis=True,
                 )  # (must be then multiplied by g^2)
             else:
-
                 hamiltonian_el_pauli = self.list_to_enc_hamilt(
                     hinput_el,
                     self.qcharge_list + self.e_field_list,
@@ -1421,7 +1513,7 @@ class HamiltonianQED_oprt:
                     sum(hamiltonian_mag_pauli)
                     if self.puregauge
                     else HamiltonianQED_oprt.pauli_tns(
-                        self.tensor_prod(self.I, (int(self.lattice.n_sitestot))),
+                        self.tensor_prod(self.I, (int(self.lattice.n_sitestot)*self.n_flavors)),
                         np.sum(hamiltonian_mag_pauli),
                     )
                 )  # (must be then multiplied by -1/g^2)
@@ -1445,9 +1537,19 @@ class HamiltonianQED_oprt:
             # ************************************  H_K   ************************************
             # Pauli expression of the kinetic term
             if self.magnetic_basis:
-                subst_list_hk = self.phi_jw_list_sym + self.u_field_list_mag
+                if self.n_flavors:
+                    subst_list_hk = self.phi_jw_list_sym + self.u_field_list_mag
+                else:
+                    subst_list_hk = self.u_field_list_mag
+                    for i in range(self.n_flavors):
+                        subst_list_hk += self.phi_jw_list_sym[i]
             else:
-                subst_list_hk = self.phi_jw_list_sym + self.u_field_list
+                if self.n_flavors:
+                    subst_list_hk = self.phi_jw_list_sym + self.u_field_list
+                else:
+                    subst_list_hk = self.u_field_list
+                    for i in range(self.n_flavors):
+                        subst_list_hk += self.phi_jw_list_sym[i]
 
             if self.lattice.dims == 1:
                 hamiltonian_k_1x = self.list_to_enc_hamilt(
@@ -1522,18 +1624,47 @@ class HamiltonianQED_oprt:
             # ************************************  H_M   ************************************
             if self.lattice.dims == 3:
                 raise NotImplementedError("Mass term not implemented for 3D")
-
-            hamiltonian_m_pauli = self.list_to_enc_hamilt(
-                self.hamilt_sym.hamiltonian_m_sym,
-                self.phi_jw_list_sym,
-                self.phiop_list,
-                encoding=self.encoding,
-                massterm=True,
-            )
+            if self.n_flavors==1:
+                hamiltonian_m_pauli = self.list_to_enc_hamilt(
+                    self.hamilt_sym.hamiltonian_m_sym,
+                    self.phi_jw_list_sym,
+                    self.phiop_list,
+                    encoding=self.encoding,
+                    massterm=True,
+                )
+            else:
+                hamiltonian_m_pauli = [self.list_to_enc_hamilt(
+                    ham_sym,
+                    phi_jw,
+                    self.phiop_list,
+                    encoding=self.encoding,
+                    massterm=True,
+                ) for ham_sym, phi_jw in zip(self.hamilt_sym.hamiltonian_m_sym,self.phi_jw_list_sym_parts)]
             # (must be then multiplied by m)
+
+            # ************************************  H_mu   ***********************************
+            if self.lattice.dims == 3:
+                raise NotImplementedError("Mass term not implemented for 3D")
+            if self.n_flavors==1:
+                hamiltonian_mu_pauli = self.list_to_enc_hamilt(
+                    self.hamilt_sym.hamiltonian_m_sym,
+                    self.phi_jw_list_sym,
+                    self.phiop_list,
+                    encoding=self.encoding,
+                    massterm=False,
+                )
+            else:
+                hamiltonian_mu_pauli = [self.list_to_enc_hamilt(
+                    ham_sym,
+                    phi_jw,
+                    self.phiop_list,
+                    encoding=self.encoding,
+                    massterm=False,
+                ) for ham_sym, phi_jw in zip(self.hamilt_sym.hamiltonian_m_sym,self.phi_jw_list_sym_parts)]
 
             self.hamiltonian_k_pauli = hamiltonian_k_pauli
             self.hamiltonian_m_pauli = hamiltonian_m_pauli
+            self.hamiltonian_mu_pauli = hamiltonian_mu_pauli
 
         self.hamiltonian_el_pauli = hamiltonian_el_pauli
         self.hamiltonian_mag_pauli = hamiltonian_mag_pauli
@@ -1607,31 +1738,31 @@ class HamiltonianQED_oprt:
             hamiltonian_gauge_suppr = 0.0 * gauge
         else:  # no gauge fields
             hamiltonian_gauge_suppr = 0.0 * self.tensor_prod(
-                self.I, int(self.lattice.n_sitestot)
+                self.I, int(self.lattice.n_sitestot*self.n_flavors)
             )
 
         # ****** fermion
         if not self.puregauge:
             print("Hamiltonian suppr fermions...")
-            suppr_f = self.tensor_prod(self.I, (int(self.lattice.n_sitestot)))
+            suppr_f = self.tensor_prod(self.I, (int(self.lattice.n_sitestot)*self.n_flavors))
             # the state is projected onto zero-charge state (fermions), same number of 1 and 0
-            for i in range(2 ** int(self.lattice.n_sitestot)):
+            for i in range(2 ** int(self.lattice.n_sitestot* self.n_flavors)):
                 bincount = sum([1 for el in bin(i)[2:] if el == "1"])
-                if bincount == int(self.lattice.n_sitestot) / 2:
-                    binc = format(i, "0%db" % int(self.lattice.n_sitestot))
+                if bincount == int(self.lattice.n_sitestot*self.n_flavors) / 2:
+                    binc = format(i, "0%db" % int(self.lattice.n_sitestot*self.n_flavors))
                     suppr_f += -1.0 * reduce(
                         lambda x, y: (x) ^ (y),
                         [s_down if x == "0" else s_up for x in binc],
                     )
             suppr_f=suppr_f.simplify()
-
+            
             hamiltonian_nzcharge_suppr = HamiltonianQED_oprt.pauli_tns(suppr_f, gauge)
             print("Hamiltonian suppr fermions done")
         if self.puregauge:
             hamiltonian_suppress = hamiltonian_gauge_suppr
         elif self.len_u_op > 0:
             hamiltonian_suppress = HamiltonianQED_oprt.pauli_tns(
-                self.tensor_prod(self.I, int(self.lattice.n_sitestot)),
+                self.tensor_prod(self.I, int(self.lattice.n_sitestot)*self.n_flavors),
                 hamiltonian_gauge_suppr,
             ) + (hamiltonian_nzcharge_suppr)
         else:  # no gauge fields
