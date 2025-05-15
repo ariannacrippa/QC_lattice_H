@@ -100,7 +100,7 @@ class HCLattice:
         # Build Jordan-Wigner chain
         self.jw_chain_func()
         self.func_qstatic_dist()
-        self.find_gausslaw_links()
+        # self.find_gausslaw_links()
 
     # ADDED: create_using=nx.DiGraph and periodic inverted
     def graph_lattice(self):
