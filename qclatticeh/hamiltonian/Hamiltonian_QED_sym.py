@@ -240,7 +240,7 @@ class HamiltonianQED_sym:
                 raise ValueError(
                     "The system of equations has no solution. Please check the input."
                 )
-            if len(sol_system) > 1:
+            else:
                 self.sol_gauss = sol_system[0]
 
             print("> Gauss law equations solved")
