@@ -11,7 +11,9 @@ requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 authors = [
-  { name = "Arianna Crippa", email = "arianna.crippa@desy.de" },
+  { name = "Arianna Crippa", email = "cripparianna@gmail.com" },
+  { name = "Emil Rosanowski", email = "rosanowski@hiskp.uni-bonn.de" },
+  { name = "Paulo Itaborai", email = "itaborapuy@gmail.com" },
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
