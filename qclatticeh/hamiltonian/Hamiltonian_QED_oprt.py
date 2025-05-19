@@ -336,13 +336,15 @@ class HamiltonianQED_oprt:
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(">> Suppression term built. ", "Execution time:", elapsed_time, "seconds")
-
-        self.get_hamiltonian(1.0,0.0)
+        if self.n_flavors==1:
+            self.get_hamiltonian(1.0,0.0)
+        else:
+            self.get_hamiltonian([1.0]*self.n_flavors,[0.0]*self.n_flavors)
 
     def get_hamiltonian(
         self,
         m_var,
-        chem_pot,
+        chem_pot=None,
         g_var=1.0,
         omega=1.0,
         fact_b_op=1.0,
@@ -365,13 +367,17 @@ class HamiltonianQED_oprt:
                 raise Warning("Chemical potential is None. Has been set to 0")
             # Now check that m_var is a float if n_flavors == 1 and else is a list of length n_flavors
             if self.n_flavors == 1:
-                if not isinstance(m_var, (float, int)) or not isinstance(chem_pot, (float, int)):
+                if isinstance(m_var, (list, tuple, np.ndarray)) or isinstance(chem_pot, (list, tuple, np.ndarray)):
+                    m_var = m_var[0]
+                    chem_pot = chem_pot[0]
+                    raise Warning("Mass term and chemical potential are lists. Has been set to the first element")
+                elif not isinstance(m_var, (float, int)) or not isinstance(chem_pot, (float, int)):
                     raise ValueError("Mass term and chemical potential must be a float")
             else:
-                if not isinstance(m_var, list) or not isinstance(chem_pot, list):
+                if not isinstance(m_var, (list, tuple, np.ndarray)) or not isinstance(chem_pot, (list, tuple, np.ndarray)):
                     m_var = [m_var] * self.n_flavors
                     chem_pot = [chem_pot] * self.n_flavors
-                    print("Mass term and chemical potential must be a list. Has been set to a list of length n_flavors")
+                    print("Mass term and chemical potential must be a list. Has been set to a list of length n_flavors.")
                 if len(m_var) != self.n_flavors or len(chem_pot) != self.n_flavors:
                     raise ValueError("Mass term and chemical potential must have length n_flavors")
             
