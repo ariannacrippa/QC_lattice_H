@@ -697,7 +697,7 @@ class HCLattice:
         if self.pbc:
             links_before_g = int(self.n_sitestot*len(self.n_sites))
         else:
-            links_before_g = int(self.n_sitestot * sum((ni - 1) / ni for ni in self.n_sites))
+            links_before_g = int(round(self.n_sitestot * sum((ni - 1) / ni for ni in self.n_sites)))
 
         #Gauss law
         links_after_g= int(round(links_before_g - (self.n_sitestot - 1)))
