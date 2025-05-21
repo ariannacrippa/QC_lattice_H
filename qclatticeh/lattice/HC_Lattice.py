@@ -844,7 +844,7 @@ class HCLattice:
                         if recompute:
                             break
                         for link in plaq:
-                            if all(plaquette not in used_plaq2 for plaquette in link_to_plaquettes[link]):
+                            if link not in selected_links and all(plaquette not in used_plaq2 for plaquette in link_to_plaquettes[link]):
 
 
                                 plaquettes = link_to_plaquettes[link]
@@ -869,8 +869,9 @@ class HCLattice:
                         plaq = eval(plaq_idx)
 
                         for link in plaq:
-                            plaquettes = link_to_plaquettes[link]
-                            selected_links.append(link)
+                            if link not in selected_links:
+                                plaquettes = link_to_plaquettes[link]
+                                selected_links.append(link)
                             if len(selected_links) == self.links_after_g:
                                 return selected_links
                             used_plaq2.extend(plaquettes)
