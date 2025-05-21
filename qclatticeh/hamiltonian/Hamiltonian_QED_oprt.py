@@ -336,43 +336,31 @@ class HamiltonianQED_oprt:
         end_time = time.time()
         elapsed_time = end_time - start_time
         print(">> Suppression term built. ", "Execution time:", elapsed_time, "seconds")
-        if self.n_flavors==1:
-            self.get_hamiltonian(1.0,0.0)
-        else:
-            self.get_hamiltonian([1.0]*self.n_flavors,[0.0]*self.n_flavors)
+
 
     def get_hamiltonian(
         self,
-        m_var,
-        chem_pot=None,
+        m_var=0.0,
+        chem_pot=0.0,
         g_var=1.0,
-        omega=1.0,
-        fact_b_op=1.0,
-        fact_e_op=1.0,
-        lambd=1000.0,
+        omega=0.0,
+        fact_b_op=0.0,
+        fact_e_op=0.0,
+        lambd=0.0,
         cutting=False,
     ):
         """Returns the Hamiltonian of the system"""
+
 
         # First check that m_var and chem_pot will work
         if self.puregauge:
             #Do nothing, no fermions
             pass
         else:
-            if m_var is None:
-                m_var = 1.0 if self.n_flavors == 1 else [1.0] * self.n_flavors
-                raise Warning("Mass term is None. Has been set to 1")
-            if chem_pot is None:
-                chem_pot = 0.0 if self.n_flavors == 1 else [0.0] * self.n_flavors
-                raise Warning("Chemical potential is None. Has been set to 0")
             # Now check that m_var is a float if n_flavors == 1 and else is a list of length n_flavors
             if self.n_flavors == 1:
-                if isinstance(m_var, (list, tuple, np.ndarray)) or isinstance(chem_pot, (list, tuple, np.ndarray)):
-                    m_var = m_var[0]
-                    chem_pot = chem_pot[0]
-                    raise Warning("Mass term and chemical potential are lists. Has been set to the first element")
-                elif not isinstance(m_var, (float, int)) or not isinstance(chem_pot, (float, int)):
-                    raise ValueError("Mass term and chemical potential must be a float")
+                if not isinstance(m_var, (float, int)) or not isinstance(chem_pot, (float, int)):
+                    raise ValueError("Mass term and chemical potential must be a single number, not a list.")
             else:
                 if not isinstance(m_var, (list, tuple, np.ndarray)) or not isinstance(chem_pot, (list, tuple, np.ndarray)):
                     m_var = [m_var] * self.n_flavors
@@ -380,34 +368,48 @@ class HamiltonianQED_oprt:
                     print("Mass term and chemical potential must be a list. Has been set to a list of length n_flavors.")
                 if len(m_var) != self.n_flavors or len(chem_pot) != self.n_flavors:
                     raise ValueError("Mass term and chemical potential must have length n_flavors")
-            
+
+
         hamiltonian_tot = 0
         # Hamiltonian for fermions
         if self.puregauge:
             hamiltonian_tot += 0
+            m_var=0.0
+            chem_pot=0.0
+            omega=0.0
         elif self.lattice.dims == 1 and self.sparse_pauli:
             if self.n_flavors==1:
-                hamiltonian_tot += (
-                    float(omega) * self.hamiltonian_k_pauli
-                    + float(m_var) * self.hamiltonian_m_pauli
-                ).to_matrix(sparse=True)
+                if omega !=0:
+                    hamiltonian_tot += (
+                    float(omega) * self.hamiltonian_k_pauli).to_matrix(sparse=True)
+                if m_var !=0:
+                    hamiltonian_tot += (float(m_var) * self.hamiltonian_m_pauli
+                    ).to_matrix(sparse=True)
             else:
-                hamiltonian_add = float(omega) * self.hamiltonian_k_pauli
+
+                hamiltonian_add = float(omega) * self.hamiltonian_k_pauli if omega !=0 else 0
                 for i in range(self.n_flavors):
-                    hamiltonian_add += float(m_var[i]) * self.hamiltonian_m_pauli[i]
-                    hamiltonian_add += float(chem_pot[i]) * self.hamiltonian_mu_pauli[i]
+                    if not all(abs(v) < 1e-13 for v in m_var):
+                        hamiltonian_add += float(m_var[i]) * self.hamiltonian_m_pauli[i]
+                    if not all(abs(v) < 1e-13 for v in chem_pot):
+                        hamiltonian_add += float(chem_pot[i]) * self.hamiltonian_mu_pauli[i]
                 hamiltonian_tot += hamiltonian_add.to_matrix(sparse=True)
         else:
             if self.n_flavors==1:
-                hamiltonian_tot += (
-                    float(omega) * self.hamiltonian_k_pauli
-                    + float(m_var) * self.hamiltonian_m_pauli
-                )
+                if omega !=0:
+                    hamiltonian_tot += (
+                    float(omega) * self.hamiltonian_k_pauli)
+                if m_var !=0:
+                    hamiltonian_tot += (
+                    float(m_var) * self.hamiltonian_m_pauli)
+
             else:
-                hamiltonian_add = float(omega) * self.hamiltonian_k_pauli
+                hamiltonian_add = float(omega) * self.hamiltonian_k_pauli if omega !=0 else 0
                 for i in range(self.n_flavors):
-                    hamiltonian_add += float(m_var[i]) * self.hamiltonian_m_pauli[i]
-                    hamiltonian_add += float(chem_pot[i]) * self.hamiltonian_mu_pauli[i]
+                    if not all(abs(v) < 1e-13 for v in m_var):
+                        hamiltonian_add += float(m_var[i]) * self.hamiltonian_m_pauli[i]
+                    if not all(abs(v) < 1e-13 for v in chem_pot):
+                        hamiltonian_add += float(chem_pot[i]) * self.hamiltonian_mu_pauli[i]
                 hamiltonian_tot += hamiltonian_add
 
         # Hamiltonian for gauge fields
@@ -417,10 +419,12 @@ class HamiltonianQED_oprt:
             hamiltonian_tot += 0
 
         else:
-            hamiltonian_tot += (
-                -fact_b_op / (float((g_var) ** 2)) * self.hamiltonian_mag_pauli
-                + fact_e_op * float((g_var) ** 2) * self.hamiltonian_el_pauli
-            )
+            if fact_b_op !=0:
+                hamiltonian_tot += (
+                    -fact_b_op / (float((g_var) ** 2)) * self.hamiltonian_mag_pauli)
+            if fact_e_op !=0:
+                hamiltonian_tot += (fact_e_op * float((g_var) ** 2) * self.hamiltonian_el_pauli
+                )
 
         # Hamiltonian for suppression term
         if lambd != 0:
@@ -432,8 +436,21 @@ class HamiltonianQED_oprt:
                 raise Warning("No suppression term to cut")
         if cutting and not self.sparse_pauli:
             raise ValueError("Cutting only for sparse matrices")
+
+
+        print(
+            f"Running with parameters:\n"
+            f"  m_var      = {m_var}\n"
+            f"  chem_pot   = {chem_pot}\n"
+            f"  g_var      = {g_var}\n"
+            f"  omega      = {omega}\n"
+            f"  fact_b_op  = {fact_b_op}\n"
+            f"  fact_e_op  = {fact_e_op}\n"
+            f"  lambd      = {lambd}\n"
+            f"  cutting    = {cutting}"
+        )
         return hamiltonian_tot
-    
+
     def cutting_operator(self, operator):
         # Cut the operator according to the non-zero suppresion term elements
         # Only unphysical states are non-zero and thus the eigenvalue of the operatgor is not changed
@@ -751,7 +768,7 @@ class HamiltonianQED_oprt:
             if subst[0][0].name[:3] == "Phi":  # ferm
                 res = ["id_f"] * len(ferm_lst) + ["id_g"] * self.len_e_op
                 f_index_op = [
-                    i for i in index_op if int(re.findall("\d+", i)[0]) < len(ferm_lst)
+                    i for i in index_op if int(re.findall(r"\d+", i)[0]) < len(ferm_lst)
                 ]  # select only fermionic dof
                 res[0] = (
                     op_dct[f_index_op[0]] @ op_dct[f_index_op[1]]
@@ -1761,7 +1778,7 @@ class HamiltonianQED_oprt:
                         [s_down if x == "0" else s_up for x in binc],
                     )
             suppr_f=suppr_f.simplify()
-            
+
             hamiltonian_nzcharge_suppr = HamiltonianQED_oprt.pauli_tns(suppr_f, gauge)
             print("Hamiltonian suppr fermions done")
         if self.puregauge:
