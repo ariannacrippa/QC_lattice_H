@@ -872,12 +872,12 @@ class HCLattice:
                             if link not in selected_links:
                                 plaquettes = link_to_plaquettes[link]
                                 selected_links.append(link)
-                            if len(selected_links) == self.links_after_g:
-                                return selected_links
-                            used_plaq2.extend(plaquettes)
+                                if len(selected_links) == self.links_after_g:
+                                    return selected_links
+                                used_plaq2.extend(plaquettes)
 
-                            recompute = True
-                            break
+                                recompute = True
+                                break
                     if recompute:
                         continue
 
