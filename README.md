@@ -10,11 +10,35 @@ The implementation is useful for carrying out research on QED quantum simulation
 - [Analysis of the confinement string in (2 + 1)-dimensional Quantum Electrodynamics with a trapped-ion quantum computer](https://arxiv.org/abs/2411.05628)
 - [Towards determining the (2+1)-dimensional Quantum Electrodynamics running coupling with Monte Carlo and quantum computing methods](https://arxiv.org/abs/2404.17545)
 
-
 ## Installation
-Before using this code, make sure you have made a dedicated Python virtual environment and installed all required dependencies.
 
-### Virtual Environment
+This source code is now available at [PyPI](https://pypi.org/projects/qclatticeh) as a package for quick installation and usage. One can simply `pip install` it with the command below:
+
+```console
+pip install qclatticeh
+```
+
+Note: if you are not using a python environment (recommended), you may need to use the `pip3` command instead of `pip` in MacOS and Linux.
+
+
+### Manual Installation through Github
+
+It may be useful to some researchers to adapt the current package to their own models. In that case, a manual installation may be easier for making changes in the hamiltonian formulation.
+
+#### Clone
+The first step is to download the latest stable release of this package below and unzip de file.
+
+[Latest Release](https://github.com/ariannacrippa/QC_lattice_H/releases)
+
+Altenatively, you can clone this repo for development builds:
+
+```console
+git clone https://github.com/ariannacrippa/QC_lattice_H.git
+```
+
+#### Virtual Environment
+Before installing this package manually, make sure you have made a dedicated Python virtual environment and installed all required dependencies.
+
 There are many distinct ways of creating Python environments which might be suitable for different applications, e.g., Anaconda, Miniconda, PyEnv, Venv, and others. Use the one that best suits your needs.
 
 For convenience purposes, we provide an example of how to create and activate a simple environment using Venv:
@@ -31,7 +55,7 @@ python -m venv qc_lattice_h && qc_lattice_h/Scripts/activate
 
 To leave this environment, simply run '`deactivate`'.
 
-### Dependencies
+#### Dependencies
 
 
 - General Dependencies:
@@ -41,7 +65,7 @@ To leave this environment, simply run '`deactivate`'.
     `scipy`
 
 - For Quantum Computation:
-    `qiskit`, `qiskit.quantum_info` (Version 1.0)
+    `qiskit`, `qiskit.quantum_info`
     
 It is possible to install all dependencies with the command below:
 
@@ -49,45 +73,72 @@ It is possible to install all dependencies with the command below:
 pip install numpy matplotlib networkx sympy scipy qiskit iteration_utilities
 ```
 
+#### Manual installation
+You can use pip to carry out the manual installation. With your python environment activated, run:
+
+```console
+pip install .
+```
+
+
 ## Usage
 
-This module consists of three main Python classes found in three separate files, as explained below, each focused on a particular component of QED Hamiltonian creation.
+This module consists of three main Python classes found in three separate submodules, as explained below, each focused on a particular component of QED Hamiltonian creation.
 
-### File Structure
-- **'HC_Lattice.py'** [link](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/lattice/HC_Lattice.py)
+### Important Submodules
+- **'lattice'** [link to source code](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/lattice)
 
 -Contains a python class '`HCLattice`' that builds a lattice in generic N dimensions, with periodic or open boundary conditions.
 It finds the set of links and sites, builds plaquettes and chains for Jordan-Wigner[^2] definition (version up to 3D). 
 
 
-- **'Hamiltonian_QED_sym.py'** [link](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/hamiltonian/Hamiltonian_QED_sym.py)
+- **'hamiltonian'** [link to source code](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/hamiltonian)
 
 -Has a python class '`HamiltonianQED_sym`' that builds a symbolic expression of QED Hamiltonian N-dimensional lattice, both with open and periodic boundary conditions. The formulation considered is from Kogut and Susskind and the Gauss’ law can be applied.
 By doing so, it results in a gauge-invariant system, reducing the number of dynamical links needed for the computation, leading to a resource-efficient Hamiltonian.
 It is also possible to consider a formulation for a magnetic basis[^3].
 
-- **'Hamiltonian_QED_oprt.py'** [link](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/hamiltonian/Hamiltonian_QED_oprt.py)
 
--Contains a '`HamiltonianQED_oprt`' class. It imports the Hamiltonian from symbolic expression and builds its respective operator form (sparse matrices or PauliOp, suitable for qiskit quantum circuits).
+-Also contains a '`HamiltonianQED_oprt`' class. It imports the Hamiltonian from symbolic expression and builds its respective operator form (sparse matrices or PauliOp, suitable for qiskit quantum circuits).
 It considers two types of encoding: `ed` returns sparse matrix; `gray` with option sparse=False returns PauliOp expression. Otherwise, a sparse matrix is returned.
 
 
-- **'Ansaetze.py'** [link](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/circuits/Ansaetze.py)
+- **'circuits'** [link](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/circuits)
 
 -Contains an '`Ansatz`' class. Consists of ansaetze proposals of variational circuits for Gray encoding (for gauge fields) and zero-charge sector (for fermionic degrees of freedom).
 
 ### Importing classes
+As shorthand, you can import all the classes into your python project as below.
 
-To integrate this implementation into your project, one suggestion is to include the Python files in your project folder, and import the classes as shown below:
 
 ```python
+from qclatticeh.lattice import HCLattice
+from qclatticeh.hamiltonian import HamiltonianQED_sym, HamiltonianQED_oprt
+from qclatticeh.circuits import Ansatz
+```
+
+### Migration Guide
+In case you were using older versions of this source code before packaging, you may have imported the same python classes as seen below:
+
+
+
+```python
+import sys
+sys.path.append("../") # go to parent dir
 from Hamiltonian_QED_sym import HamiltonianQED_sym
 from Hamiltonian_QED_oprt import HamiltonianQED_oprt
 from HC_Lattice import HCLattice
-from Ansaetze import *
+from Ansaetze import Ansatz
 ```
 
-Alternatively, one could clone the full repository (or include it as a git submodule), in which case the files would be saved in a `QC_lattice_H` subfolder. Make sure to update your code to reflect the different path, either by using a `sys.path.append()` call or by adding a prefix to your imports: `HC_Lattice` -> `QC_lattice_H.HC_Lattice`. 
+You can simply replace the imports with the new package import commands, and most of the old functionality and codebase should work successfully:
+
+```python
+from qclatticeh.lattice import HCLattice
+from qclatticeh.hamiltonian import HamiltonianQED_sym, HamiltonianQED_oprt
+from qclatticeh.circuits import Ansatz
+```
+
 
 
 ### Examples
