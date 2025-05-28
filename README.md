@@ -253,7 +253,7 @@ For simulating the fermionic degrees of freedom we employ the `iSWAP` gate, see 
 If any bugs related to installation, usage and workflow are encountered, and in case of suggestions for improvements and new features, please open a [New Issue](https://github.com/ariannacrippa/QC_Lattice_H/issues/new)
 
 ## Contributing
-To assist with potential contributions, please contact the lead developer Arianna Crippa before submitting a Pull Request.
+To assist with potential contributions, please submit a Pull Request.
 
 ### License
 [MIT licence](https://github.com/ariannacrippa/QC_lattice_H/blob/main/LICENSE)
