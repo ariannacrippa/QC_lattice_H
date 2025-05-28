@@ -4,8 +4,14 @@ authors:
 - family-names: "Crippa"
   given-names: "Arianna"
   orcid: "https://orcid.org/0000-0003-2376-5682"
+- family-names: "Itaborai"
+  given-names: "Paulo Vitor"
+  orcid: "https://orcid.org/0000-0002-4956-2958"
+- family-names: "Rosanowski"
+  given-names: "Emil"
+  orcid: "https://orcid.org/0009-0002-4072-2801"
 title: "Lattice QED Hamiltonian for Quantum Computing"
-version: 0.0.2
+version: 0.1.0
 doi: 10.5281/zenodo.11046038
-date-released: 2024-04-23
+date-released: 2025-05-28
 url: "https://github.com/ariannacrippa/QC_lattice_H"
