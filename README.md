@@ -156,12 +156,24 @@ For an example of Hamiltonian design, let us consider a 2x2 OBC system as in the
 
 where the black arrow represents the gauge field that remains dynamical after Gauss law is applied, i.e.
 
-$$\eqalign{- E_{00x} - E_{00y} - q_{00} &= 0 \\
-E_{00y} - E_{01x} - q_{01} &= 0 \\
-E_{00x} - E_{10y} - q_{10} &= 0 \\
-E_{01x} + E_{10y} - q_{11} &= 0 \\
-q_{00} + q_{01} + q_{10} + q_{11} &= 0.
-}$$
+$$- E_{00x} - E_{00y} - q_{00} = 0
+$$
+
+$$
+E_{00y} - E_{01x} - q_{01} = 0
+$$
+
+$$
+E_{00x} - E_{10y} - q_{10} = 0
+$$
+
+$$
+E_{01x} + E_{10y} - q_{11} = 0
+$$
+
+$$
+q_{00} + q_{01} + q_{10} + q_{11} = 0.
+$$
 
 After this step, the Hamiltonian will be:
 
