@@ -64,6 +64,8 @@ exclude_lines = [
 exclude = [
     ".github",
     "Images",
+    "notebooks",
+    "later",
 ]
 
 [tool.hatch.build.targets.wheel]
