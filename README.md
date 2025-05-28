@@ -103,7 +103,7 @@ It is also possible to consider a formulation for a magnetic basis[^3].
 It considers two types of encoding: `ed` returns sparse matrix; `gray` with option sparse=False returns PauliOp expression. Otherwise, a sparse matrix is returned.
 
 
-- **'circuits'** [link](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/circuits)
+- **'circuits'** [link to source code](https://github.com/ariannacrippa/QC_lattice_H/blob/main/qclatticeh/circuits)
 
 -Contains an '`Ansatz`' class. Consists of ansaetze proposals of variational circuits for Gray encoding (for gauge fields) and zero-charge sector (for fermionic degrees of freedom).
 
@@ -152,7 +152,7 @@ For code examples illustrating a typical workflow with this module, please refer
 
 
 For an example of Hamiltonian design, let us consider a 2x2 OBC system as in the following figure:
-![gausslawtrue](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/system_2x2_OBC_gausslawTrue.png)
+![Image](https://github.com/user-attachments/assets/29b41073-8d9b-4fbf-ad64-299eeeb491a8)
 
 where the black arrow represents the gauge field that remains dynamical after Gauss law is applied, i.e.
 
@@ -212,29 +212,37 @@ $$q_{\vec{n}} =  \Phi^{\dagger} \Phi-\frac{1}{2}(1+(-1)^{n_{x} +n_{y} + 1}) \ \t
 
 ## Gray circuit
 
-After discretizing and truncating the U(1) gauge group to the discrete group $`\mathbb{Z}_{2l+1}`$, the gauge fields can be represented in the electric basis as
+After discretizing and truncating the U(1) gauge group to the discrete group Z(2l+1), the gauge fields can be represented in the electric basis as
 
-$$\eqalign{
-\hat{E} &= \sum_{i=-l}^l i \ket{i}\bra{i}, \\
-\hat{U} &= \sum_{i=-l}^{l-1} \ket{i+1}\bra{i}, \\
-\hat{U^\dagger} &= \sum_{i=-l+1}^l \ket{i-1}\bra{i},
-}$$
+$$
+\hat{E} = \sum_{i=-l}^l i \ket{i}\bra{i},
+$$
 
-where $`\ket{i}=\ket{i}_{\text{ph}}`$.
+$$
+\hat{U} = \sum_{i=-l}^{l-1} \ket{i+1}\bra{i},
+$$
+
+$$
+\hat{U^\dagger} = \sum_{i=-l+1}^l \ket{i-1}\bra{i},
+$$
+
+$$\text{where}\ket{i}=\ket{i}_{\text{ph}} $$.
 
 For numerical calculations, it is advantageous to employ a suitable encoding that accurately represents the physical values of the gauge fields.
 In this work, we consider the Gray encoding.
-For the truncation $`l=1`$, we can use the circuit in the following Figure to represent a gauge field.
+For the truncation `l=1`, we can use the circuit in the following Figure to represent a gauge field.
 
-![circuit_l1](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/gray_circuit_l1.png)
+![Image](https://github.com/user-attachments/assets/140de3cc-a539-4a54-9035-36f7dde6f853)
 
-The action of the circuit is straightforward: starting from the state $`\ket{00}`$, setting both parameters $`\theta_1`$ and $`\theta_2`$ to zero allows for the exploration of the physical state $`\ket{-1}_{\text{ph}}`$. The introduction of a non-zero value for $`\theta_1`$ allows the state to change to $`\ket{01}`$, which represents the vacuum state $`\ket{0}_{\text{ph}}`$, with a certain probability. A complete rotation occurs if $`\theta_1=\pi`$, resulting in the exclusive presence of the second state with a probability of 1.0. Subsequently, the second controlled gate operates only when the first qubit is $`\ket{1}`$, limiting the exploration to $`\ket{11}`$ (i.e., $`\ket{1}_{\text{ph}}`$) and excluding $`\ket{10}`$.
+The action of the circuit is straightforward: starting from the state |00>, setting both parameters θ1 and θ2 to zero allows for the exploration of the physical state |-1>. The introduction of a non-zero value for θ1 allows the state to change to |01>, which represents the physical vacuum state |0>, with a certain probability. A complete rotation occurs if θ1 = π, resulting in the exclusive presence of the second state with a probability of 1.0. Subsequently, the second controlled gate operates only when the first qubit is |1>, limiting the exploration to |11> (i.e., physical |1>) and excluding |10>.
 
-Circuits for larger truncations ($`l=3,7,15`$) are:
+Circuits for larger truncations (`l=3,7,15`) are:
 
-![circuit_l3](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/gray_circuit_l3.png)
-![circuit_l7](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/gray_circuit_l7.png)
-![circuit_l15](https://github.com/ariannacrippa/QC_lattice_H/blob/main/Images/gray_circuit_l15.png)
+![Image](https://github.com/user-attachments/assets/cd812b92-2c88-4516-965d-8a3fd50e4dba)
+
+![Image](https://github.com/user-attachments/assets/287d3ba4-c601-48c2-9cc7-1b5bb9f0388d)
+
+![Image](https://github.com/user-attachments/assets/f42b9280-74a5-430a-b90f-104a964e0028)
 
 
 ## Fermionic circuit
