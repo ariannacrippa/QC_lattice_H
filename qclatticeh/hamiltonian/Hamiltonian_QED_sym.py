@@ -106,7 +106,7 @@ class HamiltonianQED_sym:
         gauss_law: bool
             If True, the Gauss law equations are applied to the Hamiltonian. If False, the Gauss law
             is not applied.
-        
+
         n_flavors: int
             Number of fermionic flavors in the system.
         }
@@ -517,11 +517,11 @@ class HamiltonianQED_sym:
                 else:
                     start_tuple = ((i[0][0]+1)*self.n_flavors-n-1,) + i[0][1:]
                 if i[1][1]%2 == 0:
-                    end_tuple = (i[1][0]*self.n_flavors+n,) + i[1][1:] 
-                else: 
-                    end_tuple = ((i[1][0]+1)*self.n_flavors-n-1,) + i[1][1:] 
+                    end_tuple = (i[1][0]*self.n_flavors+n,) + i[1][1:]
+                else:
+                    end_tuple = ((i[1][0]+1)*self.n_flavors-n-1,) + i[1][1:]
                 jw_link = (start_tuple, end_tuple)
-                
+
                 if self.lattice.dims == 1:
                     phase = 1
                     hamiltonian_k_sym.append(
@@ -623,11 +623,11 @@ class HamiltonianQED_sym:
                 if self.magnetic_basis
                 else self.hamiltonian_el_sym
             )
-            display_hamiltonian_el = Eq(
+            self.display_hamiltonian_el = Eq(
                 Symbol("H_E"), (Symbol("g") ** 2) / 2 * h_el_embasis
             )
-            display(display_hamiltonian_el)
-            print(latex(display_hamiltonian_el))
+            display(self.display_hamiltonian_el)
+            print(latex(self.display_hamiltonian_el))
 
         # ************************************  H_B   ************************************
         if self.len_e_op > 0:
@@ -635,7 +635,7 @@ class HamiltonianQED_sym:
 
             if self.magnetic_basis and self.display_hamiltonian:
                 # Hamiltonian to print
-                display_hamiltonian_mag = Eq(
+                self.display_hamiltonian_mag = Eq(
                     Symbol("H_B"),
                     -1
                     / (Symbol("g") ** 2)
@@ -658,12 +658,12 @@ class HamiltonianQED_sym:
                         )
                     ),
                 )
-                display(display_hamiltonian_mag)
-                print(latex(display_hamiltonian_mag))
+                display(self.display_hamiltonian_mag)
+                print(latex(self.display_hamiltonian_mag))
             else:
                 if self.display_hamiltonian:
                     # Hamiltonian to print
-                    display_hamiltonian_mag = Eq(
+                    self.display_hamiltonian_mag = Eq(
                         Symbol("H_B"),
                         -1
                         / (2 * Symbol("g") ** 2)
@@ -684,8 +684,8 @@ class HamiltonianQED_sym:
                             + Symbol("h.c.", commutative=False)
                         ),
                     )
-                    display(display_hamiltonian_mag)
-                    print(latex(display_hamiltonian_mag))
+                    display(self.display_hamiltonian_mag)
+                    print(latex(self.display_hamiltonian_mag))
 
         if not self.puregauge:
             # ************************************  H_K   ************************************
@@ -733,7 +733,7 @@ class HamiltonianQED_sym:
                         for k in self.hamiltonian_k_sym
                     ]
 
-                    display_hamiltonian_k = Eq(
+                    self.display_hamiltonian_k = Eq(
                         Symbol("H_K"),
                         (Symbol("Omega") * 1j / 2)
                         * (
@@ -811,7 +811,7 @@ class HamiltonianQED_sym:
                         )
                     else:
                         h_k_z = 0
-                    display_hamiltonian_k = Eq(
+                    self.display_hamiltonian_k = Eq(
                         Symbol("H_K"),
                         (Symbol("Omega"))
                         * (
@@ -822,13 +822,13 @@ class HamiltonianQED_sym:
                         evaluate=False,
                     )
 
-                display(display_hamiltonian_k)
-                print(latex(display_hamiltonian_k))
+                display(self.display_hamiltonian_k)
+                print(latex(self.display_hamiltonian_k))
 
             # ************************************  H_M   ************************************
             if self.display_hamiltonian:  # to print
                 if self.n_flavors>1:
-                    display_hamiltonian_m = [
+                    self.display_hamiltonian_m = [
                             Eq(
                                 Symbol(f"H_{{m,{f+1}}}"),
                                 sum(
@@ -846,11 +846,11 @@ class HamiltonianQED_sym:
                             for f, ham_m in enumerate(self.hamiltonian_m_sym)
                         ]
 
-                    for display_hamiltonian_m_part in display_hamiltonian_m:
-                        display(display_hamiltonian_m_part)
-                        print(latex(display_hamiltonian_m_part))
+                    for self.display_hamiltonian_m_part in self.display_hamiltonian_m:
+                        display(self.display_hamiltonian_m_part)
+                        print(latex(self.display_hamiltonian_m_part))
                 else:
-                    display_hamiltonian_m = Eq(
+                    self.display_hamiltonian_m = Eq(
                         Symbol("H_m"),
                         sum(
                             [
@@ -865,5 +865,5 @@ class HamiltonianQED_sym:
                         )
                         * Symbol("m"),
                     )
-                    display(display_hamiltonian_m)
-                    print(latex(display_hamiltonian_m))
+                    display(self.display_hamiltonian_m)
+                    print(latex(self.display_hamiltonian_m))
