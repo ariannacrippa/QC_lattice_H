@@ -363,6 +363,17 @@ class HamiltonianQED_sym:
             list_gauss.append(ga_tmp)
         if gc_tmp != 0:
             list_gauss.append(gc_tmp)
+
+        if self.puregauge == True and np.all(self.pbc == [True]*self.lattice.dims) and self.static_charges_values is None:
+            directions = ["x", "y", "z"] if self.lattice.dims == 3 else ["x", "y"] if self.lattice.dims == 2 else ["x"]
+            for i, d in enumerate(directions):
+                temp = 0
+                for edge in self.lattice.list_edges2_e_op:
+                    if edge[2+i] == "0" and edge[-1]==d:
+                        temp += Symbol(edge)
+                list_gauss.append(temp)
+
+
         self.list_gauss = list_gauss
 
     # HAMILTONIAN
